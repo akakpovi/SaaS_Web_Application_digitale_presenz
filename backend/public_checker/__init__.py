@@ -1,0 +1,1 @@
+"""Public checker app."""

@@ -1,0 +1,39 @@
+
+# Core Django
+Django>=5.1,<5.3
+djangorestframework>=3.15,<3.17
+djangorestframework-simplejwt[crypto]>=5.5,<5.6
+drf-spectacular>=0.28,<0.29
+
+# Database
+psycopg[binary]>=3.2,<3.3
+
+# Cache & Celery
+redis>=5.2,<6.0
+celery[redis]>=5.4,<5.6
+django-redis>=5.4,<5.5
+django-celery-beat>=2.7,<2.9
+
+# Web Server
+gunicorn>=23.0,<24.0
+
+# CORS
+django-cors-headers>=4.6,<4.8
+
+# Logging
+python-json-logger>=3.2,<4.0
+
+# ← AJOUTS CRITIQUES MANQUANTS
+# HTTP requests (pour les scanners)
+requests>=2.32,<3.0
+
+# DNS resolution (pour dns_scanner et email_security_scanner)
+dnspython>=2.7,<3.0
+
+# SSL/TLS inspection
+cryptography>=43.0,<44.0
+
+# URL validation
+validators>=0.34,<1.0
+
+certifi>=2024.8.30

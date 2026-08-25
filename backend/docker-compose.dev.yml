@@ -1,0 +1,15 @@
+# Development override — bind mount for hot reload.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+services:
+  web:
+    volumes:
+      - .:/app
+      - static_data:/app/staticfiles
+
+  celery-worker:
+    volumes:
+      - .:/app
+
+  celery-beat:
+    volumes:
+      - .:/app
