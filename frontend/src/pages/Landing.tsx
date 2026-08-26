@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import type { Lang } from "../i18n";
 import { Link } from "react-router-dom";
 import { CheckCircle, ChevronDown, Globe, Shield, Mail, Zap, Bell, Star, FileText, ArrowRight, Play, Activity } from "lucide-react";
 import { Button } from "../components/ui";
@@ -57,17 +59,10 @@ const LANGS = [
 ];
 
 function LangPicker() {
-  const [lang, setLangState] = useState<string>(
-    () => localStorage.getItem("presence_lang") ?? "en"
-  );
+  const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = () => setLangState(localStorage.getItem("presence_lang") ?? "en");
-    window.addEventListener("presence_lang_change", handler);
-    return () => window.removeEventListener("presence_lang_change", handler);
-  }, []);
+  const lang = i18n.language?.slice(0, 2) ?? "en";
 
   useEffect(() => {
     if (!open) return;
@@ -81,9 +76,7 @@ function LangPicker() {
   const current = LANGS.find((l) => l.code === lang) ?? LANGS[0];
 
   const handleChange = (code: string) => {
-    localStorage.setItem("presence_lang", code);
-    setLangState(code);
-    window.dispatchEvent(new Event("presence_lang_change"));
+    i18n.changeLanguage(code);
     setOpen(false);
   };
 
@@ -116,6 +109,7 @@ function LangPicker() {
 
 function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  // Lang gérée par LangPicker
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-8">
@@ -252,6 +246,7 @@ function FeatureCard({ icon: Icon, title, description, color }: { icon: React.FC
 }
 
 export default function Landing() {
+  const { t } = useTranslation();
   const [domain, setDomain] = useState("");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 

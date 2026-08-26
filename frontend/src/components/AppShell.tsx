@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LangContext";
+import { useTranslation } from "react-i18next";
 
 const NAV_KEYS = [
   { key: "nav.overview",   icon: LayoutDashboard, path: "/app/dashboard" },
@@ -77,14 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const langDropdown = useDropdown();
   const userDropdown = useDropdown();
 
-  // Sync langue si changée depuis Settings
-  useEffect(() => {
-    const handler = () => {
-      // sync géré par LangContext
-    };
-    window.addEventListener("presence_lang_change", handler);
-    return () => window.removeEventListener("presence_lang_change", handler);
-  }, []);
+  // Sync langue gérée par LangContext
 
   const handleLangChange = (code: string) => {
     setLangCtx(code as import("../i18n").Lang);

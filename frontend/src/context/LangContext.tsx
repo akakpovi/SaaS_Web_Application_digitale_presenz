@@ -1,8 +1,6 @@
-import React, {
-  createContext, useContext, useState, useEffect,
-  ReactNode,
-} from "react";
-import { Lang, getLang, translations } from "../i18n";
+import React, { createContext, useContext, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { Lang } from "../i18n";
 
 interface LangContextType {
   lang: Lang;
@@ -13,25 +11,20 @@ interface LangContextType {
 const LangContext = createContext<LangContextType | null>(null);
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(getLang);
-
-  useEffect(() => {
-    const handler = () => setLangState(getLang());
-    window.addEventListener("presence_lang_change", handler);
-    return () => window.removeEventListener("presence_lang_change", handler);
-  }, []);
+  const { t, i18n } = useTranslation();
 
   const setLang = (l: Lang) => {
-    localStorage.setItem("presence_lang", l);
-    setLangState(l);
+    i18n.changeLanguage(l);
+    // Sync event pour LangPickers autonomes (Landing/Auth)
     window.dispatchEvent(new Event("presence_lang_change"));
   };
 
-  const t = (key: string): string =>
-    translations[lang]?.[key] ?? translations["en"]?.[key] ?? key;
-
   return (
-    <LangContext.Provider value={{ lang, setLang, t }}>
+    <LangContext.Provider value={{
+      lang: (i18n.language?.slice(0, 2) as Lang) ?? "en",
+      setLang,
+      t: (key: string) => t(key),
+    }}>
       {children}
     </LangContext.Provider>
   );

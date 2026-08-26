@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "websites": "Websites",
+    "monitoring": "Monitoring",
+    "reviews": "Reviews",
+    "reports": "Reports",
+    "alerts": "Alerts",
+    "settings": "Settings",
+    "signout": "Sign out"
+  },
+  "dashboard": {
+    "title": "Here's the health of your digital presence.",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "no_websites": "No websites yet",
+    "add_website": "Add your first website to start monitoring",
+    "add_btn": "Add website",
+    "refresh": "Refresh"
+  },
+  "kpi": {
+    "health_score": "Digital Health Score",
+    "websites": "Websites",
+    "uptime": "Uptime",
+    "open_issues": "Open issues"
+  },
+  "websites": {
+    "title": "Websites",
+    "subtitle": "Manage and monitor all your websites from one place.",
+    "add": "Add website",
+    "add_domain": "Add a website",
+    "domain_label": "Domain",
+    "domain_hint": "Enter the domain without http:// or www.",
+    "cancel": "Cancel",
+    "add_scan": "Add & scan",
+    "never": "Never",
+    "last_check": "Last check",
+    "all_good": "All good"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "needs_attention": "Needs attention",
+    "no_data": "No data",
+    "healthy": "Good",
+    "warning": "Needs attention",
+    "critical": "Critical"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "subtitle": "Stay informed about changes to your digital presence.",
+    "no_alerts": "No alerts",
+    "all_clear": "Your digital presence looks healthy in this category.",
+    "acknowledge": "Acknowledge",
+    "resolve": "Resolve",
+    "view": "View details"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account and preferences.",
+    "account": "Account",
+    "notifications": "Notifications",
+    "subscription": "Subscription",
+    "language": "Language",
+    "security": "Security",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "signout": "Sign out",
+    "lang_note": "Language is saved locally.",
+    "save_lang": "Save language"
+  },
+  "monitoring": {
+    "title": "Monitoring",
+    "subtitle": "Configure and track automatic monitoring for your websites.",
+    "active": "Active",
+    "paused": "Paused",
+    "save": "Save configuration",
+    "trigger": "Trigger scan now"
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Monthly health reports for your websites.",
+    "generate": "Generate report"
+  },
+  "reviews": {
+    "title": "Reviews",
+    "subtitle": "Manage your customer reviews and responses.",
+    "add": "Add source",
+    "approve": "Approve",
+    "no_reviews": "No reviews yet"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred. Please try again.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "add": "Add",
+    "view_all": "View all"
+  },
+  "landing": {
+    "hero_title": "Website monitoring for restaurants & small businesses",
+    "hero_sub": "Monitor your restaurant or shop website automatically. SSL, uptime, DNS, email security and reviews — one simple dashboard, no technical skills needed.",
+    "hero_cta": "Get started",
+    "hero_login": "Log in",
+    "hero_check": "Check my website",
+    "hero_no_cc": "No credit card required. Free forever plan available.",
+    "nav_features": "Features",
+    "nav_how": "How it works",
+    "nav_pricing": "Pricing",
+    "nav_faq": "FAQ",
+    "trusted_by": "Trusted by businesses across Europe",
+    "how_title": "Up and running in minutes",
+    "how_sub": "No technical knowledge required.",
+    "features_title": "Everything you need to stay in control",
+    "features_sub": "We monitor your digital presence so you don't have to.",
+    "pricing_title": "Simple, transparent pricing",
+    "pricing_sub": "Cancel anytime. 14-day free trial on paid plans.",
+    "faq_title": "Frequently asked questions",
+    "cta_title": "Ready to take control of your digital presence?",
+    "cta_sub": "Join thousands of restaurants, shops and small businesses monitoring their digital presence with Presence.",
+    "cta_start": "Start for free",
+    "footer_tagline": "Your digital presence, under control."
+  }
+}

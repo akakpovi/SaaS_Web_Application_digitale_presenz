@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Globe } from "lucide-react";
 import { Button, Input } from "../components/ui";
@@ -14,17 +15,10 @@ const AUTH_LANGS = [
 ];
 
 function AuthLangPicker() {
-  const [lang, setLangState] = useState<string>(
-    () => localStorage.getItem("presence_lang") ?? "en"
-  );
+  const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = () => setLangState(localStorage.getItem("presence_lang") ?? "en");
-    window.addEventListener("presence_lang_change", handler);
-    return () => window.removeEventListener("presence_lang_change", handler);
-  }, []);
+  const lang = i18n.language?.slice(0, 2) ?? "en";
 
   useEffect(() => {
     if (!open) return;
@@ -38,9 +32,7 @@ function AuthLangPicker() {
   const current = AUTH_LANGS.find((l) => l.code === lang) ?? AUTH_LANGS[0];
 
   const handleChange = (code: string) => {
-    localStorage.setItem("presence_lang", code);
-    setLangState(code);
-    window.dispatchEvent(new Event("presence_lang_change"));
+    i18n.changeLanguage(code);
     setOpen(false);
   };
 

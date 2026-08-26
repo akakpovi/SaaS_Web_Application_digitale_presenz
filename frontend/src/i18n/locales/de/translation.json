@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "overview": "Übersicht",
+    "websites": "Webseiten",
+    "monitoring": "Überwachung",
+    "reviews": "Bewertungen",
+    "reports": "Berichte",
+    "alerts": "Benachrichtigungen",
+    "settings": "Einstellungen",
+    "signout": "Abmelden"
+  },
+  "dashboard": {
+    "title": "Hier ist der Gesundheitszustand Ihrer digitalen Präsenz.",
+    "greeting": {
+      "morning": "Guten Morgen",
+      "afternoon": "Guten Nachmittag",
+      "evening": "Guten Abend"
+    },
+    "no_websites": "Noch keine Webseiten",
+    "add_website": "Fügen Sie Ihre erste Webseite hinzu, um die Überwachung zu starten",
+    "add_btn": "Webseite hinzufügen",
+    "refresh": "Aktualisieren"
+  },
+  "kpi": {
+    "health_score": "Gesundheitsscore",
+    "websites": "Webseiten",
+    "uptime": "Verfügbarkeit",
+    "open_issues": "Offene Probleme"
+  },
+  "websites": {
+    "title": "Webseiten",
+    "subtitle": "Verwalten und überwachen Sie alle Ihre Webseiten an einem Ort.",
+    "add": "Webseite hinzufügen",
+    "add_domain": "Webseite hinzufügen",
+    "domain_label": "Domain",
+    "domain_hint": "Domain ohne http:// oder www. eingeben.",
+    "cancel": "Abbrechen",
+    "add_scan": "Hinzufügen & scannen",
+    "never": "Nie",
+    "last_check": "Letzter Check",
+    "all_good": "Alles gut"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "needs_attention": "Aufmerksamkeit erforderlich",
+    "no_data": "Keine Daten",
+    "healthy": "Gut",
+    "warning": "Achtung",
+    "critical": "Kritisch"
+  },
+  "alerts": {
+    "title": "Benachrichtigungen",
+    "subtitle": "Bleiben Sie über Änderungen Ihrer digitalen Präsenz informiert.",
+    "no_alerts": "Keine Benachrichtigungen",
+    "all_clear": "Ihre digitale Präsenz ist in dieser Kategorie gesund.",
+    "acknowledge": "Bestätigen",
+    "resolve": "Lösen",
+    "view": "Details anzeigen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Verwalten Sie Ihr Konto und Ihre Präferenzen.",
+    "account": "Konto",
+    "notifications": "Benachrichtigungen",
+    "subscription": "Abonnement",
+    "language": "Sprache",
+    "security": "Sicherheit",
+    "save": "Speichern",
+    "saving": "Speichern…",
+    "saved": "Gespeichert",
+    "signout": "Abmelden",
+    "lang_note": "Sprache wird lokal gespeichert.",
+    "save_lang": "Sprache speichern"
+  },
+  "monitoring": {
+    "title": "Überwachung",
+    "subtitle": "Konfigurieren und verfolgen Sie die automatische Überwachung Ihrer Webseiten.",
+    "active": "Aktiv",
+    "paused": "Pausiert",
+    "save": "Konfiguration speichern",
+    "trigger": "Scan jetzt starten"
+  },
+  "reports": {
+    "title": "Berichte",
+    "subtitle": "Monatliche Gesundheitsberichte für Ihre Webseiten.",
+    "generate": "Bericht erstellen"
+  },
+  "reviews": {
+    "title": "Bewertungen",
+    "subtitle": "Verwalten Sie Ihre Kundenbewertungen und Antworten.",
+    "add": "Quelle hinzufügen",
+    "approve": "Genehmigen",
+    "no_reviews": "Noch keine Bewertungen"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "add": "Hinzufügen",
+    "view_all": "Alle anzeigen"
+  },
+  "landing": {
+    "hero_title": "Website-Überwachung für Restaurants & Kleinunternehmen",
+    "hero_sub": "Überwachen Sie Ihre Restaurant- oder Shop-Website automatisch. SSL, Verfügbarkeit, DNS, E-Mail-Sicherheit — ein einfaches Dashboard.",
+    "hero_cta": "Loslegen",
+    "hero_login": "Anmelden",
+    "hero_check": "Meine Website prüfen",
+    "hero_no_cc": "Keine Kreditkarte erforderlich. Kostenloser Plan verfügbar.",
+    "nav_features": "Funktionen",
+    "nav_how": "So funktioniert es",
+    "nav_pricing": "Preise",
+    "nav_faq": "FAQ",
+    "trusted_by": "Vertraut von Unternehmen in ganz Europa",
+    "how_title": "In wenigen Minuten einsatzbereit",
+    "how_sub": "Keine technischen Kenntnisse erforderlich.",
+    "features_title": "Alles, was Sie brauchen, um die Kontrolle zu behalten",
+    "features_sub": "Wir überwachen Ihre digitale Präsenz, damit Sie es nicht müssen.",
+    "pricing_title": "Einfache, transparente Preise",
+    "pricing_sub": "Jederzeit kündbar. 14-tägige kostenlose Testphase.",
+    "faq_title": "Häufig gestellte Fragen",
+    "cta_title": "Bereit, Ihre digitale Präsenz zu kontrollieren?",
+    "cta_sub": "Tausende von Restaurants und Kleinunternehmen überwachen ihre digitale Präsenz mit Presence.",
+    "cta_start": "Kostenlos starten",
+    "footer_tagline": "Ihre digitale Präsenz, unter Kontrolle."
+  }
+}

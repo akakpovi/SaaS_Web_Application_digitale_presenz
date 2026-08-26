@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "overview": "Tableau de bord",
+    "websites": "Sites web",
+    "monitoring": "Surveillance",
+    "reviews": "Avis",
+    "reports": "Rapports",
+    "alerts": "Alertes",
+    "settings": "Paramètres",
+    "signout": "Déconnexion"
+  },
+  "dashboard": {
+    "title": "Voici la santé de votre présence digitale.",
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir"
+    },
+    "no_websites": "Aucun site web",
+    "add_website": "Ajoutez votre premier site pour commencer la surveillance",
+    "add_btn": "Ajouter un site",
+    "refresh": "Actualiser"
+  },
+  "kpi": {
+    "health_score": "Score de santé digitale",
+    "websites": "Sites web",
+    "uptime": "Disponibilité",
+    "open_issues": "Problèmes ouverts"
+  },
+  "websites": {
+    "title": "Sites web",
+    "subtitle": "Gérez et surveillez tous vos sites depuis un seul endroit.",
+    "add": "Ajouter un site",
+    "add_domain": "Ajouter un site web",
+    "domain_label": "Domaine",
+    "domain_hint": "Entrez le domaine sans http:// ni www.",
+    "cancel": "Annuler",
+    "add_scan": "Ajouter et scanner",
+    "never": "Jamais",
+    "last_check": "Dernier contrôle",
+    "all_good": "Tout va bien"
+  },
+  "status": {
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "needs_attention": "Attention requise",
+    "no_data": "Pas de données",
+    "healthy": "Bon",
+    "warning": "Attention",
+    "critical": "Critique"
+  },
+  "alerts": {
+    "title": "Alertes",
+    "subtitle": "Restez informé des changements sur votre présence digitale.",
+    "no_alerts": "Aucune alerte",
+    "all_clear": "Votre présence digitale est saine dans cette catégorie.",
+    "acknowledge": "Acquitter",
+    "resolve": "Résoudre",
+    "view": "Voir les détails"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez votre compte et vos préférences.",
+    "account": "Compte",
+    "notifications": "Notifications",
+    "subscription": "Abonnement",
+    "language": "Langue",
+    "security": "Sécurité",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "signout": "Déconnexion",
+    "lang_note": "La langue est enregistrée localement.",
+    "save_lang": "Enregistrer la langue"
+  },
+  "monitoring": {
+    "title": "Surveillance",
+    "subtitle": "Configurez et suivez la surveillance automatique de vos sites.",
+    "active": "Actif",
+    "paused": "En pause",
+    "save": "Enregistrer la configuration",
+    "trigger": "Lancer un scan maintenant"
+  },
+  "reports": {
+    "title": "Rapports",
+    "subtitle": "Rapports de santé mensuels pour vos sites web.",
+    "generate": "Générer un rapport"
+  },
+  "reviews": {
+    "title": "Avis",
+    "subtitle": "Gérez vos avis clients et vos réponses.",
+    "add": "Ajouter une source",
+    "approve": "Approuver",
+    "no_reviews": "Aucun avis pour l'instant"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "back": "Retour",
+    "add": "Ajouter",
+    "view_all": "Voir tout"
+  },
+  "landing": {
+    "hero_title": "Surveillance de site web pour restaurants & petites entreprises",
+    "hero_sub": "Surveillez automatiquement votre site. SSL, disponibilité, DNS, sécurité email et avis — un seul tableau de bord simple.",
+    "hero_cta": "Commencer",
+    "hero_login": "Se connecter",
+    "hero_check": "Vérifier mon site",
+    "hero_no_cc": "Sans carte bancaire. Plan gratuit disponible.",
+    "nav_features": "Fonctionnalités",
+    "nav_how": "Comment ça marche",
+    "nav_pricing": "Tarifs",
+    "nav_faq": "FAQ",
+    "trusted_by": "Fait confiance par des entreprises à travers l'Europe",
+    "how_title": "Opérationnel en quelques minutes",
+    "how_sub": "Aucune connaissance technique requise.",
+    "features_title": "Tout ce dont vous avez besoin pour rester en contrôle",
+    "features_sub": "Nous surveillons votre présence digitale pour vous.",
+    "pricing_title": "Tarifs simples et transparents",
+    "pricing_sub": "Annulez à tout moment. Essai gratuit de 14 jours sur les plans payants.",
+    "faq_title": "Questions fréquemment posées",
+    "cta_title": "Prêt à contrôler votre présence digitale ?",
+    "cta_sub": "Rejoignez des milliers de restaurants et petites entreprises qui surveillent leur présence digitale avec Presence.",
+    "cta_start": "Commencer gratuitement",
+    "footer_tagline": "Votre présence digitale, sous contrôle."
+  }
+}
