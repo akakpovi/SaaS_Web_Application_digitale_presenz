@@ -1,9 +1,73 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Globe } from "lucide-react";
 import { Button, Input } from "../components/ui";
 import SEO from "../components/SEO";
 import { useAuth } from "../context/AuthContext";
+
+
+const AUTH_LANGS = [
+  { code: "en", label: "EN", full: "English" },
+  { code: "fr", label: "FR", full: "Français" },
+  { code: "de", label: "DE", full: "Deutsch" },
+  { code: "es", label: "ES", full: "Español" },
+];
+
+function AuthLangPicker() {
+  const [lang, setLang] = useState(
+    () => localStorage.getItem("presence_lang") ?? "en"
+  );
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const current = AUTH_LANGS.find((l) => l.code === lang) ?? AUTH_LANGS[0];
+
+  const handleChange = (code: string) => {
+    setLang(code);
+    localStorage.setItem("presence_lang", code);
+    window.dispatchEvent(new Event("presence_lang_change"));
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-600 cursor-pointer hover:bg-slate-50 transition-colors"
+      >
+        <Globe size={14} /> {current.label}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
+          {AUTH_LANGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => handleChange(l.code)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                lang === l.code
+                  ? "bg-indigo-50 text-indigo-700 font-semibold"
+                  : "text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {lang === l.code ? "✓ " : "\u00A0\u00A0"}{l.full}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AuthShell({ children, title, subtitle }: {
   children: React.ReactNode;
@@ -23,9 +87,7 @@ function AuthShell({ children, title, subtitle }: {
           </div>
           <span className="font-bold text-slate-900">Presence</span>
         </Link>
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-600 cursor-pointer hover:bg-slate-50">
-          <Globe size={14} /> EN
-        </div>
+        <AuthLangPicker />
       </header>
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">

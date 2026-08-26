@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle, ChevronDown, Globe, Shield, Mail, Zap, Bell, Star, FileText, ArrowRight, Play, Activity } from "lucide-react";
 import { Button } from "../components/ui";
@@ -48,6 +48,70 @@ const faqs = [
   { q: "Can I cancel anytime?", a: "Yes. There are no long-term contracts. You can cancel your subscription at any time from your account settings." },
 ];
 
+
+const LANGS = [
+  { code: "en", label: "EN", full: "English" },
+  { code: "fr", label: "FR", full: "Français" },
+  { code: "de", label: "DE", full: "Deutsch" },
+  { code: "es", label: "ES", full: "Español" },
+];
+
+function LangPicker() {
+  const [lang, setLang] = useState(
+    () => localStorage.getItem("presence_lang") ?? "en"
+  );
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const current = LANGS.find((l) => l.code === lang) ?? LANGS[0];
+
+  const handleChange = (code: string) => {
+    setLang(code);
+    localStorage.setItem("presence_lang", code);
+    window.dispatchEvent(new Event("presence_lang_change"));
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+      >
+        {current.label} <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => handleChange(l.code)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                lang === l.code
+                  ? "bg-indigo-50 text-indigo-700 font-semibold"
+                  : "text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {lang === l.code ? "✓ " : "  "}{l.full}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
@@ -74,9 +138,7 @@ function NavBar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3 ml-auto">
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer">
-            EN <ChevronDown size={12} />
-          </div>
+          <LangPicker />
           <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2">
             Log in
           </Link>
