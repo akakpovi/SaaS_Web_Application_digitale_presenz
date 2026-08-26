@@ -73,7 +73,9 @@ export const scanService = {
   async list(websiteId?: number): Promise<Scan[]> {
     const params = websiteId ? `?website=${websiteId}` : '';
     const { data } = await api.get<PaginatedResponse<Scan>>(`/scans/${params}`);
-    return data.results;
+    // Toujours retourner un tableau
+    if (Array.isArray(data)) return data;
+    return data.results ?? [];
   },
 
   async get(id: number): Promise<Scan> {
@@ -82,7 +84,9 @@ export const scanService = {
   },
 
   async getResults(id: number): Promise<CheckResult[]> {
-    const { data } = await api.get<CheckResult[]>(`/scans/${id}/results/`);
-    return data;
+    const { data } = await api.get<any>(`/scans/${id}/results/`);
+    // Gerer reponse paginee ou tableau direct
+    if (Array.isArray(data)) return data;
+    return data.results ?? [];
   },
 };
