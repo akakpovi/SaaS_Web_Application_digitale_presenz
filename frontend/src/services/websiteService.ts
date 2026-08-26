@@ -15,6 +15,7 @@ export interface CheckResult {
   score: number | null;
   summary: string;
   recommendation: string;
+  technical_details?: Record<string, any> | null;
 }
 
 export interface Scan {
