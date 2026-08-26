@@ -104,7 +104,7 @@ export default function Monitoring() {
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.07)" }}
-              formatter={(v: number) => [`${v.toFixed(2)}%`, "Uptime"]}
+              formatter={(v) => [`${(v as number).toFixed(2)}%`, "Uptime"]}
             />
             <Area
               type="stepAfter"

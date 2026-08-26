@@ -102,7 +102,7 @@ export default function Reports() {
                 <YAxis domain={[60, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                  formatter={(v: number) => [v, "Score"]}
+                  formatter={(v) => [v as number, "Score"]}
                 />
                 <Bar dataKey="score" fill="#4f46e5" radius={[4, 4, 0, 0]} />
               </BarChart>
