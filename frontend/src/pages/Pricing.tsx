@@ -76,7 +76,7 @@ export default function Pricing() {
           "@context": "https://schema.org",
           "@type": "Product",
           name: "Presence Website Monitoring",
-          description: "Website monitoring for small businesses. Monitor uptime, SSL, DNS, email security and reviews.",
+          description: "Website monitoring for restaurants, shops and small businesses. Monitor uptime, SSL, DNS, email security and reviews from one simple dashboard.",
           offers: [
             { "@type": "Offer", name: "Free", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
             { "@type": "Offer", name: "Pro", price: "5.99", priceCurrency: "EUR", availability: "https://schema.org/InStock" },

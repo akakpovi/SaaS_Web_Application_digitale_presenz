@@ -369,8 +369,8 @@ function ToolContent({ config }: { config: ToolConfig }) {
 export default function ToolPage({ tool }: { tool: string }) {
   const toolMeta: Record<string, { title: string; description: string }> = {
     "website-checker": {
-      title: "Free Website Health Checker — Test Your Website Now | Presence",
-      description: "Check your website health for free. Test SSL, DNS, email security, performance and security headers in seconds. No account required.",
+      title: "Free Website Checker for Restaurants & Small Businesses | Presence",
+      description: "Check your restaurant or shop website health for free. Test SSL, DNS, email security and uptime in seconds. No account required — instant results.",
     },
     "ssl-checker": {
       title: "Free SSL Certificate Checker — Check Your SSL Now | Presence",

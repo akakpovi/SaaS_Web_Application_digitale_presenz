@@ -530,13 +530,13 @@ export default function FeaturePage({ feature }: { feature: string }) {
   // SEO dynamique par feature
   const featureTitles: Record<string, { title: string; description: string; path: string }> = {
     "website-monitoring": {
-      title: "Website Monitoring for Small Businesses | Presence",
-      description: "Monitor your website 24/7. Get instant alerts when your site goes down. Track uptime, response time and HTTP status from one simple dashboard.",
+      title: "Website Monitoring for Restaurants & Small Businesses | Presence",
+      description: "Know instantly when your restaurant or shop website goes offline. Automatic uptime monitoring with email alerts. Free to start — no technical skills needed.",
       path: "/features/website-monitoring",
     },
     "ssl-monitoring": {
-      title: "SSL Certificate Monitoring — Never Let Your SSL Expire | Presence",
-      description: "Get alerted before your SSL certificate expires. Monitor certificate validity, expiry date and chain of trust automatically.",
+      title: "SSL Certificate Monitoring for Restaurants & Small Businesses | Presence",
+      description: "Never let your restaurant or shop SSL certificate expire. Get alerted 30 days before expiry. Automatic monitoring for small businesses worldwide.",
       path: "/features/ssl-monitoring",
     },
     "dns-monitoring": {

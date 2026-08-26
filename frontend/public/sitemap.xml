@@ -2,69 +2,35 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- Homepage -->
+  <!-- Homepage — highest priority -->
   <url>
     <loc>https://presence.io/</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://presence.io/"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://presence.io/fr/"/>
     <xhtml:link rel="alternate" hreflang="de" href="https://presence.io/de/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://presence.io/fr/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://presence.io/"/>
   </url>
 
-  <!-- Feature pages -->
-  <url>
-    <loc>https://presence.io/features/website-monitoring</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/ssl-monitoring</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/dns-monitoring</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/email-security</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/uptime-monitoring</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/website-performance</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/features/security-headers</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
+  <!-- Review monitoring — top priority for restaurants -->
   <url>
     <loc>https://presence.io/features/review-monitoring</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.95</priority>
   </url>
 
-  <!-- Free tools -->
+  <!-- Website monitoring — top priority for small businesses -->
+  <url>
+    <loc>https://presence.io/features/website-monitoring</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Free tools — high conversion pages -->
   <url>
     <loc>https://presence.io/tools/website-checker</loc>
     <lastmod>2026-08-26</lastmod>
@@ -75,19 +41,57 @@
     <loc>https://presence.io/tools/ssl-checker</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://presence.io/tools/dns-checker</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://presence.io/tools/email-security-checker</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Feature pages -->
+  <url>
+    <loc>https://presence.io/features/ssl-monitoring</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/features/dns-monitoring</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/features/email-security</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/features/uptime-monitoring</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/features/website-performance</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/features/security-headers</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
   </url>
 
   <!-- Marketing pages -->
@@ -95,63 +99,63 @@
     <loc>https://presence.io/pricing</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://presence.io/faq</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/about</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://presence.io/blog</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>
 
-  <!-- Blog articles -->
+  <!-- Blog articles — restaurant & small business focused -->
+  <url>
+    <loc>https://presence.io/blog/website-monitoring-for-restaurants</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/blog/website-monitoring-small-business-germany</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://presence.io/blog/ssl-certificate-small-business</loc>
+    <lastmod>2026-08-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.65</priority>
+  </url>
   <url>
     <loc>https://presence.io/blog/what-is-website-monitoring</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.65</priority>
   </url>
   <url>
     <loc>https://presence.io/blog/how-to-monitor-website-uptime</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.65</priority>
   </url>
   <url>
     <loc>https://presence.io/blog/what-is-dmarc</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/blog/how-to-check-ssl-certificate</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://presence.io/blog/website-security-checklist-small-business</loc>
-    <lastmod>2026-08-26</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.60</priority>
   </url>
   <url>
     <loc>https://presence.io/blog/digital-presence-checklist-small-business</loc>
     <lastmod>2026-08-26</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.60</priority>
   </url>
 
 </urlset>

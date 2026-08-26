@@ -85,8 +85,26 @@ export const organizationSchema = {
   name: "Presence",
   url: "https://presence.io",
   logo: "https://presence.io/icons/icon-512.png",
-  description: "Digital presence monitoring for small businesses.",
+  description: "Website monitoring for restaurants, shops and small businesses worldwide. Monitor SSL, DNS, uptime and email security from one dashboard.",
   sameAs: [],
+  areaServed: [
+    { "@type": "Country", name: "Germany" },
+    { "@type": "Country", name: "France" },
+    { "@type": "Country", name: "United States" },
+    { "@type": "Country", name: "United Kingdom" },
+    { "@type": "Country", name: "Austria" },
+    { "@type": "Country", name: "Switzerland" },
+  ],
+  knowsAbout: [
+    "Website Monitoring",
+    "SSL Certificate Monitoring",
+    "DNS Monitoring",
+    "Uptime Monitoring",
+    "Email Security",
+    "Restaurant Website Monitoring",
+    "Small Business Website Monitoring",
+    "Kleinunternehmen Website Überwachung",
+  ],
 };
 
 export const websiteSchema = {
@@ -108,12 +126,16 @@ export const softwareAppSchema = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web, iOS, Android",
   offers: [
-    { "@type": "Offer", price: "0", priceCurrency: "EUR", name: "Free" },
-    { "@type": "Offer", price: "5.99", priceCurrency: "EUR", name: "Pro" },
-    { "@type": "Offer", price: "14.99", priceCurrency: "EUR", name: "Business" },
+    { "@type": "Offer", price: "0", priceCurrency: "EUR", name: "Free", description: "Free website monitoring for small businesses and restaurants" },
+    { "@type": "Offer", price: "19", priceCurrency: "EUR", name: "Pro", description: "Professional monitoring for growing businesses" },
+    { "@type": "Offer", price: "49", priceCurrency: "EUR", name: "Business", description: "Advanced monitoring for agencies and multi-location businesses" },
   ],
-  description: "Monitor your website, SSL, DNS, email security, uptime and online reputation from one simple dashboard.",
+  description: "Website monitoring for restaurants, cafés, shops and small businesses. Monitor SSL, DNS, uptime and email security automatically. Free to start.",
   url: "https://presence.io",
+  audience: {
+    "@type": "Audience",
+    audienceType: "Small Business Owners, Restaurant Owners, Shop Owners, Freelancers",
+  },
 };
 
 export function faqSchema(items: { q: string; a: string }[]) {

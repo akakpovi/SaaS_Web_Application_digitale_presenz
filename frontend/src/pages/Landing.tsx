@@ -150,9 +150,9 @@ function HeroDashboard() {
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your websites</p>
           </div>
           {[
-            { domain: "example.de", status: "🟢 Online", score: 92, uptime: "99.99%", ssl: "✅ Valid" },
-            { domain: "example.com", status: "🟢 Online", score: 82, uptime: "99.98%", ssl: "✅ Valid" },
-            { domain: "example-shop.de", status: "🟠 Attention", score: 64, uptime: "98.91%", ssl: "⚠️ Expires soon" },
+            { domain: "restaurant-weber.de", status: "🟢 Online", score: 92, uptime: "99.99%", ssl: "✅ Valid" },
+            { domain: "bakery-london.com", status: "🟢 Online", score: 82, uptime: "99.98%", ssl: "✅ Valid" },
+            { domain: "boutique-schmidt.de", status: "🟠 Attention", score: 64, uptime: "98.91%", ssl: "⚠️ Expires soon" },
           ].map((site) => (
             <div key={site.domain} className="flex items-center gap-4 px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
               <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -194,8 +194,8 @@ export default function Landing() {
   return (
     <div className="min-h-full bg-white">
       <SEO
-        title="Website Monitoring for Small Businesses | Presence"
-        description="Monitor your website, SSL, DNS, email security, uptime and online reputation from one simple dashboard. Built for small businesses."
+        title="Website Monitoring for Restaurants & Small Businesses | Presence"
+        description="Monitor your restaurant or shop website automatically. SSL, DNS, uptime and email security from one simple dashboard. Free to start. Trusted by restaurants and small businesses worldwide."
         path="/"
         hreflang={{ en: "/", fr: "/fr/", de: "/de/" }}
         structuredData={[
@@ -213,14 +213,14 @@ export default function Landing() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium mb-8 border border-indigo-100">
               <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-              Digital presence monitoring for small businesses
+              Website monitoring for restaurants & small businesses
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-slate-900 leading-tight mb-6">
               Your digital presence,{" "}
               <span className="text-indigo-600">always under control.</span>
             </h1>
             <p className="text-xl text-slate-500 leading-relaxed mb-10">
-              Monitor your website, SSL, domain, email security and online reputation from one simple dashboard.
+              Monitor your restaurant or shop website automatically. SSL, uptime, DNS, email security and reviews — one simple dashboard, no technical skills needed.
             </p>
 
             {/* Domain scanner */}
@@ -512,7 +512,7 @@ export default function Landing() {
       <section className="py-24 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-slate-900 mb-4">Ready to take control of your digital presence?</h2>
-          <p className="text-lg text-slate-500 mb-8">Join thousands of small businesses monitoring their digital presence with Presence.</p>
+          <p className="text-lg text-slate-500 mb-8">Join thousands of restaurants, shops and small businesses monitoring their digital presence with Presence.</p>
           <div className="flex justify-center gap-4">
             <Link to="/register"><Button size="lg">Start for free <ArrowRight size={16} /></Button></Link>
             <Link to="/login"><Button variant="outline" size="lg">Log in</Button></Link>
