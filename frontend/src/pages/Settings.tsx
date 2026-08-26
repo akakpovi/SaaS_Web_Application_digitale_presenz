@@ -1,265 +1,395 @@
 import React, { useState, useEffect } from "react";
-import { Card, Button, Toggle, Tabs } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import { Check, Loader2, LogOut, Shield, Bell, Globe, CreditCard, User } from "lucide-react";
 
-const sections = ["Account", "Business", "Websites", "Notifications", "PWA", "Security", "Subscription", "Language"];
+interface NotifPrefs {
+  ssl_expiring_enabled: boolean;
+  ssl_invalid_enabled: boolean;
+  website_offline_enabled: boolean;
+  dns_problem_enabled: boolean;
+  email_security_enabled: boolean;
+  security_headers_enabled: boolean;
+  performance_enabled: boolean;
+  score_drop_enabled: boolean;
+  scan_failed_enabled: boolean;
+  digest_frequency: string;
+}
 
-export default function Settings() {
-  const { user, logout } = useAuth();
-  const [section, setSection] = useState("Account");
-  const [fullName, setFullName] = useState(user?.full_name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
-  const [notifs, setNotifs] = useState({
-    websiteDown: true, sslExpiry: true, dnsChanges: true,
-    emailSecurity: false, weeklyReport: true, reviews: true,
-  });
-  const [channels, setChannels] = useState({ email: true, push: true, discord: false, slack: false });
-  const [pwa, setPwa] = useState({ installed: true, push: true, offline: true });
-  const [lang, setLang] = useState("English");
+interface Plan {
+  id: number;
+  tier: string;
+  name: string;
+  price_monthly: string;
+}
 
-  useEffect(() => {
-    if (user) {
-      setFullName(user.full_name);
-      setEmail(user.email);
-    }
-  }, [user]);
+interface Subscription {
+  id: string;
+  status: string;
+  billing_cycle: string;
+  plan: Plan;
+}
 
-  const handleSaveAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveMsg('');
-    try {
-      await api.patch('/auth/me/', { full_name: fullName });
-      setSaveMsg('Saved successfully!');
-      setTimeout(() => setSaveMsg(''), 3000);
-    } catch {
-      setSaveMsg('Failed to save. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const initials = user?.full_name
-    ?.split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) ?? '?';
-
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500 mt-1">Manage your account and preferences.</p>
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${checked ? "bg-indigo-600" : "bg-slate-200"}`}
+    >
+      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
+    </button>
+  );
+}
+
+function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-4">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+        <Icon size={18} className="text-indigo-600" />
+        <h2 className="font-bold text-slate-900">{title}</h2>
       </div>
-
-      <div className="grid lg:grid-cols-4 gap-6">
-        <nav className="lg:col-span-1">
-          <Card className="overflow-hidden">
-            {sections.map((s) => (
-              <button key={s} onClick={() => setSection(s)}
-                className={`w-full text-left px-4 py-3 text-sm border-b border-slate-100 last:border-0 transition-colors ${
-                  section === s ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50"
-                }`}>
-                {s}
-              </button>
-            ))}
-          </Card>
-        </nav>
-
-        <div className="lg:col-span-3">
-          {section === "Account" && (
-            <Card className="p-6">
-              <h2 className="font-bold text-slate-900 mb-6">Account details</h2>
-              <form onSubmit={handleSaveAccount} className="flex flex-col gap-4">
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center text-xl font-bold text-indigo-600">
-                    {initials}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">{user?.full_name}</p>
-                    <p className="text-sm text-slate-500">{user?.email}</p>
-                    {user?.is_email_verified === false && (
-                      <span className="text-xs text-amber-600">⚠ Email not verified</span>
-                    )}
-                  </div>
-                </div>
-                <div className="grid gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-slate-700">Full name</label>
-                    <input
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-slate-700">Email address</label>
-                    <input
-                      value={email}
-                      disabled
-                      className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-400 cursor-not-allowed"
-                    />
-                    <p className="text-xs text-slate-400">Email cannot be changed.</p>
-                  </div>
-                </div>
-                {saveMsg && (
-                  <p className={`text-sm ${saveMsg.includes('Failed') ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {saveMsg}
-                  </p>
-                )}
-                <div className="flex items-center gap-3">
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving ? 'Saving...' : 'Save changes'}
-                  </Button>
-                  <Button type="button" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={logout}>
-                    Sign out
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          )}
-
-          {section === "Notifications" && (
-            <div className="flex flex-col gap-4">
-              <Card className="p-6">
-                <h2 className="font-bold text-slate-900 mb-4">Alert types</h2>
-                <div className="flex flex-col gap-4">
-                  {[
-                    { key: "websiteDown", label: "Website unavailable", desc: "Notify when your website goes offline" },
-                    { key: "sslExpiry", label: "SSL certificate expiry", desc: "Notify 30 days before expiration" },
-                    { key: "dnsChanges", label: "DNS configuration changes", desc: "Notify when DNS records change" },
-                    { key: "emailSecurity", label: "Email security issues", desc: "Notify when email configuration has issues" },
-                    { key: "weeklyReport", label: "Weekly report", desc: "Receive your digital health summary" },
-                    { key: "reviews", label: "New reviews", desc: "Notify when new reviews are received" },
-                  ].map(({ key, label, desc }) => (
-                    <div key={key} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{label}</p>
-                        <p className="text-xs text-slate-500">{desc}</p>
-                      </div>
-                      <Toggle checked={notifs[key as keyof typeof notifs]}
-                        onChange={(v) => setNotifs(prev => ({ ...prev, [key]: v }))} />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-              <Card className="p-6">
-                <h2 className="font-bold text-slate-900 mb-4">Notification channels</h2>
-                <div className="flex flex-col gap-4">
-                  {[
-                    { key: "email", label: "Email", desc: "Receive alerts by email" },
-                    { key: "push", label: "Push notifications", desc: "Browser and PWA notifications" },
-                    { key: "discord", label: "Discord", desc: "Webhook integration" },
-                    { key: "slack", label: "Slack", desc: "Webhook integration" },
-                  ].map(({ key, label, desc }) => (
-                    <div key={key} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{label}</p>
-                        <p className="text-xs text-slate-500">{desc}</p>
-                      </div>
-                      <Toggle checked={channels[key as keyof typeof channels]}
-                        onChange={(v) => setChannels(prev => ({ ...prev, [key]: v }))} />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {section === "Subscription" && (
-            <SubscriptionSection />
-          )}
-
-          {section === "Language" && (
-            <Card className="p-6">
-              <h2 className="font-bold text-slate-900 mb-6">Language & region</h2>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-700 mb-2">Display language</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["English", "Français", "Deutsch"].map((l) => (
-                      <button key={l} onClick={() => setLang(l)}
-                        className={`py-2.5 px-4 rounded-xl border text-sm font-medium transition-all ${lang === l ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <Button className="self-start">Save preference</Button>
-              </div>
-            </Card>
-          )}
-
-          {!["Account", "Notifications", "Subscription", "Language"].includes(section) && (
-            <Card className="p-12 text-center">
-              <p className="text-4xl mb-3">🔧</p>
-              <p className="font-semibold text-slate-900 mb-1">{section} settings</p>
-              <p className="text-sm text-slate-500">This section is available in the full application.</p>
-            </Card>
-          )}
-        </div>
-      </div>
+      <div className="px-6 py-5">{children}</div>
     </div>
   );
 }
 
-function SubscriptionSection() {
-  const [sub, setSub] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+function AccountSection() {
+  const { user, logout } = useAuth();
+  const [fullName, setFullName] = useState(user?.full_name ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const dirty = fullName !== (user?.full_name ?? "");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [subRes, plansRes] = await Promise.all([
-          api.get('/subscriptions/me/'),
-          api.get('/subscriptions/plans/'),
-        ]);
-        setSub(subRes.data);
-        setPlans(plansRes.data.results ?? plansRes.data);
-      } catch { /* ignore */ }
-      finally { setIsLoading(false); }
-    };
-    load();
-  }, []);
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await api.patch("/auth/me/", { full_name: fullName });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setError("Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  if (isLoading) return <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" /></div>;
+  const handleLogout = async () => {
+    try { await logout(); } catch { /* finally dans AuthContext */ }
+  };
 
   return (
-    <Card className="p-6">
-      <h2 className="font-bold text-slate-900 mb-2">Your subscription</h2>
-      {sub && (
-        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl mb-6 flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-indigo-900">{sub.plan?.name ?? 'Free'} Plan</p>
-            <p className="text-sm text-indigo-600">
-              {sub.plan?.price_monthly === '0.00' ? 'Free forever' : `€${sub.plan?.price_monthly}/month`}
-            </p>
+    <Section icon={User} title="Account">
+      <form onSubmit={handleSave} className="flex flex-col gap-4 max-w-sm">
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-1.5">Full name</label>
+          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-1.5">Email address</label>
+          <input type="email" value={user?.email ?? ""} disabled
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-400" />
+          <p className="text-xs text-slate-400 mt-1">Email cannot be changed.</p>
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button type="submit" disabled={saving || !dirty}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg self-start transition-colors ${dirty ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+          {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : null}
+          {saving ? "Saving…" : saved ? "Saved" : "Save changes"}
+        </button>
+      </form>
+      <div className="mt-6 pt-6 border-t border-slate-100 max-w-sm">
+        <p className="text-sm font-medium text-slate-700 mb-1">Sign out</p>
+        <p className="text-xs text-slate-400 mb-3">You will be redirected to the login page.</p>
+        <button onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <LogOut size={14} /> Sign out
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+function NotificationsSection() {
+  const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
+  const [original, setOriginal] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.get<NotifPrefs>("/alerts/preferences/").then(({ data }) => {
+      setPrefs(data);
+      setOriginal(JSON.stringify(data));
+    }).catch(() => {});
+  }, []);
+
+  const dirty = prefs ? JSON.stringify(prefs) !== original : false;
+
+  const handleSave = async () => {
+    if (!prefs) return;
+    setSaving(true);
+    try {
+      await api.patch("/alerts/preferences/", prefs);
+      setOriginal(JSON.stringify(prefs));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally { setSaving(false); }
+  };
+
+  const TOGGLES: [keyof NotifPrefs, string][] = [
+    ["ssl_expiring_enabled",     "SSL expiring soon"],
+    ["ssl_invalid_enabled",      "SSL invalid or expired"],
+    ["website_offline_enabled",  "Website offline"],
+    ["dns_problem_enabled",      "DNS problems"],
+    ["email_security_enabled",   "Email security issues"],
+    ["security_headers_enabled", "Missing security headers"],
+    ["performance_enabled",      "Performance degradation"],
+    ["score_drop_enabled",       "Health score drop"],
+    ["scan_failed_enabled",      "Scan failed"],
+  ];
+
+  return (
+    <Section icon={Bell} title="Alert preferences">
+      {!prefs ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {TOGGLES.map(([key, label]) => (
+            <div key={key} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+              <span className="text-sm text-slate-700">{label}</span>
+              <Toggle checked={prefs[key] as boolean} onChange={(v) => setPrefs({ ...prefs, [key]: v })} />
+            </div>
+          ))}
+          <div className="pt-4">
+            <label className="text-sm font-medium text-slate-700 block mb-2">Digest frequency</label>
+            <select value={prefs.digest_frequency} onChange={(e) => setPrefs({ ...prefs, digest_frequency: e.target.value })}
+              className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="immediate">Immediate</option>
+              <option value="hourly">Hourly digest</option>
+              <option value="daily">Daily digest</option>
+            </select>
           </div>
-          <span className={`px-3 py-1 text-xs font-bold rounded-full ${sub.status === 'active' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
-            {sub.status}
-          </span>
+          <div className="pt-4">
+            <button onClick={handleSave} disabled={saving || !dirty}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${dirty ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+              {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : null}
+              {saving ? "Saving…" : saved ? "Saved" : "Save preferences"}
+            </button>
+          </div>
         </div>
       )}
-      <div className="space-y-2 mb-6">
-        <p className="text-sm font-medium text-slate-700">Available plans:</p>
-        {plans.map((p: any) => (
-          <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl border ${sub?.plan?.tier === p.tier ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200'}`}>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">{p.name}</p>
-              <p className="text-xs text-slate-500">{p.max_websites} sites · {p.max_scans_per_month} scans/mo</p>
-            </div>
-            <span className="text-sm font-bold text-slate-800">
-              {p.price_monthly === '0.00' ? 'Free' : `€${p.price_monthly}/mo`}
-            </span>
-          </div>
-        ))}
+    </Section>
+  );
+}
+
+function LanguageSection({ lang, setLang }: { lang: string; setLang: (l: string) => void }) {
+  const [saved, setSaved] = useState(false);
+  const LANGUAGES = [
+    { code: "en", label: "English" },
+    { code: "fr", label: "Français" },
+    { code: "de", label: "Deutsch" },
+    { code: "es", label: "Español" },
+  ];
+  const handleSave = () => {
+    localStorage.setItem("presence_lang", lang);
+    window.dispatchEvent(new Event("presence_lang_change"));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  return (
+    <Section icon={Globe} title="Language & region">
+      <div className="max-w-sm flex flex-col gap-4">
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-2">Display language</label>
+          <select value={lang} onChange={(e) => setLang(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          <p className="text-xs text-slate-400 mt-2">Language is saved locally. Full translations coming soon.</p>
+        </div>
+        <button onClick={handleSave}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors self-start">
+          {saved ? <><Check size={14} /> Saved</> : "Save language"}
+        </button>
       </div>
-    </Card>
+    </Section>
+  );
+}
+
+function SubscriptionSection() {
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      api.get<Subscription>("/subscriptions/me/"),
+      api.get<{ results: Plan[] }>("/subscriptions/plans/"),
+    ]).then(([s, p]) => {
+      setSub(s.data);
+      setPlans(p.data.results ?? []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleUpgrade = async (tier: string) => {
+    setUpgrading(tier);
+    try {
+      await api.post("/subscriptions/upgrade/", { plan_tier: tier, billing_cycle: "monthly" });
+      const { data } = await api.get<Subscription>("/subscriptions/me/");
+      setSub(data);
+    } finally { setUpgrading(null); }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm("Cancel your subscription?")) return;
+    setCancelling(true);
+    try {
+      await api.post("/subscriptions/cancel/");
+      const { data } = await api.get<Subscription>("/subscriptions/me/");
+      setSub(data);
+    } finally { setCancelling(false); }
+  };
+
+  return (
+    <Section icon={CreditCard} title="Subscription">
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : sub ? (
+        <div className="flex flex-col gap-5">
+          <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+            <p className="text-sm font-bold text-indigo-900">Current plan: {sub.plan.name}</p>
+            <p className="text-sm text-indigo-700 mt-0.5">
+              Status: <span className="font-medium capitalize">{sub.status}</span> · {sub.billing_cycle} billing
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {plans.map((plan) => {
+              const isCurrent = plan.tier === sub.plan.tier;
+              return (
+                <div key={plan.id} className={`p-4 border rounded-xl ${isCurrent ? "border-indigo-300 bg-indigo-50" : "border-slate-200"}`}>
+                  <p className="font-bold text-slate-900">{plan.name}</p>
+                  <p className="text-xl font-black text-slate-900 my-1">
+                    €{plan.price_monthly}<span className="text-xs font-normal text-slate-500">/mo</span>
+                  </p>
+                  {isCurrent ? (
+                    <span className="text-xs text-indigo-600 font-semibold">✓ Current</span>
+                  ) : (
+                    <button onClick={() => handleUpgrade(plan.tier)} disabled={upgrading === plan.tier}
+                      className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                      {upgrading === plan.tier ? <Loader2 size={12} className="animate-spin" /> : "Switch plan"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {sub.plan.tier !== "free" && sub.status === "active" && (
+            <div className="pt-2 border-t border-slate-100">
+              <button onClick={handleCancel} disabled={cancelling}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                {cancelling ? <Loader2 size={14} className="animate-spin" /> : "Cancel subscription"}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">Unable to load subscription.</p>
+      )}
+    </Section>
+  );
+}
+
+function SecuritySection() {
+  const [current, setCurrent] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw.length < 12) { setError("New password must be at least 12 characters."); return; }
+    setSaving(true); setError("");
+    try {
+      await api.post("/auth/password/change/", { current_password: current, new_password: newPw });
+      setSaved(true); setCurrent(""); setNewPw("");
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? "Failed to change password.");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Section icon={Shield} title="Security">
+      <form onSubmit={handleSave} className="flex flex-col gap-4 max-w-sm">
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-1.5">Current password</label>
+          <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} required
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-1.5">New password</label>
+          <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Min. 12 characters" required
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {saved && <p className="text-sm text-emerald-600 flex items-center gap-1"><Check size={14} /> Password updated.</p>}
+        <button type="submit" disabled={saving || !current || !newPw}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors self-start disabled:opacity-50">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : "Change password"}
+        </button>
+      </form>
+    </Section>
+  );
+}
+
+const SECTIONS = [
+  { id: "account",       label: "Account",       icon: User },
+  { id: "notifications", label: "Notifications",  icon: Bell },
+  { id: "subscription",  label: "Subscription",   icon: CreditCard },
+  { id: "language",      label: "Language",       icon: Globe },
+  { id: "security",      label: "Security",       icon: Shield },
+];
+
+export default function Settings() {
+  const [section, setSection] = useState("account");
+  const [lang, setLang] = useState(() => localStorage.getItem("presence_lang") ?? "en");
+
+  return (
+    <div className="p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="text-slate-500 mt-1">Manage your account and preferences.</p>
+      </div>
+      <div className="flex flex-col lg:flex-row gap-6">
+        <nav className="lg:w-48 flex-shrink-0">
+          <div className="flex flex-row lg:flex-col gap-1 flex-wrap">
+            {SECTIONS.map(({ id, label, icon: Icon }) => (
+              <button key={id} onClick={() => setSection(id)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors ${section === id ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}>
+                <Icon size={16} />{label}
+              </button>
+            ))}
+          </div>
+        </nav>
+        <div className="flex-1 min-w-0">
+          {section === "account"       && <AccountSection />}
+          {section === "notifications" && <NotificationsSection />}
+          {section === "subscription"  && <SubscriptionSection />}
+          {section === "language"      && <LanguageSection lang={lang} setLang={setLang} />}
+          {section === "security"      && <SecuritySection />}
+        </div>
+      </div>
+    </div>
   );
 }
