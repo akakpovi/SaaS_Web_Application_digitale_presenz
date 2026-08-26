@@ -24,49 +24,50 @@ function timeAgo(dateStr: string): string {
 export default function Dashboard() {
   const { user } = useAuth();
   const { websites, kpis, recentAlerts, scoreBreakdown, isLoading, error, refetch } = useDashboard();
-
-  const firstName = user?.full_name?.split(' ')[0] ?? 'there';
   const { t } = useLang();
 
+  const firstName = user?.full_name?.split(' ')[0] ?? 'there';
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? t('dashboard.greeting.morning') : hour < 18 ? t('dashboard.greeting.afternoon') : t('dashboard.greeting.evening');
+  const greeting = hour < 12
+    ? t('dashboard.greeting.morning')
+    : hour < 18
+    ? t('dashboard.greeting.afternoon')
+    : t('dashboard.greeting.evening');
 
   const kpiCards = [
     {
-      label: "Digital Health Score",
+      label: t("kpi.health_score"),
       value: isLoading ? '—' : String(kpis.avgScore),
       unit: "/ 100",
-      sub: kpis.avgScore >= 80 ? "Good" : kpis.avgScore >= 60 ? "Needs attention" : kpis.avgScore > 0 ? "Critical" : "No data",
-      trend: "",
+      sub: kpis.avgScore >= 80
+        ? t("status.healthy")
+        : kpis.avgScore >= 60
+        ? t("status.warning")
+        : kpis.avgScore > 0
+        ? t("status.critical")
+        : t("status.no_data"),
       icon: "🎯",
-      color: "emerald"
     },
     {
-      label: "Websites",
+      label: t("kpi.websites"),
       value: isLoading ? '—' : String(kpis.totalWebsites),
       unit: "",
-      sub: isLoading ? '' : `${kpis.healthyCount} healthy, ${kpis.totalWebsites - kpis.healthyCount} needs attention`,
-      trend: "",
+      sub: isLoading ? '' : `${kpis.healthyCount} ${t("status.healthy").toLowerCase()}, ${kpis.totalWebsites - kpis.healthyCount} ${t("status.needs_attention").toLowerCase()}`,
       icon: "🌐",
-      color: "indigo"
     },
     {
-      label: "Uptime",
+      label: t("kpi.uptime"),
       value: "—",
       unit: "",
       sub: "Last 30 days",
-      trend: "",
       icon: "⬆",
-      color: "emerald"
     },
     {
-      label: "Open issues",
+      label: t("kpi.open_issues"),
       value: isLoading ? '—' : String(kpis.openIssues),
       unit: "",
-      sub: kpis.openIssues > 0 ? "Needs your attention" : "All clear",
-      trend: "",
+      sub: kpis.openIssues > 0 ? t("status.needs_attention") : t("websites.all_good"),
       icon: "⚠",
-      color: "amber"
     },
   ];
 
@@ -76,7 +77,7 @@ export default function Dashboard() {
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{greeting}, {firstName} 👋</h1>
-          <p className="text-slate-500 mt-1">Here's the health of your digital presence.</p>
+          <p className="text-slate-500 mt-1">{t("dashboard.title")}</p>
         </div>
         <button
           onClick={refetch}
@@ -92,37 +93,39 @@ export default function Dashboard() {
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl mb-6">
           <AlertTriangle size={18} className="text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm text-red-700">{t("common.error")}</p>
         </div>
       )}
 
-      {/* Alert banner — seulement si des alertes firing */}
+      {/* Alert banner */}
       {!isLoading && kpis.openIssues > 0 && (
         <div className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
           <AlertTriangle size={18} className="text-amber-600 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-800">{kpis.openIssues} issue{kpis.openIssues > 1 ? 's' : ''} need{kpis.openIssues === 1 ? 's' : ''} your attention</p>
+            <p className="text-sm font-semibold text-amber-800">
+              {kpis.openIssues} issue{kpis.openIssues > 1 ? 's' : ''} {t("status.needs_attention").toLowerCase()}
+            </p>
             {recentAlerts[0] && (
               <p className="text-sm text-amber-700">{recentAlerts[0].title}</p>
             )}
           </div>
           <Link to="/app/alerts">
             <button className="flex items-center gap-1.5 text-sm font-medium text-amber-700 hover:text-amber-800">
-              View alerts <ArrowRight size={14} />
+              {t("alerts.view")} <ArrowRight size={14} />
             </button>
           </Link>
         </div>
       )}
 
-      {/* Empty state — pas de sites */}
+      {/* Empty state */}
       {!isLoading && kpis.totalWebsites === 0 && (
         <div className="flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-2xl mb-6">
           <Globe size={40} className="text-slate-300 mb-4" />
-          <p className="text-slate-900 font-semibold mb-1">No websites yet</p>
-          <p className="text-slate-500 text-sm mb-4">Add your first website to start monitoring</p>
+          <p className="text-slate-900 font-semibold mb-1">{t("dashboard.no_websites")}</p>
+          <p className="text-slate-500 text-sm mb-4">{t("dashboard.add_website")}</p>
           <Link to="/app/websites">
             <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-              Add website
+              {t("dashboard.add_btn")}
             </button>
           </Link>
         </div>
@@ -143,11 +146,6 @@ export default function Dashboard() {
               </div>
               <span className="text-2xl">{kpi.icon}</span>
             </div>
-            {kpi.trend && (
-              <p className="text-xs text-emerald-600 font-medium mt-2 flex items-center gap-1">
-                <TrendingUp size={12} /> {kpi.trend}
-              </p>
-            )}
           </Card>
         ))}
       </div>
@@ -158,16 +156,16 @@ export default function Dashboard() {
         <div className="xl:col-span-2">
           <Card>
             <div className="flex items-center justify-between p-5 pb-0">
-              <h2 className="font-bold text-slate-900">Your websites</h2>
+              <h2 className="font-bold text-slate-900">{t("websites.title")}</h2>
               <Link to="/app/websites" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
-                View all <ArrowRight size={14} />
+                {t("common.edit")} <ArrowRight size={14} />
               </Link>
             </div>
 
             <div className="hidden md:grid grid-cols-5 gap-4 px-5 pt-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-100">
               <span className="col-span-2">Website</span>
               <span>Score</span>
-              <span>Last check</span>
+              <span>{t("websites.last_check")}</span>
               <span>SSL</span>
             </div>
 
@@ -177,7 +175,7 @@ export default function Dashboard() {
               </div>
             ) : websites.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-400">
-                No websites yet
+                {t("dashboard.no_websites")}
               </div>
             ) : (
               websites.map((site) => (
@@ -213,7 +211,7 @@ export default function Dashboard() {
             <div className="p-5 pt-3">
               <Link to="/app/websites">
                 <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors">
-                  + Add website
+                  + {t("dashboard.add_btn")}
                 </button>
               </Link>
             </div>
@@ -222,36 +220,47 @@ export default function Dashboard() {
 
         {/* Right column */}
         <div className="flex flex-col gap-4">
-          {/* Health score overview */}
+          {/* Health score */}
           <Card className="p-5">
-            <h2 className="font-bold text-slate-900 mb-4">Digital Health Score</h2>
+            <h2 className="font-bold text-slate-900 mb-4">{t("kpi.health_score")}</h2>
             <div className="flex items-center gap-4">
               <ScoreRing score={isLoading ? 0 : kpis.avgScore} size={90} />
               <div className="flex-1">
                 <p className={`text-sm font-semibold mb-1 ${kpis.avgScore >= 80 ? 'text-emerald-600' : kpis.avgScore >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
-                  {kpis.avgScore >= 80 ? 'Good' : kpis.avgScore >= 60 ? 'Needs attention' : kpis.avgScore > 0 ? 'Critical' : 'No data yet'}
+                  {kpis.avgScore >= 80
+                    ? t("status.healthy")
+                    : kpis.avgScore >= 60
+                    ? t("status.warning")
+                    : kpis.avgScore > 0
+                    ? t("status.critical")
+                    : t("status.no_data")}
                 </p>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {kpis.avgScore > 0
-                    ? 'Based on your latest scans across all monitored websites.'
-                    : 'Run a scan on your websites to see your health score.'}
+                    ? t("dashboard.title")
+                    : t("dashboard.add_website")}
                 </p>
               </div>
             </div>
             <div className="mt-4 space-y-2">
               {(scoreBreakdown.length > 0 ? scoreBreakdown : [
                 { label: "Website", score: 0, max: 20 },
-                { label: "SSL", score: 0, max: 20 },
-                { label: "DNS", score: 0, max: 15 },
-                { label: "Email", score: 0, max: 15 },
-                { label: "Security", score: 0, max: 15 },
+                { label: "SSL",     score: 0, max: 20 },
+                { label: "DNS",     score: 0, max: 15 },
+                { label: "Email",   score: 0, max: 15 },
+                { label: "Security",score: 0, max: 15 },
                 { label: "Performance", score: 0, max: 15 },
               ]).map(({ label, score, max }) => (
                 <div key={label} className="flex items-center gap-3">
                   <span className="text-xs text-slate-500 w-20 flex-shrink-0">{label}</span>
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${score === max ? "bg-emerald-500" : score >= max * 0.7 ? "bg-amber-500" : score > 0 ? "bg-red-500" : "bg-slate-200"}`}
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        score === max ? "bg-emerald-500"
+                        : score >= max * 0.7 ? "bg-amber-500"
+                        : score > 0 ? "bg-red-500"
+                        : "bg-slate-200"
+                      }`}
                       style={{ width: `${max > 0 ? (score / max) * 100 : 0}%` }}
                     />
                   </div>
@@ -264,8 +273,8 @@ export default function Dashboard() {
           {/* Recent alerts */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-slate-900">Recent alerts</h2>
-              <Link to="/app/alerts" className="text-sm text-indigo-600 hover:text-indigo-700">View all</Link>
+              <h2 className="font-bold text-slate-900">{t("alerts.title")}</h2>
+              <Link to="/app/alerts" className="text-sm text-indigo-600 hover:text-indigo-700">{t("alerts.view")}</Link>
             </div>
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
@@ -273,7 +282,7 @@ export default function Dashboard() {
               </div>
             ) : recentAlerts.length === 0 ? (
               <div className="text-center py-4 text-sm text-slate-400">
-                ✅ No active alerts
+                ✅ {t("alerts.no_alerts")}
               </div>
             ) : (
               <div className="space-y-3">
@@ -295,9 +304,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <Clock size={18} className="text-slate-400" />
               <div>
-                <p className="text-xs text-slate-500">Last check</p>
+                <p className="text-xs text-slate-500">{t("websites.last_check")}</p>
                 <p className="text-sm font-semibold text-slate-800">
-                  {isLoading ? '...' : kpis.lastCheck + ' · All systems monitored'}
+                  {isLoading ? '...' : `${kpis.lastCheck} · ${t("websites.all_good")}`}
                 </p>
               </div>
             </div>
