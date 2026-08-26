@@ -6,14 +6,15 @@ import {
   Star, Settings, ChevronRight, Menu, ChevronDown, LogOut,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useT } from "../i18n";
 
-const nav = [
-  { label: "Overview",   icon: LayoutDashboard, path: "/app/dashboard" },
-  { label: "Websites",   icon: Globe,           path: "/app/websites" },
-  { label: "Monitoring", icon: Activity,        path: "/app/monitoring" },
-  { label: "Reviews",    icon: Star,            path: "/app/reviews" },
-  { label: "Reports",    icon: FileText,        path: "/app/reports" },
-  { label: "Alerts",     icon: Bell,            path: "/app/alerts" },
+const NAV_KEYS = [
+  { key: "nav.overview",   icon: LayoutDashboard, path: "/app/dashboard" },
+  { key: "nav.websites",   icon: Globe,           path: "/app/websites" },
+  { key: "nav.monitoring", icon: Activity,        path: "/app/monitoring" },
+  { key: "nav.reviews",    icon: Star,            path: "/app/reviews" },
+  { key: "nav.reports",    icon: FileText,        path: "/app/reports" },
+  { key: "nav.alerts",     icon: Bell,            path: "/app/alerts" },
 ];
 
 const LANGUAGES = [
@@ -42,6 +43,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const t = useT();
+  const nav = NAV_KEYS.map(({ key, icon, path }) => ({ label: t(key), icon, path }));
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed,   setCollapsed]   = useState(false);
@@ -131,13 +134,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link to="/app/settings"
             className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all ${collapsed ? "justify-center" : ""}`}>
             <Settings size={18} />
-            {!collapsed && <span>Settings</span>}
+            {!collapsed && <span>{t("nav.settings")}</span>}
           </Link>
 
           <button onClick={handleLogout} title={collapsed ? "Sign out" : undefined}
             className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all ${collapsed ? "justify-center" : ""}`}>
             <LogOut size={18} />
-            {!collapsed && <span>Sign out</span>}
+            {!collapsed && <span>{t("nav.signout")}</span>}
           </button>
 
           {!collapsed && (
@@ -201,11 +204,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                   <Link to="/app/settings" onClick={() => setUserOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                    <Settings size={14} /> Settings
+                    <Settings size={14} /> {t("nav.settings")}
                   </Link>
                   <button onClick={handleLogout}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                    <LogOut size={14} /> Sign out
+                    <LogOut size={14} /> {t("nav.signout")}
                   </button>
                 </div>
               )}

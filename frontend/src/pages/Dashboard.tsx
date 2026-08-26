@@ -4,6 +4,7 @@ import { Globe, TrendingUp, Clock, AlertTriangle, ArrowRight, RefreshCw } from "
 import { Card, StatusBadge, ScoreRing } from "../components/ui";
 import { useDashboard } from "../hooks/useDashboard";
 import { useAuth } from "../context/AuthContext";
+import { useT } from "../i18n";
 
 function AlertIcon({ severity }: { severity: string }) {
   if (severity === 'critical') return <span className="text-base flex-shrink-0 mt-0.5">🔴</span>;
@@ -25,9 +26,10 @@ export default function Dashboard() {
   const { websites, kpis, recentAlerts, scoreBreakdown, isLoading, error, refetch } = useDashboard();
 
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
+  const t = useT();
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 12 ? t('dashboard.greeting.morning') : hour < 18 ? t('dashboard.greeting.afternoon') : t('dashboard.greeting.evening');
 
   const kpiCards = [
     {
@@ -82,7 +84,7 @@ export default function Dashboard() {
           className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
         >
           <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Refresh
+          {t("dashboard.refresh")}
         </button>
       </div>
 
