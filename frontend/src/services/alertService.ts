@@ -3,7 +3,7 @@ import { PaginatedResponse } from './websiteService';
 
 export interface Alert {
   id: string;
-  website: number;
+  website_id: number;
   website_domain?: string;
   alert_type: string;
   severity: 'info' | 'warning' | 'critical';

@@ -142,7 +142,7 @@ export function useDashboard(): DashboardData {
         const dashWebsites: DashboardWebsite[] = websitesWithScans.map(({ site, lastScan }) => {
           const score = lastScan?.health_score ?? 0;
           const status = (lastScan?.health_status ?? 'neutral') as 'healthy' | 'warning' | 'critical' | 'neutral';
-          const siteAlerts = alerts.filter(a => a.website === site.id);
+          const siteAlerts = alerts.filter(a => a.website_id === site.id);
 
           return {
             id: String(site.id),

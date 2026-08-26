@@ -116,7 +116,7 @@ export default function Alerts() {
 
                   {alert.status === 'firing' && (
                     <div className="flex items-center gap-2 mt-4">
-                      <Link to={`/app/websites/${alert.website}`}>
+                      <Link to={`/app/websites/${alert.website_id}`}>
                         <Button size="sm">View details</Button>
                       </Link>
                       <Button size="sm" variant="outline"
