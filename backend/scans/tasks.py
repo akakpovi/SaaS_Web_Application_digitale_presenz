@@ -22,24 +22,22 @@ def run_authenticated_scan(scan_id: int) -> None:
         logger.warning(f"Scan {scan_id} is not in QUEUED state. Current: {scan.status}")
         return
 
-    # Update to processing state
-    Scan.objects.filter(pk=scan_id).update(status=Scan.Status.PROCESSING)
+    Scan.objects.filter(pk=scan_id).update(status=Scan.Status.RUNNING)
     domain = scan.website.domain
 
     for category, scanner in PUBLIC_SCANNERS.items():
         try:
             result = scanner.scan(domain)
-            
             CheckResult.objects.update_or_create(
                 scan_id=scan_id,
                 category=category,
                 defaults={
                     "status": result.status,
                     "score": result.score,
-                    "message": result.message,
-                    "details": {
+                    "summary": result.message,
+                    "recommendation": result.recommendation,
+                    "technical_details": {
                         **result.details,
-                        "recommendation": result.recommendation,
                         "duration_ms": result.duration_ms,
                     },
                 }
@@ -50,20 +48,20 @@ def run_authenticated_scan(scan_id: int) -> None:
                 scan_id=scan_id,
                 category=category,
                 defaults={
-                    "status": CheckResult.Status.CRITICAL,
+                    "status": "critical",
                     "score": 0,
-                    "message": "Scanner failed unexpectedly",
-                    "details": {"error": str(e)},
+                    "summary": "Scanner failed unexpectedly",
+                    "technical_details": {"error": str(e)},
                 }
             )
 
-    # All scanners completed, calculate final score and update state
     with transaction.atomic():
         scan.refresh_from_db()
         recalculate_scan_health(scan)
-        
-        # update_or_create triggers signal logic in older versions but explicit refresh + update is safer here
         scan.status = Scan.Status.COMPLETED
         scan.save(update_fields=["status", "health_score", "health_status"])
 
     logger.info(f"Authenticated scan {scan_id} completed successfully.")
+
+    from alerts.tasks import detect_alerts
+    detect_alerts.delay(scan_id)

@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     "websites",
     "scans",
     "public_checker",
+    "monitoring",
+    "alerts",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -94,7 +97,18 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 60
 CELERY_TASK_SOFT_TIME_LIMIT = 45
-CELERY_BEAT_SCHEDULE: dict[str, object] = {}
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE: dict[str, object] = {
+    "run-due-monitors": {
+        "task": "monitoring.tasks.run_due_monitors",
+        "schedule": crontab(minute="*/5"),
+    },
+    "cleanup-old-alerts": {
+        "task": "alerts.tasks.cleanup_old_alerts",
+        "schedule": crontab(hour=2, minute=0),
+    },
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
