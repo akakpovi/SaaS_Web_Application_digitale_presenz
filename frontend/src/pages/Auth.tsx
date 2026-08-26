@@ -14,18 +14,22 @@ const AUTH_LANGS = [
 ];
 
 function AuthLangPicker() {
-  const [lang, setLang] = useState(
+  const [lang, setLangState] = useState<string>(
     () => localStorage.getItem("presence_lang") ?? "en"
   );
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const handler = () => setLangState(localStorage.getItem("presence_lang") ?? "en");
+    window.addEventListener("presence_lang_change", handler);
+    return () => window.removeEventListener("presence_lang_change", handler);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -34,8 +38,8 @@ function AuthLangPicker() {
   const current = AUTH_LANGS.find((l) => l.code === lang) ?? AUTH_LANGS[0];
 
   const handleChange = (code: string) => {
-    setLang(code);
     localStorage.setItem("presence_lang", code);
+    setLangState(code);
     window.dispatchEvent(new Event("presence_lang_change"));
     setOpen(false);
   };
@@ -55,12 +59,10 @@ function AuthLangPicker() {
               key={l.code}
               onClick={() => handleChange(l.code)}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                lang === l.code
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-700 hover:bg-slate-50"
+                lang === l.code ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-700 hover:bg-slate-50"
               }`}
             >
-              {lang === l.code ? "✓ " : "\u00A0\u00A0"}{l.full}
+              {lang === l.code ? "✓ " : "  "}{l.full}
             </button>
           ))}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Button, Tabs } from "../components/ui";
+import { useLang } from "../context/LangContext";
 import { Link } from "react-router-dom";
 import { alertService, Alert } from "../services/alertService";
 import { RefreshCw } from "lucide-react";
@@ -21,6 +22,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Alerts() {
+  const { t } = useLang();
   const [filter, setFilter] = useState("All");
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);

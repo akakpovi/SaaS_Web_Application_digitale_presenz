@@ -4,7 +4,7 @@ import { Globe, TrendingUp, Clock, AlertTriangle, ArrowRight, RefreshCw } from "
 import { Card, StatusBadge, ScoreRing } from "../components/ui";
 import { useDashboard } from "../hooks/useDashboard";
 import { useAuth } from "../context/AuthContext";
-import { useT } from "../i18n";
+import { useLang } from "../context/LangContext";
 
 function AlertIcon({ severity }: { severity: string }) {
   if (severity === 'critical') return <span className="text-base flex-shrink-0 mt-0.5">🔴</span>;
@@ -26,7 +26,7 @@ export default function Dashboard() {
   const { websites, kpis, recentAlerts, scoreBreakdown, isLoading, error, refetch } = useDashboard();
 
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
-  const t = useT();
+  const { t } = useLang();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t('dashboard.greeting.morning') : hour < 18 ? t('dashboard.greeting.afternoon') : t('dashboard.greeting.evening');

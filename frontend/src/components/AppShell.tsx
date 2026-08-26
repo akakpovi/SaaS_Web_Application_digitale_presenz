@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Sync langue si changée depuis Settings
   useEffect(() => {
     const handler = () => {
-      setLangCtx((localStorage.getItem("presence_lang") ?? "en") as import("../i18n").Lang);
+      // sync géré par LangContext
     };
     window.addEventListener("presence_lang_change", handler);
     return () => window.removeEventListener("presence_lang_change", handler);

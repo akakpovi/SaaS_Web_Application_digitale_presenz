@@ -6,6 +6,7 @@ import { Card } from "../components/ui";
 import { websiteService, scanService, Website, Scan } from "../services/websiteService";
 import { RefreshCw, Settings, Check, Loader2, Bell, BellOff } from "lucide-react";
 import api from "../services/api";
+import { useLang } from "../context/LangContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,7 @@ function MonitoringConfigPanel({
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function Monitoring() {
+  const { t } = useLang();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedSite, setSelectedSite] = useState<number | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -402,7 +404,7 @@ export default function Monitoring() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
               {
-                label: "Monitoring",
+                label: t("monitoring.title"),
                 value: config?.enabled ? "Active" : "Paused",
                 sub: config
                   ? `Every ${INTERVALS.find((i) => i.value === config.interval)?.label.toLowerCase().replace("every ", "") ?? config.interval}`
