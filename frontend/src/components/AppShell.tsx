@@ -6,7 +6,7 @@ import {
   Star, Settings, ChevronRight, Menu, ChevronDown, LogOut,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useT } from "../i18n";
+import { useLang } from "../context/LangContext";
 
 const NAV_KEYS = [
   { key: "nav.overview",   icon: LayoutDashboard, path: "/app/dashboard" },
@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const { user, logout } = useAuth();
-  const t = useT();
+  const { lang, setLang: setLangCtx, t } = useLang();
 
   const nav = NAV_KEYS.map(({ key, icon, path }) => ({
     label: t(key), icon, path,
@@ -73,27 +73,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed,   setCollapsed]   = useState(false);
-  const [lang, setLang] = useState(
-    () => localStorage.getItem("presence_lang") ?? "en"
-  );
-
-  // Dropdowns indépendants avec fermeture propre
+// Dropdowns indépendants avec fermeture propre
   const langDropdown = useDropdown();
   const userDropdown = useDropdown();
 
   // Sync langue si changée depuis Settings
   useEffect(() => {
     const handler = () => {
-      setLang(localStorage.getItem("presence_lang") ?? "en");
+      setLangCtx((localStorage.getItem("presence_lang") ?? "en") as import("../i18n").Lang);
     };
     window.addEventListener("presence_lang_change", handler);
     return () => window.removeEventListener("presence_lang_change", handler);
   }, []);
 
   const handleLangChange = (code: string) => {
-    setLang(code);
-    localStorage.setItem("presence_lang", code);
-    window.dispatchEvent(new Event("presence_lang_change"));
+    setLangCtx(code as import("../i18n").Lang);
     langDropdown.setOpen(false);
   };
 

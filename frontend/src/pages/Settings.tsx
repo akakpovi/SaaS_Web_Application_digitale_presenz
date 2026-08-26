@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useLang } from "../context/LangContext";
 import api from "../services/api";
 import { Check, Loader2, LogOut, Shield, Bell, Globe, CreditCard, User } from "lucide-react";
 
@@ -188,30 +189,34 @@ function NotificationsSection() {
   );
 }
 
-function LanguageSection({ lang, setLang }: { lang: string; setLang: (l: string) => void }) {
+function LanguageSection() {
+  const { lang, setLang } = useLang();
+  const [localLang, setLocalLang] = useState<import('../i18n').Lang>(lang);
   const [saved, setSaved] = useState(false);
+
   const LANGUAGES = [
     { code: "en", label: "English" },
     { code: "fr", label: "Français" },
     { code: "de", label: "Deutsch" },
     { code: "es", label: "Español" },
   ];
+
   const handleSave = () => {
-    localStorage.setItem("presence_lang", lang);
-    window.dispatchEvent(new Event("presence_lang_change"));
+    setLang(localLang as import("../i18n").Lang);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
   return (
     <Section icon={Globe} title="Language & region">
       <div className="max-w-sm flex flex-col gap-4">
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-2">Display language</label>
-          <select value={lang} onChange={(e) => setLang(e.target.value)}
+          <select value={localLang} onChange={(e) => setLocalLang(e.target.value as import("../i18n").Lang)}
             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
             {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
-          <p className="text-xs text-slate-400 mt-2">Language is saved locally. Full translations coming soon.</p>
+          <p className="text-xs text-slate-400 mt-2">Language is saved locally. Changes apply immediately across the app.</p>
         </div>
         <button onClick={handleSave}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors self-start">
@@ -363,7 +368,6 @@ const SECTIONS = [
 
 export default function Settings() {
   const [section, setSection] = useState("account");
-  const [lang, setLang] = useState(() => localStorage.getItem("presence_lang") ?? "en");
 
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
@@ -386,7 +390,7 @@ export default function Settings() {
           {section === "account"       && <AccountSection />}
           {section === "notifications" && <NotificationsSection />}
           {section === "subscription"  && <SubscriptionSection />}
-          {section === "language"      && <LanguageSection lang={lang} setLang={setLang} />}
+          {section === "language"      && <LanguageSection />}
           {section === "security"      && <SecuritySection />}
         </div>
       </div>
