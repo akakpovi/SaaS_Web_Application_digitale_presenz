@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     "monitoring",
     "alerts",
     "notifications",
+    "reports",
+    "reviews",
+    "subscriptions",
 ]
 
 MIDDLEWARE = [
@@ -107,6 +110,10 @@ CELERY_BEAT_SCHEDULE: dict[str, object] = {
     "cleanup-old-alerts": {
         "task": "alerts.tasks.cleanup_old_alerts",
         "schedule": crontab(hour=2, minute=0),
+    },
+    "generate-monthly-reports": {
+        "task": "reports.tasks.generate_monthly_reports",
+        "schedule": crontab(day_of_month=1, hour=3, minute=0),
     },
 }
 
