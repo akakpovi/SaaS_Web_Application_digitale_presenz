@@ -527,6 +527,55 @@ function FeatureContent({ config }: { config: FeaturePageConfig }) {
 }
 
 export default function FeaturePage({ feature }: { feature: string }) {
+  // SEO dynamique par feature
+  const featureTitles: Record<string, { title: string; description: string; path: string }> = {
+    "website-monitoring": {
+      title: "Website Monitoring for Small Businesses | Presence",
+      description: "Monitor your website 24/7. Get instant alerts when your site goes down. Track uptime, response time and HTTP status from one simple dashboard.",
+      path: "/features/website-monitoring",
+    },
+    "ssl-monitoring": {
+      title: "SSL Certificate Monitoring — Never Let Your SSL Expire | Presence",
+      description: "Get alerted before your SSL certificate expires. Monitor certificate validity, expiry date and chain of trust automatically.",
+      path: "/features/ssl-monitoring",
+    },
+    "dns-monitoring": {
+      title: "DNS Monitoring — Track Your DNS Records | Presence",
+      description: "Monitor your DNS records automatically. Get alerted when DNS changes are detected. Check A, AAAA, MX and NS records.",
+      path: "/features/dns-monitoring",
+    },
+    "email-security": {
+      title: "Email Security Monitoring — SPF, DKIM & DMARC | Presence",
+      description: "Check your SPF, DKIM and DMARC configuration automatically. Protect your business email from spoofing and impersonation.",
+      path: "/features/email-security",
+    },
+    "uptime-monitoring": {
+      title: "Uptime Monitoring — Track Your Website Availability | Presence",
+      description: "Monitor your website uptime 24/7. Get instant downtime alerts. See your uptime percentage and incident history.",
+      path: "/features/uptime-monitoring",
+    },
+    "website-performance": {
+      title: "Website Performance Monitoring | Presence",
+      description: "Monitor your website load time and page size automatically. Get alerted when performance degrades.",
+      path: "/features/website-performance",
+    },
+    "security-headers": {
+      title: "Security Headers Monitoring — CSP, HSTS & More | Presence",
+      description: "Check your HTTP security headers automatically. Monitor CSP, HSTS, X-Frame-Options and more from one dashboard.",
+      path: "/features/security-headers",
+    },
+    "review-monitoring": {
+      title: "Review Monitoring — Track Your Online Reputation | Presence",
+      description: "Monitor your customer reviews across platforms. Get notified of new reviews and manage your online reputation.",
+      path: "/features/review-monitoring",
+    },
+  };
+  const seoMeta = featureTitles[feature] ?? {
+    title: "Features | Presence",
+    description: "Discover all Presence monitoring features for small businesses.",
+    path: `/features/${feature}`,
+  };
+
   const config = configs[feature];
   if (!config) {
     return (

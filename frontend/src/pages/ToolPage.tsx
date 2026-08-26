@@ -367,6 +367,29 @@ function ToolContent({ config }: { config: ToolConfig }) {
 }
 
 export default function ToolPage({ tool }: { tool: string }) {
+  const toolMeta: Record<string, { title: string; description: string }> = {
+    "website-checker": {
+      title: "Free Website Health Checker — Test Your Website Now | Presence",
+      description: "Check your website health for free. Test SSL, DNS, email security, performance and security headers in seconds. No account required.",
+    },
+    "ssl-checker": {
+      title: "Free SSL Certificate Checker — Check Your SSL Now | Presence",
+      description: "Check your SSL certificate validity, expiry date and chain of trust for free. Instant results, no account required.",
+    },
+    "dns-checker": {
+      title: "Free DNS Checker — Check Your DNS Records | Presence",
+      description: "Check your DNS records for free. View A, AAAA, MX, NS and TXT records instantly. No account required.",
+    },
+    "email-security-checker": {
+      title: "Free Email Security Checker — SPF, DKIM & DMARC | Presence",
+      description: "Check your SPF, DKIM and DMARC configuration for free. Protect your business email from spoofing. Instant results.",
+    },
+  };
+  const meta = toolMeta[tool] ?? {
+    title: "Free Website Tools | Presence",
+    description: "Free tools to check your website health, SSL, DNS and email security.",
+  };
+
   const config = toolConfigs[tool];
   if (!config) return <div className="p-8 text-center text-slate-500">Tool not found.</div>;
   return <ToolContent config={config} />;
