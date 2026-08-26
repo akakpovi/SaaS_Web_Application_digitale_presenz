@@ -33,7 +33,12 @@ class RegistrationSerializer(serializers.ModelSerializer[User]):
         return value
 
     def create(self, validated_data: dict[str, Any]) -> User:
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+        from django.conf import settings
+        if getattr(settings, 'DEBUG', False):
+            user.is_email_verified = True
+            user.save(update_fields=["is_email_verified"])
+        return user
 
 
 class PresenceTokenObtainPairSerializer(TokenObtainPairSerializer):
