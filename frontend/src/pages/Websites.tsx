@@ -158,7 +158,7 @@ export default function Websites() {
               } catch { /* pas de résultats */ }
             }
 
-            const siteAlerts = alerts.filter(a => a.website === site.id);
+            const siteAlerts = alerts.filter(a => a.website_id === site.id);
             const ssl = getSslInfo(lastScan);
             const status = (lastScan?.health_status ?? 'neutral') as 'healthy' | 'warning' | 'critical' | 'neutral';
 
