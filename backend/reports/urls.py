@@ -1,9 +1,14 @@
 from django.urls import path
-
-from reports.views import GenerateReportView, ReportDetailView, ReportListView
+from .views import (
+    GenerateReportView,
+    ReportListView,
+    ReportDetailView,
+    WhiteLabelPDFReportView,
+)
 
 urlpatterns = [
-    path("reports/",            ReportListView.as_view(),    name="report-list"),
-    path("reports/generate/",   GenerateReportView.as_view(), name="report-generate"),
-    path("reports/<uuid:pk>/",  ReportDetailView.as_view(),  name="report-detail"),
+    path("", ReportListView.as_view(), name="report-list"),
+    path("generate/", GenerateReportView.as_view(), name="report-generate"),
+    path("<int:pk>/", ReportDetailView.as_view(), name="report-detail"),
+    path("pdf/<int:scan_id>/", WhiteLabelPDFReportView.as_view(), name="whitelabel-pdf-report"),
 ]

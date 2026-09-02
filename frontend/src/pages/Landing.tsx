@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import type { Lang } from "../i18n";
+import { PublicScanForm } from "../components/PublicScanForm";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { CheckCircle, ChevronDown, Globe, Shield, Mail, Zap, Bell, Star, FileText, ArrowRight, Play, Activity } from "lucide-react";
 import { Button } from "../components/ui";
-import SEO, { organizationSchema, websiteSchema, softwareAppSchema, faqSchema } from "../components/SEO";
 
 const plans = [
   {
@@ -39,81 +38,34 @@ const plans = [
   },
 ];
 
-const faqs = [
-  { q: "What does Presence monitor?", a: "Presence monitors your website availability, SSL certificate, DNS configuration, email security, security headers, uptime, performance, and online reviews — all from one simple dashboard." },
-  { q: "Do I need technical knowledge?", a: "Not at all. Presence is designed specifically for non-technical business owners. Everything is explained in plain language, and technical details are always optional." },
-  { q: "Does Presence change my website?", a: "No. Presence only reads publicly available information about your website. It never modifies or accesses your website files or code." },
-  { q: "How often is my website checked?", a: "On the Pro plan, your website is checked every hour automatically. On the Business plan, checks happen even more frequently. On the Free plan, you can run checks manually." },
-  { q: "What happens if my website goes offline?", a: "You'll receive an immediate alert via email or push notification. Presence will continue monitoring and notify you again when your website comes back online." },
-  { q: "Can I monitor multiple websites?", a: "Yes. Depending on your plan, you can monitor 1, 10, or 50 websites. You can add websites from your settings at any time." },
-  { q: "Can I install Presence as an app?", a: "Yes! Presence is available as a Progressive Web App (PWA). You can install it on your phone, tablet, or computer for faster access and push notifications." },
-  { q: "Can I cancel anytime?", a: "Yes. There are no long-term contracts. You can cancel your subscription at any time from your account settings." },
+const trustedBy = ["Restaurants", "Cafés", "Barbershops", "Beauty Salons", "Hotels", "Auto Repair", "Freelancers", "Agencies", "Real Estate"];
+
+const features = [
+  { icon: Globe, titleKey: "feature_website_monitoring", descKey: "feature_website_monitoring_desc", color: "bg-indigo-50 text-indigo-600" },
+  { icon: Shield, titleKey: "feature_ssl_monitoring", descKey: "feature_ssl_monitoring_desc", color: "bg-emerald-50 text-emerald-600" },
+  { icon: Zap, titleKey: "feature_dns_monitoring", descKey: "feature_dns_monitoring_desc", color: "bg-amber-50 text-amber-600" },
+  { icon: Mail, titleKey: "feature_email_security", descKey: "feature_email_security_desc", color: "bg-blue-50 text-blue-600" },
+  { icon: Activity, titleKey: "feature_performance_monitoring", descKey: "feature_performance_monitoring_desc", color: "bg-purple-50 text-purple-600" },
+  { icon: Shield, titleKey: "feature_security_headers", descKey: "feature_security_headers_desc", color: "bg-rose-50 text-rose-600" },
+  { icon: Bell, titleKey: "feature_uptime_monitoring", descKey: "feature_uptime_monitoring_desc", color: "bg-cyan-50 text-cyan-600" },
+  { icon: Star, titleKey: "feature_reviews", descKey: "feature_reviews_desc", color: "bg-yellow-50 text-yellow-600" },
+  { icon: FileText, titleKey: "feature_reports", descKey: "feature_reports_desc", color: "bg-slate-50 text-slate-600" },
 ];
 
+const stepKeys = [1, 2, 3];
+const stepIcons = [Globe, CheckCircle, Bell];
 
-const LANGS = [
-  { code: "en", label: "EN", full: "English" },
-  { code: "fr", label: "FR", full: "Français" },
-  { code: "de", label: "DE", full: "Deutsch" },
-  { code: "es", label: "ES", full: "Español" },
-];
-
-function LangPicker() {
-  const { i18n } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const lang = i18n.language?.slice(0, 2) ?? "en";
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const current = LANGS.find((l) => l.code === lang) ?? LANGS[0];
-
-  const handleChange = (code: string) => {
-    i18n.changeLanguage(code);
-    setOpen(false);
-  };
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
-      >
-        {current.label} <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
-          {LANGS.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => handleChange(l.code)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                lang === l.code ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {lang === l.code ? "✓ " : "  "}{l.full}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NavBar() {
+function NavBar({ t, i18n }: { t: (key: string) => string; i18n: any }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  // Lang gérée par LangPicker
+  const languages = [
+    { code: 'en', label: 'EN' },
+    { code: 'de', label: 'DE' },
+    { code: 'fr', label: 'FR' },
+  ];
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-8">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
           <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -125,21 +77,34 @@ function NavBar() {
           <span className="font-bold text-slate-900 text-base">Presence</span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 flex-1">
-          <a href="#features" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-          <a href="#how" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">How it works</a>
-          <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Pricing</a>
-          <a href="#faq" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">FAQ</a>
+          <a href="#features" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.features')}</a>
+          <a href="#how" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.how_it_works')}</a>
+          <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.pricing')}</a>
+          <a href="#faq" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.faq')}</a>
         </nav>
 
         <div className="hidden md:flex items-center gap-3 ml-auto">
-          <LangPicker />
+          <div className="flex items-center gap-1">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => i18n.changeLanguage(lang.code)}
+                className={`px-2 py-1 text-xs font-medium rounded transition ${
+                  i18n.language === lang.code
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
           <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2">
-            Log in
+            {t('auth.login')}
           </Link>
           <Link to="/register">
-            <Button size="sm">Get started</Button>
+            <Button size="sm">{t('auth.get_started')}</Button>
           </Link>
         </div>
 
@@ -150,13 +115,13 @@ function NavBar() {
 
       {menuOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white px-4 py-4 flex flex-col gap-3">
-          <a href="#features" className="text-sm text-slate-700 py-2">Features</a>
-          <a href="#how" className="text-sm text-slate-700 py-2">How it works</a>
-          <a href="#pricing" className="text-sm text-slate-700 py-2">Pricing</a>
-          <a href="#faq" className="text-sm text-slate-700 py-2">FAQ</a>
+          <a href="#features" className="text-sm text-slate-700 py-2">{t('landing.features')}</a>
+          <a href="#how" className="text-sm text-slate-700 py-2">{t('landing.how_it_works')}</a>
+          <a href="#pricing" className="text-sm text-slate-700 py-2">{t('landing.pricing')}</a>
+          <a href="#faq" className="text-sm text-slate-700 py-2">{t('landing.faq')}</a>
           <div className="pt-2 border-t border-slate-100 flex gap-3">
-            <Link to="/login" className="flex-1"><Button variant="outline" className="w-full">Log in</Button></Link>
-            <Link to="/register" className="flex-1"><Button className="w-full">Get started</Button></Link>
+            <Link to="/login" className="flex-1"><Button variant="outline" className="w-full">{t('auth.login')}</Button></Link>
+            <Link to="/register" className="flex-1"><Button className="w-full">{t('auth.get_started')}</Button></Link>
           </div>
         </div>
       )}
@@ -167,7 +132,6 @@ function NavBar() {
 function HeroDashboard() {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
-      {/* Header bar */}
       <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
         <div className="flex gap-1.5">
           <span className="w-3 h-3 rounded-full bg-red-400" />
@@ -178,7 +142,6 @@ function HeroDashboard() {
       </div>
 
       <div className="p-5 bg-slate-50">
-        {/* Score row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="bg-white rounded-xl p-4 border border-slate-200 text-center col-span-1">
             <p className="text-xs text-slate-500 mb-1">Digital Health Score</p>
@@ -202,15 +165,14 @@ function HeroDashboard() {
           </div>
         </div>
 
-        {/* Website list */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your websites</p>
           </div>
           {[
-            { domain: "restaurant-weber.de", status: "🟢 Online", score: 92, uptime: "99.99%", ssl: "✅ Valid" },
-            { domain: "bakery-london.com", status: "🟢 Online", score: 82, uptime: "99.98%", ssl: "✅ Valid" },
-            { domain: "boutique-schmidt.de", status: "🟠 Attention", score: 64, uptime: "98.91%", ssl: "⚠️ Expires soon" },
+            { domain: "example.de", status: "🟢 Online", score: 92, uptime: "99.99%", ssl: "✅ Valid" },
+            { domain: "example.com", status: "🟢 Online", score: 82, uptime: "99.98%", ssl: "✅ Valid" },
+            { domain: "example-shop.de", status: "🟠 Attention", score: 64, uptime: "98.91%", ssl: "⚠️ Expires soon" },
           ].map((site) => (
             <div key={site.domain} className="flex items-center gap-4 px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
               <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -233,7 +195,7 @@ function HeroDashboard() {
   );
 }
 
-function FeatureCard({ icon: Icon, title, description, color }: { icon: React.FC<{ size?: number; className?: string }>, title: string, description: string, color: string, href?: string }) {
+function FeatureCard({ icon: Icon, title, description, color }: { icon: React.FC<{ size?: number; className?: string }>, title: string, description: string, color: string }) {
   return (
     <div className="group bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-200 hover:shadow-md transition-all duration-200">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${color}`}>
@@ -246,25 +208,38 @@ function FeatureCard({ icon: Icon, title, description, color }: { icon: React.FC
 }
 
 export default function Landing() {
-  const { t } = useTranslation();
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallPWA = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => setDeferredPrompt(null));
+    } else {
+      alert("Sur ordinateur : cliquez sur l\'icône ⊕ dans la barre d\'adresse de votre navigateur.\nSur mobile : appuyez sur Partager / Menu puis \'Ajouter à l\'écran d\'accueil\'.");
+    }
+  };
+
+  const { t, i18n } = useTranslation();
   const [domain, setDomain] = useState("");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
+  const faqItems = [1, 2, 3, 4, 5].map(i => ({
+    q: t(`landing.faq_q_${i}`),
+    a: t(`landing.faq_a_${i}`)
+  }));
+
   return (
     <div className="min-h-full bg-white">
-      <SEO
-        title="Website Monitoring for Restaurants & Small Businesses | Presence"
-        description="Monitor your restaurant or shop website automatically. SSL, DNS, uptime and email security from one simple dashboard. Free to start. Trusted by restaurants and small businesses worldwide."
-        path="/"
-        hreflang={{ en: "/", fr: "/fr/", de: "/de/" }}
-        structuredData={[
-          organizationSchema,
-          websiteSchema,
-          softwareAppSchema,
-          faqSchema(faqs.map(f => ({ q: f.q, a: f.a }))),
-        ]}
-      />
-      <NavBar />
+      <NavBar t={t} i18n={i18n} />
 
       {/* Hero */}
       <section className="pt-20 pb-24 px-4">
@@ -272,41 +247,18 @@ export default function Landing() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium mb-8 border border-indigo-100">
               <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-              Website monitoring for restaurants & small businesses
+              {t('landing.hero_subtitle')}
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-slate-900 leading-tight mb-6">
-              Your digital presence,{" "}
-              <span className="text-indigo-600">always under control.</span>
+              {t('landing.hero_title')}
             </h1>
             <p className="text-xl text-slate-500 leading-relaxed mb-10">
-              Monitor your restaurant or shop website automatically. SSL, uptime, DNS, email security and reviews — one simple dashboard, no technical skills needed.
+              Monitor your website, SSL, domain, email security and online reputation from one simple dashboard.
             </p>
 
-            {/* Domain scanner */}
-            <div className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto mb-5">
-              <div className="flex-1 flex items-center border border-slate-300 rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
-                <div className="pl-4 text-slate-400">
-                  <Globe size={16} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="yourwebsite.com"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  className="flex-1 px-3 py-3 text-sm bg-transparent placeholder:text-slate-400 focus:outline-none"
-                />
-              </div>
-              <Link to="/onboarding">
-                <Button size="lg" className="sm:w-auto w-full whitespace-nowrap">
-                  Check my website
-                  <ArrowRight size={16} />
-                </Button>
-              </Link>
-            </div>
-            <p className="text-xs text-slate-400">No credit card required. Free forever plan available.</p>
+            <PublicScanForm className="mb-6" />
           </div>
 
-          {/* Dashboard preview */}
           <div className="max-w-4xl mx-auto">
             <HeroDashboard />
           </div>
@@ -318,7 +270,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-sm font-medium text-slate-400 mb-8 uppercase tracking-widest">Trusted by businesses across Europe</p>
           <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-400 font-medium">
-            {["Restaurants", "Cafés", "Barbershops", "Beauty Salons", "Hotels", "Auto Repair", "Freelancers", "Agencies", "Real Estate"].map(t => (
+            {trustedBy.map(t => (
               <span key={t} className="px-4 py-2 bg-white border border-slate-200 rounded-full">{t}</span>
             ))}
           </div>
@@ -329,30 +281,29 @@ export default function Landing() {
       <section id="how" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Up and running in minutes</h2>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">{t('landing.how_it_works_title')}</h2>
             <p className="text-lg text-slate-500">No technical knowledge required.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: "01", title: "Add your website", desc: "Enter your domain name. That's all you need to get started.", icon: Globe },
-              { step: "02", title: "Get your health score", desc: "See what's healthy and what needs attention — in plain language.", icon: CheckCircle },
-              { step: "03", title: "Get notified", desc: "Presence monitors your website automatically and alerts you when something changes.", icon: Bell },
-            ].map(({ step, title, desc, icon: Icon }) => (
-              <div key={step} className="relative">
-                <div className="flex items-start gap-5">
-                  <div className="flex-shrink-0">
-                    <span className="text-5xl font-black text-indigo-100 leading-none">{step}</span>
-                  </div>
-                  <div className="pt-2">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                      <Icon size={18} className="text-white" />
+            {stepKeys.map((step, idx) => {
+              const Icon = stepIcons[idx];
+              return (
+                <div key={step} className="relative">
+                  <div className="flex items-start gap-5">
+                    <div className="flex-shrink-0">
+                      <span className="text-5xl font-black text-indigo-100 leading-none">0{step}</span>
                     </div>
-                    <h3 className="font-bold text-slate-900 text-lg mb-2">{title}</h3>
-                    <p className="text-slate-500">{desc}</p>
+                    <div className="pt-2">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                        <Icon size={18} className="text-white" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-lg mb-2">{t(`landing.step_${step}_title`)}</h3>
+                      <p className="text-slate-500">{t(`landing.step_${step}_desc`)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -363,7 +314,9 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               <h2 className="text-4xl font-bold mb-4">One score. Everything you need to know.</h2>
-              <p className="text-indigo-200 text-lg mb-8">Your Digital Health Score tells you at a glance whether your digital presence is healthy or needs attention.</p>
+              <p className="text-indigo-200 text-lg mb-8">
+                Your Digital Health Score tells you at a glance whether your digital presence is healthy or needs attention.
+              </p>
               <div className="space-y-3">
                 {[
                   { label: "Website", score: 20, max: 20 },
@@ -413,21 +366,13 @@ export default function Landing() {
       <section id="features" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Everything you need to stay in control</h2>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">{t('landing.features_title')}</h2>
             <p className="text-lg text-slate-500">We monitor your digital presence so you don't have to.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { icon: Globe, title: "Website Monitoring", description: "Know immediately when your website becomes unavailable.", color: "bg-indigo-50 text-indigo-600", href: "/features/website-monitoring" },
-              { icon: Shield, title: "SSL Monitoring", description: "Get notified before your certificate expires.", color: "bg-emerald-50 text-emerald-600", href: "/features/ssl-monitoring" },
-              { icon: Zap, title: "DNS Monitoring", description: "Detect important changes to your domain configuration.", color: "bg-amber-50 text-amber-600", href: "/features/dns-monitoring" },
-              { icon: Mail, title: "Email Security", description: "Check SPF, DKIM and DMARC configuration — explained simply.", color: "bg-blue-50 text-blue-600", href: "/features/email-security" },
-              { icon: Activity, title: "Performance Monitoring", description: "Track website response time and uptime over time.", color: "bg-purple-50 text-purple-600", href: "/features/website-performance" },
-              { icon: Shield, title: "Security Headers", description: "Identify missing or weak security-related headers.", color: "bg-rose-50 text-rose-600", href: "/features/security-headers" },
-              { icon: Bell, title: "Uptime Monitoring", description: "Track your website availability over time.", color: "bg-cyan-50 text-cyan-600", href: "/features/uptime-monitoring" },
-              { icon: Star, title: "Online Reviews", description: "Monitor customer ratings and reviews across platforms.", color: "bg-yellow-50 text-yellow-600", href: "/features/review-monitoring" },
-              { icon: FileText, title: "Automatic Reports", description: "Receive clear monthly reports without technical jargon.", color: "bg-slate-50 text-slate-600", href: "/blog/what-is-website-monitoring" },
-            ].map(f => <Link key={f.title} to={f.href}><FeatureCard {...f} /></Link>)}
+            {features.map((f) => (
+              <FeatureCard key={f.titleKey} icon={f.icon} title={t(`landing.${f.titleKey}`)} description={t(`landing.${f.descKey}`)} color={f.color} />
+            ))}
           </div>
         </div>
       </section>
@@ -450,14 +395,13 @@ export default function Landing() {
                 ))}
               </ul>
               <div className="flex gap-3">
-                <Button>Install Presence</Button>
+                <Button onClick={handleInstallPWA}>📲 Installer l'application Presence</Button>
                 <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800">
                   <Play size={16} /> Learn about the PWA
                 </Button>
               </div>
             </div>
             <div className="flex justify-center">
-              {/* Phone mockup */}
               <div className="relative">
                 <div className="w-56 bg-slate-800 rounded-3xl border-2 border-slate-700 overflow-hidden shadow-2xl">
                   <div className="h-6 bg-slate-800 flex items-center justify-center">
@@ -476,7 +420,6 @@ export default function Landing() {
                         <div key={s} className="bg-white rounded-lg p-2.5 border border-slate-200 text-xs font-medium text-slate-700">{s}</div>
                       ))}
                     </div>
-                    {/* Push notification */}
                     <div className="mt-3 bg-slate-900 text-white rounded-xl p-3 text-xs">
                       <p className="font-semibold mb-0.5">⚠️ SSL expires in 12 days</p>
                       <p className="text-slate-400">example-shop.de</p>
@@ -493,46 +436,68 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Simple, transparent pricing</h2>
-            <p className="text-slate-500">Cancel anytime. 14-day free trial on paid plans.</p>
+            {/* Pricing Section - Mode 100% Gratuit */}
+      <section id="pricing" className="py-20 bg-slate-50 border-y border-slate-100">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-4">
+            ✨ Offre de Lancement
           </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl p-6 border ${plan.highlight ? "border-indigo-500 shadow-xl shadow-indigo-100" : "border-slate-200 bg-white"} ${plan.highlight ? "bg-indigo-600" : ""}`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">Most popular</span>
-                  </div>
-                )}
-                <div className={`mb-4 ${plan.highlight ? "text-white" : "text-slate-900"}`}>
-                  <p className={`text-sm font-medium mb-1 ${plan.highlight ? "text-indigo-200" : "text-slate-500"}`}>{plan.name}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black">{plan.price}</span>
-                    <span className={`text-sm ${plan.highlight ? "text-indigo-300" : "text-slate-400"}`}>{plan.period}</span>
-                  </div>
-                  <p className={`text-sm mt-1 ${plan.highlight ? "text-indigo-200" : "text-slate-500"}`}>{plan.description}</p>
-                </div>
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm">
-                      <CheckCircle size={14} className={plan.highlight ? "text-emerald-400" : "text-emerald-500"} />
-                      <span className={plan.highlight ? "text-indigo-100" : "text-slate-600"}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link to={plan.path}>
-                  <button className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${plan.highlight ? "bg-white text-indigo-700 hover:bg-indigo-50" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}>
-                    {plan.cta}
-                  </button>
-                </Link>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight sm:text-4xl">
+            Un outil professionnel, <span className="text-indigo-600">100% Gratuit.</span>
+          </h2>
+          <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+            Pas d'abonnements, pas de frais cachés. Presence SaaS est financé par des partenariats et sponsors non intrusifs.
+          </p>
+
+          <div className="mt-12 bg-white border border-slate-200 rounded-3xl p-8 shadow-xl max-w-2xl mx-auto text-left relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
+              Accès Complet
+            </div>
+            
+            <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">Plan Gratuit & Illimité</h3>
+                <p className="text-xs text-slate-500 mt-1">Surveillez vos sites sans sortir de carte bancaire</p>
               </div>
-            ))}
+              <div className="text-right">
+                <span className="text-4xl font-black text-slate-900">0€</span>
+                <span className="text-xs text-slate-500 font-medium"> / mois</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Surveillance de sites illimitée</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Audits & Optimisation SEO</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Scanner de Sécurité complet</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Alertes Emails instantanées</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Contrôles SSL & Performances</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-sm text-slate-700">Rapports PDF & Historique</span>
+              </div>
+            </div>
+
+            <Link
+              to="/register"
+              className="block w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-center shadow-lg shadow-indigo-100 transition-all text-sm"
+            >
+              Créer mon compte gratuit maintenant
+            </Link>
           </div>
         </div>
       </section>
@@ -541,10 +506,10 @@ export default function Landing() {
       <section id="faq" className="py-24 px-4 bg-slate-50">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Frequently asked questions</h2>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">{t('landing.faq_title')}</h2>
           </div>
           <div className="space-y-3">
-            {faqs.map((faq, i) => (
+            {faqItems.map((faq, i) => (
               <div key={i} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                 <button
                   className="w-full flex items-center justify-between px-5 py-4 text-left"
@@ -570,13 +535,13 @@ export default function Landing() {
       {/* CTA */}
       <section className="py-24 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Ready to take control of your digital presence?</h2>
-          <p className="text-lg text-slate-500 mb-8">Join thousands of restaurants, shops and small businesses monitoring their digital presence with Presence.</p>
+          <h2 className="text-4xl font-bold text-slate-900 mb-4">{t('landing.cta_title')}</h2>
+          <p className="text-lg text-slate-500 mb-8">{t('landing.cta_subtitle')}</p>
           <div className="flex justify-center gap-4">
-            <Link to="/register"><Button size="lg">Start for free <ArrowRight size={16} /></Button></Link>
-            <Link to="/login"><Button variant="outline" size="lg">Log in</Button></Link>
+            <Link to="/register"><Button size="lg">{t('auth.get_started')} <ArrowRight size={16} /></Button></Link>
+            <Link to="/login"><Button variant="outline" size="lg">{t('auth.login')}</Button></Link>
           </div>
-          <p className="text-sm text-slate-400 mt-4">No credit card required.</p>
+          <p className="text-sm text-slate-400 mt-4">{t('landing.no_credit_card')}</p>
         </div>
       </section>
 
@@ -609,7 +574,7 @@ export default function Landing() {
             ))}
           </div>
           <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-400">© 2026 Presence. All rights reserved.</p>
+            <p className="text-xs text-slate-400">© 2026 Presence. {t('landing.footer.rights')}</p>
             <div className="flex gap-4 text-xs text-slate-400">
               <span>🇪🇺 Made in Europe</span>
               <span>GDPR Compliant</span>
@@ -620,3 +585,4 @@ export default function Landing() {
     </div>
   );
 }
+

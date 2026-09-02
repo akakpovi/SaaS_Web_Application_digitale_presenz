@@ -6,7 +6,7 @@ import { Card } from "../components/ui";
 import { websiteService, scanService, Website, Scan } from "../services/websiteService";
 import { RefreshCw, Settings, Check, Loader2, Bell, BellOff } from "lucide-react";
 import api from "../services/api";
-import { useLang } from "../context/LangContext";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -63,12 +63,14 @@ function timeUntil(d: string) {
 // ─── Composant config panel ───────────────────────────────────────────────────
 
 function MonitoringConfigPanel({
+
   config,
   onSaved,
 }: {
   config: MonitoringConfig;
   onSaved: (updated: MonitoringConfig) => void;
 }) {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useState(config.enabled);
   const [interval, setInterval] = useState(config.interval);
   const [saving, setSaving] = useState(false);
@@ -149,8 +151,8 @@ function MonitoringConfigPanel({
           </div>
           <p className="text-xs text-slate-400 mt-2">
             {enabled
-              ? "Automatic scans are running."
-              : "No automatic scans while paused."}
+              ? t("monitoring.auto_running")
+              : t("monitoring.paused_note")}
           </p>
         </div>
 
@@ -178,19 +180,19 @@ function MonitoringConfigPanel({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-100">
         {[
           {
-            label: "Last scan",
+            label: t("monitoring.last_scan"),
             value: config.last_scan_at ? timeAgo(config.last_scan_at) : "Never",
           },
           {
-            label: "Next scan",
+            label: t("monitoring.next_scan"),
             value: config.next_scan_at ? timeUntil(config.next_scan_at) : "—",
           },
           {
-            label: "Consecutive failures",
+            label: t("monitoring.failures"),
             value: String(config.consecutive_failures),
           },
           {
-            label: "Escalation level",
+            label: t("monitoring.escalation"),
             value: config.escalation_level === 0
               ? "✅ Normal"
               : config.escalation_level === 1
@@ -221,7 +223,7 @@ function MonitoringConfigPanel({
           ) : saved ? (
             <Check size={14} />
           ) : null}
-          {saving ? "Saving…" : saved ? "Saved" : "Save configuration"}
+          {saving ? t("settings.saving") : saved ? t("settings.saved") : t("monitoring.save")}
         </button>
 
         <button
@@ -243,7 +245,7 @@ function MonitoringConfigPanel({
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function Monitoring() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedSite, setSelectedSite] = useState<number | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -370,7 +372,7 @@ export default function Monitoring() {
             onClick={() => selectedSite && loadSiteData(selectedSite)}
             disabled={isRefreshing}
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Refresh"
+            title={t("dashboard.refresh")}
           >
             <RefreshCw
               size={16}
@@ -405,14 +407,14 @@ export default function Monitoring() {
             {[
               {
                 label: t("monitoring.title"),
-                value: config?.enabled ? "Active" : "Paused",
+                value: config?.enabled ? t("monitoring.active") : t("monitoring.paused"),
                 sub: config
                   ? `Every ${INTERVALS.find((i) => i.value === config.interval)?.label.toLowerCase().replace("every ", "") ?? config.interval}`
                   : "—",
                 icon: config?.enabled ? "🟢" : "⏸️",
               },
               {
-                label: "Current status",
+                label: t("monitoring.current_status"),
                 value:
                   currentStatus === "healthy"
                     ? "Online"
@@ -427,15 +429,15 @@ export default function Monitoring() {
                 icon: statusIcon,
               },
               {
-                label: "Total scans",
+                label: t("monitoring.total_scans"),
                 value: String(scans.length),
                 sub: `${completedScans.length} completed`,
                 icon: "📊",
               },
               {
-                label: "Uptime rate",
+                label: t("monitoring.uptime_rate"),
                 value: uptimePct === "—" ? "—" : `${uptimePct}%`,
-                sub: "Based on scan history",
+                sub: t("monitoring.based_on"),
                 icon: "📈",
               },
             ].map((s) => (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Globe, Plus, X, RefreshCw, Trash2 } from "lucide-react";
 import { Card, StatusBadge, ScoreRing, Button } from "../components/ui";
-import { useLang } from "../context/LangContext";
+import { useTranslation } from "react-i18next";
 import { websiteService, scanService, Website, Scan } from "../services/websiteService";
 import { alertService } from "../services/alertService";
 

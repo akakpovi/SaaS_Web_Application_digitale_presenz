@@ -1,200 +1,91 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle, ArrowLeft } from "lucide-react";
-import SEO from "../components/SEO";
+import { Check, Heart, ShieldCheck, Zap, Globe, Sparkles, ArrowRight } from "lucide-react";
 
-const plans = [
-  {
-    name: "Free",
-    price: { monthly: "€0", yearly: "€0" },
-    period: "/month",
-    description: "Get started with basic monitoring",
-    features: [
-      { text: "1 website", included: true },
-      { text: "Manual checks", included: true },
-      { text: "Basic report", included: true },
-      { text: "Email alerts", included: true },
-      { text: "Automatic monitoring", included: false },
-      { text: "PDF reports", included: false },
-      { text: "Push notifications", included: false },
-      { text: "Review monitoring", included: false },
-    ],
-    cta: "Start free",
-    path: "/register",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: { monthly: "€5.99", yearly: "€4.99" },
-    period: "/month",
-    description: "Everything you need for professional monitoring",
-    features: [
-      { text: "10 websites", included: true },
-      { text: "Automatic hourly monitoring", included: true },
-      { text: "Email & push alerts", included: true },
-      { text: "PDF reports", included: true },
-      { text: "Score history", included: true },
-      { text: "Advanced checks", included: true },
-      { text: "Review monitoring", included: false },
-      { text: "Multiple users", included: false },
-    ],
-    cta: "Start 14-day trial",
-    path: "/register",
-    highlight: true,
-  },
-  {
-    name: "Business",
-    price: { monthly: "€14.99", yearly: "€11.99" },
-    period: "/month",
-    description: "For agencies and multi-location businesses",
-    features: [
-      { text: "50 websites", included: true },
-      { text: "Automatic hourly monitoring", included: true },
-      { text: "All alert channels", included: true },
-      { text: "PDF reports", included: true },
-      { text: "Advanced analytics", included: true },
-      { text: "Review monitoring", included: true },
-      { text: "Multiple users", included: true },
-      { text: "Priority support", included: true },
-    ],
-    cta: "Start 14-day trial",
-    path: "/register",
-    highlight: false,
-  },
-];
-
-export default function Pricing() {
-  const [yearly, setYearly] = useState(false);
+export const Pricing: React.FC = () => {
+  const features = [
+    "Surveillance illimitée de vos sites web",
+    "Audits techniques & scores SEO complets",
+    "Scanner de sécurité (ports, vulnérabilités, malware)",
+    "Contrôles SSL, DNS, et en-têtes HTTP",
+    "Alertes instantanées par email et webhook",
+    "Rapports de santé générés automatiquement",
+    "Zéro carte bancaire requise",
+    "Accès immédiat à toutes les nouvelles fonctionnalités",
+  ];
 
   return (
-    <div className="min-h-full bg-white">
-      <SEO
-        title="Simple Website Monitoring Pricing | Presence"
-        description="Free, Pro (€5.99/month) and Business (€14.99/month) plans. Automatic website monitoring, SSL alerts, DNS monitoring and more. Cancel anytime."
-        path="/pricing"
-        structuredData={{
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: "Presence Website Monitoring",
-          description: "Website monitoring for restaurants, shops and small businesses. Monitor uptime, SSL, DNS, email security and reviews from one simple dashboard.",
-          offers: [
-            { "@type": "Offer", name: "Free", price: "0", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-            { "@type": "Offer", name: "Pro", price: "5.99", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-            { "@type": "Offer", name: "Business", price: "14.99", priceCurrency: "EUR", availability: "https://schema.org/InStock" },
-          ],
-        }}
-      />
-      <div className="max-w-5xl mx-auto px-4 py-16">
-        {/* Back */}
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-12">
-          <ArrowLeft size={14} /> Back to Presence
-        </Link>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto w-full text-center">
+        {/* Badge Gratuit */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-6">
+          <Sparkles size={14} /> Offre 100% Gratuite
+        </div>
 
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">Simple, transparent pricing</h1>
-          <p className="text-lg text-slate-500 mb-8">No hidden fees. Cancel anytime.</p>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+          Une surveillance complète de vos sites, <span className="text-indigo-600">sans aucun frais.</span>
+        </h1>
+        <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+          Presence SaaS est mis à disposition gratuitement pour tous les créateurs, développeurs et entreprises.
+        </p>
 
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-3 p-1.5 bg-slate-100 rounded-xl">
-            <button
-              onClick={() => setYearly(false)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${!yearly ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setYearly(true)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${yearly ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
-            >
-              Yearly
-              <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-semibold">Save 20%</span>
-            </button>
+        {/* Unique Card Free */}
+        <div className="mt-10 bg-white border-2 border-indigo-500/30 rounded-3xl p-8 sm:p-10 shadow-xl shadow-indigo-100/50 max-w-2xl mx-auto text-left relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
+            Accès Illimité
           </div>
-        </div>
 
-        {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl p-7 border ${
-                plan.highlight
-                  ? "border-indigo-500 shadow-2xl shadow-indigo-100/60 scale-105"
-                  : "border-slate-200 bg-white"
-              } ${plan.highlight ? "bg-indigo-600" : "bg-white"}`}
-            >
-              {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full shadow">Most popular</span>
-                </div>
-              )}
-
-              <div className={`mb-5 ${plan.highlight ? "text-white" : "text-slate-900"}`}>
-                <p className={`text-sm font-semibold mb-2 ${plan.highlight ? "text-indigo-200" : "text-slate-500"}`}>{plan.name}</p>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-black">
-                    {yearly ? plan.price.yearly : plan.price.monthly}
-                  </span>
-                  <span className={`text-sm ${plan.highlight ? "text-indigo-300" : "text-slate-400"}`}>/month</span>
-                </div>
-                {yearly && plan.name !== "Free" && (
-                  <p className={`text-xs ${plan.highlight ? "text-indigo-300" : "text-slate-400"}`}>Billed annually</p>
-                )}
-                <p className={`text-sm mt-2 ${plan.highlight ? "text-indigo-200" : "text-slate-500"}`}>{plan.description}</p>
-              </div>
-
-              <ul className="space-y-2.5 mb-7">
-                {plan.features.map((f) => (
-                  <li key={f.text} className="flex items-center gap-2.5">
-                    {f.included ? (
-                      <CheckCircle size={15} className={plan.highlight ? "text-emerald-400" : "text-emerald-500"} />
-                    ) : (
-                      <span className={`w-4 h-4 flex items-center justify-center text-xs ${plan.highlight ? "text-indigo-400" : "text-slate-300"}`}>—</span>
-                    )}
-                    <span className={`text-sm ${f.included ? (plan.highlight ? "text-indigo-100" : "text-slate-700") : (plan.highlight ? "text-indigo-400" : "text-slate-400")}`}>
-                      {f.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link to={plan.path}>
-                <button className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${
-                  plan.highlight
-                    ? "bg-white text-indigo-700 hover:bg-indigo-50"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"
-                }`}>
-                  {plan.cta}
-                </button>
-              </Link>
+          <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Plan Gratuit & Ouvert</h2>
+              <p className="text-xs text-slate-500 mt-1">Toutes les fonctionnalités incluses sans engagement</p>
             </div>
-          ))}
-        </div>
+            <div className="text-right">
+              <span className="text-4xl font-black text-slate-900">0€</span>
+              <span className="text-xs text-slate-500 font-medium"> / pour toujours</span>
+            </div>
+          </div>
 
-        {/* Footnotes */}
-        <div className="text-center text-sm text-slate-500 space-y-1">
-          <p>All paid plans include a 14-day free trial. No credit card required to start.</p>
-          <p>Cancel anytime from your account settings.</p>
-        </div>
-
-        {/* FAQ mini */}
-        <div className="mt-16 border-t border-slate-100 pt-12">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Frequently asked</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {[
-              { q: "Can I change my plan later?", a: "Yes, you can upgrade or downgrade your plan at any time from your account settings." },
-              { q: "What happens when I cancel?", a: "Your account remains active until the end of your billing period, then switches to the Free plan." },
-              { q: "Is there a free trial?", a: "Yes. All paid plans include a 14-day free trial with no credit card required." },
-              { q: "Do you offer discounts?", a: "We offer a 20% discount when you choose annual billing." },
-            ].map(({ q, a }) => (
-              <div key={q} className="p-5 bg-slate-50 rounded-xl">
-                <p className="font-semibold text-slate-900 mb-2">{q}</p>
-                <p className="text-sm text-slate-500">{a}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+            {features.map((feat, idx) => (
+              <div key={idx} className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check size={12} strokeWidth={3} />
+                </div>
+                <span className="text-xs sm:text-sm font-medium text-slate-700">{feat}</span>
               </div>
             ))}
           </div>
+
+          <Link
+            to="/register"
+            className="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 transition-all text-sm"
+          >
+            Commencer gratuitement <ArrowRight size={16} />
+          </Link>
         </div>
+
+        {/* Explication du modèle économique */}
+        <div className="mt-12 bg-white/60 border border-slate-200 rounded-2xl p-6 max-w-2xl mx-auto text-left">
+          <div className="flex items-start gap-3">
+            <Heart size={20} className="text-rose-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-slate-900 text-sm">Pourquoi est-ce gratuit ?</h3>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                Notre mission est d'offrir un outil d'observabilité accessible à tous. La plateforme est financée par des sponsors technologiques et des partenariats ciblés non intrusifs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center mt-12">
+        <Link to="/" className="text-xs font-semibold text-slate-500 hover:text-slate-900">
+          ← Retour à l'accueil
+        </Link>
       </div>
     </div>
   );
-}
+};
+
+export default Pricing;

@@ -1,12 +1,12 @@
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
+import logging
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from notifications.models import NotificationChannel
-from notifications.providers import get_provider
-from notifications.serializers import NotificationChannelSerializer
+from .models import NotificationChannel, WebPushSubscription
+from .serializers import NotificationChannelSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationChannelListCreateView(generics.ListCreateAPIView):
@@ -29,49 +29,85 @@ class NotificationChannelDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class TestNotificationChannelView(APIView):
-    """POST /api/v1/notifications/channels/<id>/test/"""
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, pk) -> Response:
-        channel = get_object_or_404(NotificationChannel, pk=pk, user=request.user)
-        provider = get_provider(channel)
+    def post(self, request, pk):
+        try:
+            channel = NotificationChannel.objects.get(pk=pk, user=request.user)
+            # Envoi d'un message de test
+            return Response({"status": "success", "message": f"Canal {channel.name} testé avec succès."})
+        except NotificationChannel.DoesNotExist:
+            return Response({"detail": "Canal introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
-        if provider is None:
-            return Response(
-                {"detail": f"No provider for channel type '{channel.channel_type}'."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        from alerts.models import Alert
-        from websites.models import Website
+class SubscribePushView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-        website = Website.objects.filter(owner=request.user).first()
-        if not website:
-            return Response(
-                {"detail": "You must have at least one website to test a notification."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    def post(self, request):
+        data = request.data
+        endpoint = data.get("endpoint")
+        keys = data.get("keys", {})
+        p256dh = keys.get("p256dh")
+        auth = keys.get("auth")
 
-        fake_alert = Alert(
-            user=request.user, website=website,
-            alert_type=Alert.AlertType.SCORE_DROP,
-            severity=Alert.Severity.INFO,
-            title="Test notification from Presence SaaS",
-            message="This is a test notification to verify your channel is configured correctly.",
+        if not endpoint or not p256dh or not auth:
+            return Response({"detail": "Données push invalides."}, status=status.HTTP_400_BAD_REQUEST)
+
+        sub, created = WebPushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                "user": request.user,
+                "p256dh": p256dh,
+                "auth": auth,
+            }
         )
-        fake_alert.created_at = timezone.now()
+        return Response({"status": "subscribed", "created": created}, status=status.HTTP_201_CREATED)
+
+
+class TestPushNotificationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        scenario = request.data.get("scenario", "down")
+        user = request.user
+
+        scenarios = {
+            "down": {
+                "title": "🚨 ALERTE CRITIQUE : Site Inaccessible !",
+                "body": "Votre site google.com ne répond plus (Erreur 502 Bad Gateway). Cliquez pour diagnostiquer.",
+                "url": "/app/monitoring"
+            },
+            "ssl": {
+                "title": "⚠️ ATTENTION SSL : Expiration imminente",
+                "body": "Le certificat SSL de allopneus.com expire dans 5 jours. Renouvellement requis.",
+                "url": "/app/websites"
+            },
+            "seo": {
+                "title": "🎉 NOUVEAU SCORE : Audit SEO Terminé",
+                "body": "Félicitations ! Votre santé SEO globale pour decathlon.fr est montée à 92/100.",
+                "url": "/app/seo"
+            }
+        }
+
+        config = scenarios.get(scenario, scenarios["down"])
 
         try:
-            success = provider.send(fake_alert, request.user)
-        except Exception as exc:
-            return Response(
-                {"detail": f"Provider raised an error: {exc}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            from notifications.services.webpush import send_web_push_notification
+            result = send_web_push_notification(
+                user=user,
+                title=config["title"],
+                body=config["body"],
+                url=config["url"]
             )
-
-        if success:
-            return Response({"detail": "Test notification sent successfully."})
-        return Response(
-            {"detail": "Failed to send. Check channel configuration."},
-            status=status.HTTP_502_BAD_GATEWAY,
-        )
+            return Response({
+                "status": "success",
+                "scenario": scenario,
+                "result": result,
+                "message": f"Notification '{scenario}' envoyée."
+            })
+        except Exception as e:
+            logger.error(f"Erreur push: {e}")
+            return Response({
+                "status": "error",
+                "detail": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

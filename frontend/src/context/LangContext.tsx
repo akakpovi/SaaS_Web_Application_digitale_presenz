@@ -1,3 +1,5 @@
+// Wrapper de compatibilité — utilise i18next directement
+// Conservé pour les imports existants, mais useTranslation() est préférable
 import React, { createContext, useContext, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Lang } from "../i18n";
@@ -12,13 +14,7 @@ const LangContext = createContext<LangContextType | null>(null);
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
-
-  const setLang = (l: Lang) => {
-    i18n.changeLanguage(l);
-    // Sync event pour LangPickers autonomes (Landing/Auth)
-    window.dispatchEvent(new Event("presence_lang_change"));
-  };
-
+  const setLang = (l: Lang) => i18n.changeLanguage(l);
   return (
     <LangContext.Provider value={{
       lang: (i18n.language?.slice(0, 2) as Lang) ?? "en",

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, Loader } from "lucide-react";
 import { Button, Input, ScoreRing } from "../components/ui";
+import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
 import { websiteService, scanService, CheckResult } from "../services/websiteService";
 
@@ -20,6 +21,7 @@ const checkLabels = [
 const industries = ["Restaurant / Café", "Retail", "Hotel / Hospitality", "Auto Repair", "Beauty / Hair Salon", "Freelancer", "Agency", "Real Estate", "Professional Services", "Other"];
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [business, setBusiness] = useState({ name: "", industry: "", country: "Germany" });
@@ -167,7 +169,7 @@ export default function Onboarding() {
                 <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{scanError}</div>
               )}
               <div className="flex flex-col gap-4">
-                <Input label="Your website domain" placeholder="example.com" value={domain} onChange={setDomain}
+                <Input label={t("onboarding.domain_label")} placeholder="example.com" value={domain} onChange={setDomain}
                   helper="Enter your domain without https:// — we'll handle the rest." />
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm text-indigo-700">
                   <p className="font-medium mb-1">What we'll check:</p>

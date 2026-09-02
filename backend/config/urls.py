@@ -12,9 +12,13 @@ urlpatterns = [
     path("api/v1/", include("monitoring.urls")),
     path("api/v1/", include("alerts.urls")),
     path("api/v1/", include("notifications.urls")),
-    path("api/v1/", include("reports.urls")),        # ← NOUVEAU
-    path("api/v1/", include("reviews.urls")),         # ← NOUVEAU
-    path("api/v1/", include("subscriptions.urls")),   # ← NOUVEAU
+    path("api/v1/", include("reports.urls")),
+    path("api/v1/", include("reviews.urls")),
+    path("api/v1/", include("subscriptions.urls")),
+    path("api/v1/", include("seo.urls")),
+    path("api/v1/", include("social.urls")),
+    path("api/v1/", include("advanced_security.urls")),
+    path("api/v1/analytics/", include("analytics.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="openapi-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="openapi-schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="openapi-schema"), name="redoc"),

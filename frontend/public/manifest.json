@@ -1,10 +1,11 @@
 {
-  "name": "Presence",
+  "name": "Presence \u2014 Digital Monitoring & SEO",
   "short_name": "Presence",
-  "description": "Monitor your website, SSL, DNS, email security and online reputation from one simple dashboard.",
+  "description": "Surveillance de pr\u00e9sence digitale, audits SEO et alertes de s\u00e9curit\u00e9 en temps r\u00e9el.",
   "start_url": "/app/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#0f172a",
   "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
   "icons": [
@@ -20,8 +21,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["business", "productivity", "utilities"],
-  "lang": "en",
-  "scope": "/"
+  ]
 }

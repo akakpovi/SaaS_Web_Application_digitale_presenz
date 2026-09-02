@@ -1,3 +1,4 @@
+from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -25,15 +26,38 @@ class Scan(models.Model):
         MONITORING = "monitoring", "Monitoring"
         PUBLIC = "public", "Public"
 
-    website = models.ForeignKey("websites.Website", on_delete=models.CASCADE, related_name="scans")
+    website = models.ForeignKey(
+        "websites.Website",
+        on_delete=models.CASCADE,
+        related_name="scans"
+    )
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     trigger = models.CharField(max_length=16, choices=Trigger.choices, default=Trigger.MANUAL)
     health_score = models.PositiveSmallIntegerField(null=True, blank=True)
-    health_status = models.CharField(max_length=12, choices=HealthStatus.choices, default=HealthStatus.NEUTRAL)
+    health_status = models.CharField(
+        max_length=12,
+        choices=HealthStatus.choices,
+        default=HealthStatus.NEUTRAL
+    )
     failure_message = models.CharField(max_length=500, blank=True)
+    
+    # Guest architecture fields
+    is_guest = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True if performed by an unauthenticated visitor."
+    )
+    session_key = models.CharField(
+        max_length=40,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Django session key of the guest visitor."
+    )
+
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -41,10 +65,18 @@ class Scan(models.Model):
         indexes = [
             models.Index(fields=["website", "-created_at"]),
             models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["is_guest", "created_at"]),
+            models.Index(fields=["session_key"]),
         ]
         constraints = [
-            models.CheckConstraint(condition=Q(health_score__isnull=True) | Q(health_score__gte=0, health_score__lte=100), name="scan_health_score_range"),
-            models.CheckConstraint(condition=Q(status__in=["pending", "queued", "running", "completed", "failed"]), name="scan_status_valid"),
+            models.CheckConstraint(
+                condition=Q(health_score__isnull=True) | Q(health_score__gte=0, health_score__lte=100),
+                name="scan_health_score_range",
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=["pending", "queued", "running", "completed", "failed"]),
+                name="scan_status_valid",
+            ),
         ]
 
     _TRANSITIONS = {

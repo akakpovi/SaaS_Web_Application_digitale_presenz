@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 2cm;
+    @bottom-center {
+      content: "Presence SaaS — Rapport généré le {{ generated_at }}";
+      font-size: 9px;
+      color: #94a3b8;
+    }
+  }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    font-size: 12px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header img {
+    max-height: 48px;
+    max-width: 180px;
+  }
+  .header h1 {
+    font-size: 22px;
+    color: #1e40af;
+    margin: 0;
+  }
+  .score-box {
+    text-align: center;
+    margin: 24px 0;
+    padding: 24px;
+    background: #f1f5f9;
+    border-radius: 12px;
+  }
+  .score-value {
+    font-size: 56px;
+    font-weight: 800;
+    color: {{ score_color }};
+  }
+  .score-label {
+    font-size: 14px;
+    color: #64748b;
+  }
+  .summary-grid {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .summary-card {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  .critical { background: #fef2f2; color: #dc2626; }
+  .warning { background: #fffbeb; color: #d97706; }
+  .passed { background: #f0fdf4; color: #16a34a; }
+  .summary-card .num { font-size: 28px; font-weight: 700; }
+  .summary-card .label { font-size: 11px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th {
+    background: #1e40af;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 11px;
+  }
+  tr:nth-child(even) { background: #f8fafc; }
+  .status-healthy { color: #16a34a; font-weight: 600; }
+  .status-warning { color: #d97706; font-weight: 600; }
+  .status-critical { color: #dc2626; font-weight: 600; }
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    {% if logo_url %}
+      <img src="{{ logo_url }}" alt="Logo" />
+    {% else %}
+      <h1>Presence SaaS</h1>
+    {% endif %}
+    <div style="text-align: right;">
+      <strong>{{ domain }}</strong><br/>
+      <span style="color: #64748b; font-size: 11px;">{{ generated_at }}</span>
+    </div>
+  </div>
+
+  <div class="score-box">
+    <div class="score-value">{{ score }}/100</div>
+    <div class="score-label">Score de Santé Globale</div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card critical">
+      <div class="num">{{ critical_count }}</div>
+      <div class="label">Critiques</div>
+    </div>
+    <div class="summary-card warning">
+      <div class="num">{{ warning_count }}</div>
+      <div class="label">Avertissements</div>
+    </div>
+    <div class="summary-card passed">
+      <div class="num">{{ passed_count }}</div>
+      <div class="label">Conformes</div>
+    </div>
+  </div>
+
+  <h2 style="color: #1e40af; font-size: 16px;">Détail des Vérifications</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Catégorie</th>
+        <th>Statut</th>
+        <th>Score</th>
+        <th>Diagnostic</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for check in checks %}
+      <tr>
+        <td><strong>{{ check.category }}</strong></td>
+        <td class="status-{{ check.status }}">{{ check.status }}</td>
+        <td>{{ check.score }}/20</td>
+        <td>{{ check.summary }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Rapport généré par Presence SaaS · {{ generated_at }} · Ce document est confidentiel.
+  </div>
+</body>
+</html>

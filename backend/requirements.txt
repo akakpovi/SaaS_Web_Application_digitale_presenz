@@ -37,3 +37,9 @@ cryptography>=43.0,<44.0
 validators>=0.34,<1.0
 
 certifi>=2024.8.30
+# SEO Scanner
+beautifulsoup4>=4.12,<5.0
+
+pywebpush>=2.0.0
+
+weasyprint>=62.0

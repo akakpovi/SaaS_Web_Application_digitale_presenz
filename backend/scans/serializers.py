@@ -1,15 +1,13 @@
 from rest_framework import serializers
-
-from .models import CheckResult, Scan
-from .services.scoring import CHECK_WEIGHTS
+from .models import Scan, CheckResult
 
 
-class CheckResultSerializer(serializers.ModelSerializer[CheckResult]):
+class CheckResultSerializer(serializers.ModelSerializer):
     max_score = serializers.SerializerMethodField()
 
     class Meta:
         model = CheckResult
-        fields = (
+        fields = [
             "id",
             "category",
             "status",
@@ -20,33 +18,33 @@ class CheckResultSerializer(serializers.ModelSerializer[CheckResult]):
             "technical_details",
             "created_at",
             "updated_at",
-        )
-        read_only_fields = fields
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
-    def get_max_score(self, instance: CheckResult) -> int | None:
-        return CHECK_WEIGHTS.get(instance.category)
+    def get_max_score(self, obj):
+        return 20
 
 
-class ScanSerializer(serializers.ModelSerializer[Scan]):
-    check_results = CheckResultSerializer(many=True, read_only=True)
-    website_id = serializers.IntegerField(read_only=True)
+class ScanSerializer(serializers.ModelSerializer):
     domain = serializers.CharField(source="website.domain", read_only=True)
+    website_id = serializers.IntegerField(source="website.id", read_only=True)
+    check_results = CheckResultSerializer(many=True, read_only=True)
 
     class Meta:
         model = Scan
-        fields = (
+        fields = [
             "id",
-            "website_id",
             "domain",
+            "website_id",
             "status",
-            "trigger",
             "health_score",
             "health_status",
+            "trigger",
             "failure_message",
             "started_at",
             "completed_at",
             "created_at",
             "updated_at",
             "check_results",
-        )
-        read_only_fields = fields
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]

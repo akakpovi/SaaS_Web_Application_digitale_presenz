@@ -1,0 +1,36 @@
+
+===== /manifest.json =====
+HTTP=200 TYPE=application/json SIZE=703
+JSON text data
+  "name": "Presence",
+  "short_name": "Presence",
+
+===== /manifest.webmanifest =====
+HTTP=200 TYPE=text/html SIZE=3448
+HTML document, ASCII text
+<!doctype html>
+<html lang="en">
+
+===== /icons/icon-192.png =====
+HTTP=200 TYPE=text/html SIZE=3448
+HTML document, ASCII text
+<!doctype html>
+<html lang="en">
+
+===== /icons/icon-512.png =====
+HTTP=200 TYPE=text/html SIZE=3448
+HTML document, ASCII text
+<!doctype html>
+<html lang="en">
+
+===== /sw.js =====
+HTTP=200 TYPE=text/html SIZE=3448
+HTML document, ASCII text
+<!doctype html>
+<html lang="en">
+
+===== /service-worker.js =====
+HTTP=200 TYPE=text/html SIZE=3448
+HTML document, ASCII text
+<!doctype html>
+<html lang="en">

@@ -1,48 +1,39 @@
-from typing import TYPE_CHECKING
+"""Alert escalation logic."""
 
-if TYPE_CHECKING:
-    from alerts.models import AlertPreference
+import logging
+from alerts.models import Alert, AlertPreference
+
+logger = logging.getLogger(__name__)
 
 
 def compute_severity(
-    check_severity: str,
+    base_severity: str,
     consecutive_failures: int,
-    preferences: "AlertPreference",
+    preferences: AlertPreference,
 ) -> str:
-    """
-    Determine alert severity.
-    - critical check → always CRITICAL
-    - consecutive_failures >= threshold → CRITICAL
-    - otherwise → WARNING or INFO
-    """
-    if check_severity == "critical":
-        return "critical"
-    threshold = getattr(preferences, "consecutive_failures_critical", 3)
-    if consecutive_failures >= threshold:
-        return "critical"
-    if check_severity == "warning" or consecutive_failures >= 1:
-        return "warning"
-    return "info"
+    """Escalate severity based on consecutive failures."""
+    if base_severity == "critical":
+        return Alert.Severity.CRITICAL
+    
+    if consecutive_failures >= preferences.consecutive_failures_critical:
+        return Alert.Severity.CRITICAL
+    
+    return Alert.Severity.WARNING
 
 
-def should_create_alert(
-    alert_type: str,
-    preferences: "AlertPreference",
-) -> bool:
-    """Check user preferences to determine if this alert type is enabled."""
-    TYPE_PREF_MAP = {
-        "ssl_expiring":     "ssl_expiring_enabled",
-        "ssl_invalid":      "ssl_invalid_enabled",
-        "ssl_expired":      "ssl_expiring_enabled",
-        "website_offline":  "website_offline_enabled",
-        "dns_problem":      "dns_problem_enabled",
-        "email_security":   "email_security_enabled",
-        "security_headers": "security_headers_enabled",
-        "performance":      "performance_enabled",
-        "score_drop":       "score_drop_enabled",
-        "scan_failed":      "scan_failed_enabled",
+def should_create_alert(alert_type: str, preferences: AlertPreference) -> bool:
+    """Check if alert type is enabled in preferences."""
+    mapping = {
+        'ssl_invalid': 'ssl_invalid_enabled',
+        'ssl_expiring': 'ssl_expiring_enabled',
+        'ssl_expired': 'ssl_expiring_enabled',
+        'website_offline': 'website_offline_enabled',
+        'dns_problem': 'dns_problem_enabled',
+        'email_security': 'email_security_enabled',
+        'security_headers': 'security_headers_enabled',
+        'performance': 'performance_enabled',
+        'score_drop': 'score_drop_enabled',
+        'scan_failed': 'scan_failed_enabled',
     }
-    pref_field = TYPE_PREF_MAP.get(alert_type)
-    if pref_field is None:
-        return True
-    return bool(getattr(preferences, pref_field, True))
+    attr = mapping.get(alert_type)
+    return getattr(preferences, attr, True) if attr else True

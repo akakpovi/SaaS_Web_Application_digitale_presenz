@@ -22,7 +22,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "unsafe-development-only-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG")
-ALLOWED_HOSTS = [host.strip() for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
+ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1', 'testserver', 'web'] # [host.strip() for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
 
 INSTALLED_APPS = [
@@ -46,11 +46,17 @@ INSTALLED_APPS = [
     "reports",
     "reviews",
     "subscriptions",
+    "seo",
+    "social",
+    "advanced_security",
+    "analytics",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "analytics.middleware.TrafficTrackingMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -103,6 +109,10 @@ CELERY_TASK_SOFT_TIME_LIMIT = 45
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE: dict[str, object] = {
+    "purge_guest_data_nightly": {
+        "task": "scans.tasks.purge_guest_data",
+        "schedule": crontab(hour=3, minute=0),
+    },
     "run-due-monitors": {
         "task": "monitoring.tasks.run_due_monitors",
         "schedule": crontab(minute="*/5"),
@@ -135,10 +145,18 @@ REST_FRAMEWORK = {
 }
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
 ]
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -180,3 +198,37 @@ LOGGING = {
         "celery": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
     },
 }
+
+# ---- Extended Celery Beat Schedule ----
+CELERY_BEAT_SCHEDULE.update({
+    "sync-reviews-hourly": {
+        "task": "reviews.tasks.sync_all_review_sources",
+        "schedule": 3600.0,
+    },
+    "track-mentions-daily": {
+        "task": "social.tasks.track_brand_mentions",
+        "schedule": 86400.0,
+        "args": [],
+    },
+})
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+# === PHASE2_RATE_LIMIT_I18N_PATCH ===
+# 🆕 Phase 2 (Sept 2026) — Rate-limiting public scan 5/h + support i18n emails
+REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_CLASSES", [
+    "rest_framework.throttling.AnonRateThrottle",
+    "rest_framework.throttling.UserRateThrottle",
+])
+REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["public_scan"] = "5/hour"
+REST_FRAMEWORK["NUM_PROXIES"] = 1  # Nginx reverse-proxy → vraie IP via X-Forwarded-For
+
+LANGUAGES = [
+    ("fr", "Français"),
+    ("en", "English"),
+    ("de", "Deutsch"),
+]
+USE_I18N = True
+# === END PHASE2_RATE_LIMIT_I18N_PATCH ===

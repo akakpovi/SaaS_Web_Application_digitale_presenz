@@ -1,13 +1,11 @@
 from rest_framework import serializers
-from reviews.models import ResponseDraft, Review, ReviewSource
-
+from reviews.models import ResponseDraft, Review, ReviewSource, ReviewSentiment, ReviewImportJob
 
 class ReviewSourceSerializer(serializers.ModelSerializer):
     class Meta:
         model  = ReviewSource
         fields = "__all__"
         read_only_fields = ["id", "user", "last_synced_at", "created_at", "updated_at"]
-
 
 class ReviewSerializer(serializers.ModelSerializer):
     source_provider = serializers.CharField(source="source.provider", read_only=True)
@@ -26,9 +24,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "external_id", "created_at", "updated_at",
         ]
 
-
 class ReviewCreateSerializer(serializers.ModelSerializer):
-    """For manually creating reviews."""
     class Meta:
         model  = Review
         fields = [
@@ -43,9 +39,23 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You do not own this review source.")
         return value
 
-
 class ResponseDraftSerializer(serializers.ModelSerializer):
     class Meta:
         model  = ResponseDraft
         fields = "__all__"
         read_only_fields = ["id", "user", "sent_at", "created_at", "updated_at"]
+
+class ReviewSentimentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewSentiment
+        fields = "__all__"
+
+class ReviewImportJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewImportJob
+        fields = [
+            "id", "source", "file", "file_type", "total_rows",
+            "imported_count", "failed_count", "errors", "status",
+            "created_at", "completed_at"
+        ]
+        read_only_fields = ["id", "total_rows", "imported_count", "failed_count", "errors", "status", "created_at", "completed_at"]

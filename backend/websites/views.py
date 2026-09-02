@@ -1,50 +1,45 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-
-from scans.models import Scan
-from scans.serializers import ScanSerializer
-
+from rest_framework.decorators import action
 from .models import Website
-from .serializers import WebsiteSerializer
+from .serializers import WebsiteSerializer, WebsiteDetailSerializer
+from scans.models import Scan, HealthStatus
+from scans.serializers import ScanSerializer
+from scans.tasks import run_authenticated_scan
 
 
-@extend_schema(tags=["websites"])
-class WebsiteViewSet(ModelViewSet[Website]):
-    serializer_class = WebsiteSerializer
+class WebsiteViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):  # type: ignore[no-untyped-def]
-        return Website.objects.filter(owner=self.request.user).order_by("domain")
+    def get_queryset(self):
+        return Website.objects.filter(owner=self.request.user).order_by("-created_at")
 
-    def perform_create(self, serializer: WebsiteSerializer) -> None:
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return WebsiteDetailSerializer
+        return WebsiteSerializer
+
+    def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-    @extend_schema(request=None, responses={202: ScanSerializer, 409: None}, tags=["scans"])
     @action(detail=True, methods=["post"], url_path="scan")
-    def scan(self, request: object, pk: str | None = None) -> Response:
+    def trigger_scan(self, request, pk=None):
         website = self.get_object()
-        
-        # Prevent concurrent scans for the same website
-        active_scans = Scan.objects.filter(
+        active_scan = Scan.objects.filter(
             website=website,
-            status__in=[
-                Scan.Status.PENDING,
-                Scan.Status.QUEUED,
-                Scan.Status.RUNNING,
-            ],
-        ).exists()
-        
-        if active_scans:
+            status__in=[Scan.Status.QUEUED, Scan.Status.RUNNING, Scan.Status.PENDING]
+        ).first()
+        if active_scan:
             return Response(
                 {"detail": "A scan is already in progress for this website."},
                 status=status.HTTP_409_CONFLICT
             )
-            
-        scan = Scan.objects.create(website=website, trigger=Scan.Trigger.MANUAL, status=Scan.Status.QUEUED)
-        
-        from scans.tasks import run_authenticated_scan
+
+        scan = Scan.objects.create(
+            website=website,
+            trigger=Scan.Trigger.MANUAL,
+            status=Scan.Status.QUEUED,
+            health_status=HealthStatus.NEUTRAL.value if hasattr(HealthStatus.NEUTRAL, "value") else str(HealthStatus.NEUTRAL),
+        )
         run_authenticated_scan.delay(scan.id)
-        
         return Response(ScanSerializer(scan).data, status=status.HTTP_202_ACCEPTED)

@@ -1,256 +1,436 @@
-import React, { useState, useEffect } from "react";
-import { Star, RefreshCw, Plus, X, ThumbsUp } from "lucide-react";
-import { Card, Button } from "../components/ui";
+import React, { useEffect, useState } from "react";
+import { 
+  Star, MessageSquare, Plus, RefreshCw, 
+  Upload, Search, Loader, Globe, X 
+} from "lucide-react";
 import api from "../services/api";
-import { websiteService, Website } from "../services/websiteService";
+import { Badge } from "../components/ui";
 
 interface ReviewSource {
   id: number;
-  website: number;
-  provider: string;
+  source_type: string;
   name: string;
-  enabled: boolean;
+  url: string;
+  is_active: boolean;
 }
 
-interface Review {
+interface ReviewItem {
   id: string;
-  source: number;
   author_name: string;
   rating: number;
   text: string;
-  sentiment: "positive" | "neutral" | "negative";
-  is_approved: boolean;
   review_date: string;
+  sentiment?: "positive" | "neutral" | "negative";
+  language?: string;
+  sentiment_confidence?: number;
+  is_approved: boolean;
 }
 
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map((s) => (
-        <Star key={s} size={14}
-          className={s <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-200"} />
-      ))}
-    </div>
-  );
+interface Website {
+  id: string;
+  domain: string;
+  name: string;
 }
 
-function sentimentColor(s: string) {
-  if (s === "positive") return "text-emerald-600 bg-emerald-50 border-emerald-200";
-  if (s === "negative") return "text-red-600 bg-red-50 border-red-200";
-  return "text-slate-600 bg-slate-50 border-slate-200";
-}
-
-function timeAgo(d: string) {
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 30) return days + "d ago";
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
-export default function Reviews() {
-  const [websites, setWebsites]   = useState<Website[]>([]);
-  const [sources, setSources]     = useState<ReviewSource[]>([]);
-  const [reviews, setReviews]     = useState<Review[]>([]);
+export const Reviews: React.FC = () => {
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
+  const [sources, setSources] = useState<ReviewSource[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]         = useState("");
-  const [showAdd, setShowAdd]     = useState(false);
-  const [selectedWebsite, setSelectedWebsite] = useState<number | null>(null);
-  const [newSourceName, setNewSourceName]     = useState("");
-  const [adding, setAdding]       = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryStatus, setDiscoveryStatus] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<number | null>(null);
+  
+  // Modales
+  const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [newSource, setNewSource] = useState({ source_type: "trustpilot", name: "", url: "" });
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
 
-  const load = async () => {
-    setIsLoading(true);
-    setError("");
+  useEffect(() => {
+    loadWebsites();
+  }, []);
+
+  useEffect(() => {
+    if (selectedWebsiteId) {
+      loadData(selectedWebsiteId);
+    }
+  }, [selectedWebsiteId]);
+
+  const loadWebsites = async () => {
     try {
-      const [sites, srcRes, revRes] = await Promise.all([
-        websiteService.list(),
-        api.get<{ results: ReviewSource[] }>("/reviews/sources/"),
-        api.get<{ results: Review[] }>("/reviews/"),
+      const res = await api.get("/websites/");
+      const list = res.data.results || res.data || [];
+      setWebsites(list);
+      if (list.length > 0) {
+        setSelectedWebsiteId(list[0].id);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const loadData = async (siteId: string) => {
+    setIsLoading(true);
+    try {
+      const [srcRes, revRes] = await Promise.all([
+        api.get(`/reviews/sources/?website_id=${siteId}`),
+        api.get(`/reviews/?website_id=${siteId}`),
       ]);
-      setWebsites(sites);
-      setSources(srcRes.data.results ?? []);
-      setReviews(revRes.data.results ?? []);
-      if (sites.length > 0 && !selectedWebsite) setSelectedWebsite(sites[0].id);
-    } catch {
-      setError("Failed to load reviews.");
+      setSources(srcRes.data.results || srcRes.data || []);
+      setReviews(revRes.data.results || revRes.data || []);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
-
-  const loadBySource = async (sourceId: number | null) => {
-    setActiveSource(sourceId);
+  const handleDiscover = async () => {
+    if (!selectedWebsiteId) return;
+    setDiscovering(true);
+    setDiscoveryStatus(null);
     try {
-      const params = sourceId ? "?source=" + sourceId : "";
-      const res = await api.get<{ results: Review[] }>("/reviews/" + params);
-      setReviews(res.data.results ?? []);
-    } catch { setError("Failed to filter reviews."); }
+      const res = await api.post("/reviews/discover/", { website_id: selectedWebsiteId });
+      const data = res.data;
+      if (data.total_new_reviews > 0) {
+        const currentDomain = websites.find(w => w.id === selectedWebsiteId)?.domain || 'votre site';
+      setDiscoveryStatus(`✨ ${data.total_new_reviews} avis réels trouvés et synchronisés depuis le web pour ${currentDomain} !`);
+      } else {
+        const currentDomain = websites.find(w => w.id === selectedWebsiteId)?.domain || 'votre site';
+      setDiscoveryStatus(`Scan terminé : aucun nouvel avis public trouvé pour ${currentDomain}.`);
+      }
+      await loadData(selectedWebsiteId);
+    } catch (err: any) {
+      setDiscoveryStatus("Erreur lors de la détection des avis.");
+    } finally {
+      setDiscovering(false);
+    }
   };
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedWebsite) return;
-    setAdding(true);
+    if (!selectedWebsiteId) return;
     try {
-      await api.post("/reviews/sources/", {
-        website: selectedWebsite,
-        provider: "manual",
-        name: newSourceName.trim() || "Manual reviews",
-        enabled: true,
-      });
-      setNewSourceName("");
+      await api.post("/reviews/sources/", { ...newSource, website: selectedWebsiteId });
       setShowAdd(false);
-      await load();
-    } catch { setError("Failed to add source."); }
-    finally { setAdding(false); }
+      setNewSource({ source_type: "trustpilot", name: "", url: "" });
+      loadData(selectedWebsiteId);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importFile || !selectedWebsiteId) return;
+    setImporting(true);
+    setImportResult(null);
+
+    const formData = new FormData();
+    formData.append("file", importFile);
+    formData.append("website_id", selectedWebsiteId);
+
     try {
-      await api.post("/reviews/" + id + "/approve/");
-      setReviews((prev) => prev.map((r) => r.id === id ? { ...r, is_approved: true } : r));
-    } catch { setError("Failed to approve."); }
+      const res = await api.post("/reviews/import/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult(`Succès : ${res.data.created_count} avis importés.`);
+      setTimeout(() => {
+        setShowImport(false);
+        setImportResult(null);
+        setImportFile(null);
+        loadData(selectedWebsiteId);
+      }, 1500);
+    } catch (err) {
+      setImportResult("Erreur lors de l'import. Vérifiez le format (CSV ou JSON).");
+    } finally {
+      setImporting(false);
+    }
   };
+
+  const filteredReviews = activeSource 
+    ? reviews.filter((r: any) => r.source === activeSource || r.source_id === activeSource)
+    : reviews;
 
   const avgRating = reviews.length > 0
-    ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) : "—";
-  const positive = reviews.filter((r) => r.sentiment === "positive").length;
-  const negative = reviews.filter((r) => r.sentiment === "negative").length;
+    ? (reviews.reduce((acc, r) => acc + Number(r.rating || 0), 0) / reviews.length).toFixed(1)
+    : "—";
+
+  const positiveCount = reviews.filter((r) => r.sentiment === "positive").length;
+  const negativeCount = reviews.filter((r) => r.sentiment === "negative").length;
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8 gap-4">
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reviews</h1>
-          <p className="text-slate-500 mt-1">Manage your customer reviews and responses.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Avis Clients & E-Réputation</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Détection automatique, synchronisation et analyse de sentiment des avis réels de votre site.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={load} disabled={isLoading} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-            <RefreshCw size={16} className={"text-slate-500 " + (isLoading ? "animate-spin" : "")} />
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {websites.length > 1 && (
+            <select
+              value={selectedWebsiteId || ""}
+              onChange={(e) => setSelectedWebsiteId(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {websites.map((w) => (
+                <option key={w.id} value={w.id}>{w.domain}</option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={handleDiscover}
+            disabled={discovering || !selectedWebsiteId}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+          >
+            {discovering ? <Loader size={16} className="animate-spin" /> : <Search size={16} />}
+            {discovering ? "Scan en cours..." : "Détecter les avis réels"}
           </button>
-          <Button onClick={() => setShowAdd(true)}><Plus size={16} /> Add source</Button>
+
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors shadow-sm"
+          >
+            <Upload size={16} /> Importer
+          </button>
+
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus size={16} /> Ajouter une source
+          </button>
         </div>
       </div>
 
-      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
+      {/* Discovery Alert Notification */}
+      {discoveryStatus && (
+        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl text-sm text-indigo-900 flex items-center gap-2">
+          <Globe size={18} className="text-indigo-600 flex-shrink-0" />
+          <span>{discoveryStatus}</span>
+        </div>
+      )}
 
-      {/* Modal ajout source */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAdd(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-900">Add review source</h2>
-              <button onClick={() => setShowAdd(false)} className="p-1.5 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+      {/* KPIs Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <p className="text-2xl font-bold text-slate-900">{reviews.length}</p>
+          <p className="text-xs text-slate-500 mt-1">Total avis</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <p className="text-2xl font-bold text-amber-500 flex items-center justify-center gap-1">
+            {avgRating} {avgRating !== "—" && <Star size={18} fill="currentColor" />}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Note moyenne</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <p className="text-2xl font-bold text-emerald-600">{positiveCount}</p>
+          <p className="text-xs text-slate-500 mt-1">Positifs 🟢</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <p className="text-2xl font-bold text-rose-600">{negativeCount}</p>
+          <p className="text-xs text-slate-500 mt-1">Négatifs 🔴</p>
+        </div>
+      </div>
+
+      {/* Sources Filter Pills */}
+      {sources.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setActiveSource(null)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+              activeSource === null
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            Tous les avis ({reviews.length})
+          </button>
+          {sources.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setActiveSource(s.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                activeSource === s.id
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              {s.name || s.source_type}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Reviews List or Empty State */}
+      {isLoading ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+          <Loader size={32} className="animate-spin text-indigo-600 mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Chargement des avis...</p>
+        </div>
+      ) : filteredReviews.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <MessageSquare size={26} />
+          </div>
+          <h3 className="font-semibold text-slate-900 mb-1">Aucun avis synchronisé</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Cliquez sur <strong>« Détecter les avis réels »</strong> en haut pour aspirer automatiquement vos avis publics Trustpilot et rich snippets.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredReviews.map((rev) => (
+            <div key={rev.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors shadow-sm">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <div>
+                  <h4 className="font-semibold text-slate-900 text-sm">{rev.author_name}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex text-amber-400">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={14}
+                          fill={i < Math.round(rev.rating) ? "currentColor" : "none"}
+                          className={i < Math.round(rev.rating) ? "text-amber-400" : "text-slate-200"}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      {rev.review_date ? new Date(rev.review_date).toLocaleDateString() : ""}
+                    </span>
+                  </div>
+                </div>
+
+                {rev.sentiment && (
+                  <Badge variant={rev.sentiment === "positive" ? "success" : rev.sentiment === "negative" ? "critical" : "neutral"}>
+                    {rev.sentiment === "positive" ? "Positif 🟢" : rev.sentiment === "negative" ? "Négatif 🔴" : "Neutre ⚪"}
+                  </Badge>
+                )}
+              </div>
+
+              <p className="text-sm text-slate-600 leading-relaxed mt-2">{rev.text}</p>
             </div>
-            <form onSubmit={handleAddSource} className="flex flex-col gap-4">
+          ))}
+        </div>
+      )}
+
+      {/* Modal Add Source */}
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">Ajouter une source d'avis</h2>
+              <button onClick={() => setShowAdd(false)} className="p-1 text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleAddSource} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1.5">Website</label>
-                <select value={selectedWebsite ?? ""} onChange={(e) => setSelectedWebsite(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  {websites.map((w) => <option key={w.id} value={w.id}>{w.domain}</option>)}
+                <label className="block text-xs font-medium text-slate-700 mb-1">Plateforme</label>
+                <select
+                  value={newSource.source_type}
+                  onChange={(e) => setNewSource({ ...newSource, source_type: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                >
+                  <option value="trustpilot">Trustpilot</option>
+                  <option value="google">Google Business</option>
+                  <option value="custom">Avis Site Direct</option>
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1.5">Source name</label>
-                <input type="text" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)}
-                  placeholder="e.g. Google Reviews"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-xs font-medium text-slate-700 mb-1">Nom de la source</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Trustpilot Officiel"
+                  value={newSource.name}
+                  onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  required
+                />
               </div>
-              <div className="flex gap-3 mt-2">
-                <button type="button" onClick={() => setShowAdd(false)}
-                  className="flex-1 py-2.5 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">Cancel</button>
-                <Button type="submit" className="flex-1" disabled={adding || !selectedWebsite}>
-                  {adding ? "Adding..." : "Add source"}
-                </Button>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">URL publique</label>
+                <input
+                  type="url"
+                  placeholder="https://www.trustpilot.com/review/votresite.com"
+                  value={newSource.url}
+                  onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdd(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium shadow-sm"
+                >
+                  Enregistrer
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <>
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            {[
-              { label: "Total reviews", value: String(reviews.length) },
-              { label: "Avg rating",    value: avgRating },
-              { label: "Positive",      value: String(positive) },
-              { label: "Negative",      value: String(negative) },
-            ].map((k) => (
-              <Card key={k.label} className="p-4 text-center">
-                <p className="text-2xl font-black text-slate-900">{k.value}</p>
-                <p className="text-xs text-slate-500 mt-1">{k.label}</p>
-              </Card>
-            ))}
-          </div>
-
-          {/* Filtres par source */}
-          {sources.length > 0 && (
-            <div className="flex items-center gap-2 mb-6 flex-wrap">
-              <button onClick={() => loadBySource(null)}
-                className={"px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors " + (activeSource === null ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>
-                All
-              </button>
-              {sources.map((s) => (
-                <button key={s.id} onClick={() => loadBySource(s.id)}
-                  className={"px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors " + (activeSource === s.id ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>
-                  {s.name}
+      {/* Modal Import */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">Importer des avis (CSV ou JSON)</h2>
+              <button onClick={() => setShowImport(false)} className="p-1 text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleImport} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Fichier de données</label>
+                <input
+                  type="file"
+                  accept=".csv, .json"
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm border p-2 rounded-lg"
+                  required
+                />
+              </div>
+              {importResult && (
+                <p className="text-xs font-medium text-indigo-600">{importResult}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImport(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 font-medium"
+                >
+                  Annuler
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Liste des avis */}
-          {reviews.length === 0 ? (
-            <Card className="p-12 text-center">
-              <Star size={40} className="text-slate-200 mx-auto mb-4" />
-              <p className="font-semibold text-slate-900 mb-1">No reviews yet</p>
-              <p className="text-sm text-slate-500 mb-4">Add a review source to start collecting reviews.</p>
-              <Button onClick={() => setShowAdd(true)}><Plus size={16} /> Add source</Button>
-            </Card>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {reviews.map((review) => (
-                <Card key={review.id} className="p-5">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                      <p className="font-semibold text-slate-900">{review.author_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <StarRating rating={review.rating} />
-                        <span className="text-xs text-slate-400">{timeAgo(review.review_date)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={"text-xs px-2 py-0.5 rounded-full border font-medium " + sentimentColor(review.sentiment)}>
-                        {review.sentiment}
-                      </span>
-                      {review.is_approved && (
-                        <span className="text-xs px-2 py-0.5 rounded-full border text-emerald-600 bg-emerald-50 border-emerald-200 font-medium">✓ Approved</span>
-                      )}
-                    </div>
-                  </div>
-                  {review.text && <p className="text-sm text-slate-600 mb-4 leading-relaxed">{review.text}</p>}
-                  {!review.is_approved && (
-                    <Button size="sm" onClick={() => handleApprove(review.id)}>
-                      <ThumbsUp size={13} /> Approve
-                    </Button>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
+                <button
+                  type="submit"
+                  disabled={importing}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium shadow-sm disabled:opacity-50"
+                >
+                  {importing ? "Importation..." : "Importer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
-}
+};
+
+export default Reviews;

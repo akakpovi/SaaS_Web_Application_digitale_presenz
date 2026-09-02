@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, Button, ScoreRing } from "../components/ui";
 import { Download, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import api from "../services/api";
+import { useTranslation } from "react-i18next";
 import { websiteService, Website } from "../services/websiteService";
 
 interface Report {
@@ -29,6 +30,7 @@ function formatMonth(dateStr: string) {
 }
 
 export default function Reports() {
+  const { t } = useTranslation();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedSite, setSelectedSite] = useState<number | null>(null);
   const [reports, setReports] = useState<Report[]>([]);

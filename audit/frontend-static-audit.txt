@@ -1,0 +1,350 @@
+PRESENCE — AUDIT STATIQUE DU FRONTEND
+Frontend : /home/elom/Schreibtisch/SaaS_Web_Application_digitale_presenz/frontend
+Fichiers TS/JS analysés : 29
+
+==================== DEPENDANCES ====================
+@tailwindcss/vite: ^4.0.0
+@types/react: ^19.0.0
+@types/react-dom: ^19.0.0
+@vitejs/plugin-react: ^6.0.0
+axios: ^1.19.0
+lucide-react: ^1.33.0
+react: ^19.0.0
+react-dom: ^19.0.0
+react-helmet-async: ^3.0.0
+react-router-dom: ^7.18.2
+vite: ^8.0.0
+
+Scripts package.json :
+  dev: vite --host 0.0.0.0
+  build: vite build
+  preview: vite preview
+  format: oxfmt
+
+==================== ROUTES REACT ====================
+src/App.tsx:51: <Routes>
+src/App.tsx:52: <Route path="dashboard" element={<Dashboard />} />
+src/App.tsx:53: <Route path="websites" element={<Websites />} />
+src/App.tsx:54: <Route path="websites/:id" element={<WebsiteDetails />} />
+src/App.tsx:55: <Route path="monitoring" element={<Monitoring />} />
+src/App.tsx:56: <Route path="alerts" element={<Alerts />} />
+src/App.tsx:57: <Route path="reports" element={<Reports />} />
+src/App.tsx:58: <Route path="reviews" element={<Reviews />} />
+src/App.tsx:59: <Route path="settings" element={<Settings />} />
+src/App.tsx:60: <Route path="*" element={<Navigate to="dashboard" replace />} />
+src/App.tsx:70: <Routes>
+src/App.tsx:71: <Route path="/" element={<Landing />} />
+src/App.tsx:72: <Route path="/pricing" element={<Pricing />} />
+src/App.tsx:73: <Route path="/faq" element={<FAQPage />} />
+src/App.tsx:74: <Route path="/blog" element={<BlogPage />} />
+src/App.tsx:75: <Route path="/blog/:slug" element={<BlogPage />} />
+src/App.tsx:76: <Route path="/features/website-monitoring" element={<FeaturePage feature="website-monitoring" />} />
+src/App.tsx:77: <Route path="/features/ssl-monitoring" element={<FeaturePage feature="ssl-monitoring" />} />
+src/App.tsx:78: <Route path="/features/dns-monitoring" element={<FeaturePage feature="dns-monitoring" />} />
+src/App.tsx:79: <Route path="/features/email-security" element={<FeaturePage feature="email-security" />} />
+src/App.tsx:80: <Route path="/features/uptime-monitoring" element={<FeaturePage feature="uptime-monitoring" />} />
+src/App.tsx:81: <Route path="/features/website-performance" element={<FeaturePage feature="website-performance" />} />
+src/App.tsx:82: <Route path="/features/security-headers" element={<FeaturePage feature="security-headers" />} />
+src/App.tsx:83: <Route path="/features/review-monitoring" element={<FeaturePage feature="review-monitoring" />} />
+src/App.tsx:84: <Route path="/tools/website-checker" element={<ToolPage tool="website-checker" />} />
+src/App.tsx:85: <Route path="/tools/ssl-checker" element={<ToolPage tool="ssl-checker" />} />
+src/App.tsx:86: <Route path="/tools/dns-checker" element={<ToolPage tool="dns-checker" />} />
+src/App.tsx:87: <Route path="/tools/email-security-checker" element={<ToolPage tool="email-security-checker" />} />
+src/App.tsx:88: <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+src/App.tsx:89: <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+src/App.tsx:90: <Route path="/forgot-password" element={<ForgotPassword />} />
+src/App.tsx:91: <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+src/App.tsx:92: <Route path="/app/*" element={<AppLayout />} />
+src/App.tsx:93: <Route path="*" element={<Navigate to="/" replace />} />
+
+==================== PAGES ET CONNEXIONS ====================
+
+src/pages/Alerts.tsx
+  Imports data/auth : ../services/alertService
+  Appels services   : alertService.acknowledge, alertService.list, alertService.resolve
+  Liens statiques   : /app/websites/${alert.website_id}
+
+src/pages/Auth.tsx
+  Imports data/auth : ../context/AuthContext
+  Appels services   : AUCUN
+  Liens statiques   : #, /, /forgot-password, /login, /register
+
+src/pages/BlogPage.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : /, /#features, /blog/${article.slug}, /faq, /pricing, /register, /tools/website-checker
+
+src/pages/Dashboard.tsx
+  Imports data/auth : ../context/AuthContext, ../hooks/useDashboard
+  Appels services   : AUCUN
+  Liens statiques   : /app/alerts, /app/websites, /app/websites/${site.id}
+
+src/pages/FAQPage.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : /, /#features, /about, /pricing, /register, /tools/website-checker
+
+src/pages/FeaturePage.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : /, /#features, /about, /faq, /login, /pricing, /register, /tools/website-checker
+
+src/pages/Landing.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : #, #faq, #features, #how, #pricing, /, /login, /onboarding, /register
+
+src/pages/Monitoring.tsx
+  Imports data/auth : ../services/websiteService
+  Appels services   : scanService.list, websiteService.list
+  Liens statiques   : AUCUN
+
+src/pages/Onboarding.tsx
+  Imports data/auth : ../services/websiteService
+  Appels services   : scanService.getResults, scanService.list, websiteService.create, websiteService.scan
+  Liens statiques   : AUCUN
+
+src/pages/Pricing.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : /
+
+src/pages/Reports.tsx
+  Imports data/auth : ../services/api, ../services/websiteService
+  Appels services   : websiteService.list
+  Liens statiques   : AUCUN
+
+src/pages/Reviews.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : AUCUN
+
+src/pages/Settings.tsx
+  Imports data/auth : ../context/AuthContext, ../services/api
+  Appels services   : AUCUN
+  Liens statiques   : AUCUN
+
+src/pages/ToolPage.tsx
+  Imports data/auth : AUCUN
+  Appels services   : AUCUN
+  Liens statiques   : /, /#features, /faq, /login, /pricing, /register, /tools/website-checker
+
+src/pages/WebsiteDetails.tsx
+  Imports data/auth : ../services/websiteService
+  Appels services   : scanService.getResults, scanService.list, websiteService.get, websiteService.scan
+  Liens statiques   : /app/websites
+
+src/pages/Websites.tsx
+  Imports data/auth : ../services/alertService, ../services/websiteService
+  Appels services   : alertService.list, scanService.getResults, scanService.list, websiteService.create, websiteService.delete, websiteService.list, websiteService.scan
+  Liens statiques   : /app/websites/${site.id}
+
+==================== APPELS RESEAU ====================
+src/pages/Auth.tsx:238: await api.post("/auth/password/reset/", { email });
+src/pages/Reports.tsx:53: const { data } = await api.get(`/reports/?website_id=${siteId}`);
+src/pages/Reports.tsx:65: await api.post('/reports/generate/', {
+src/pages/Settings.tsx:35: await api.patch('/auth/me/', { full_name: fullName });
+src/pages/Settings.tsx:220: api.get('/subscriptions/me/'),
+src/pages/Settings.tsx:221: api.get('/subscriptions/plans/'),
+src/services/alertService.ts:22: const { data } = await api.get<PaginatedResponse<Alert>>(`/alerts/${query ? '?' + query : ''}`);
+src/services/alertService.ts:27: const { data } = await api.post<Alert>(`/alerts/${id}/acknowledge/`);
+src/services/alertService.ts:32: const { data } = await api.post<Alert>(`/alerts/${id}/resolve/`);
+src/services/api.ts:1: import axios from 'axios';
+src/services/api.ts:5: const api = axios.create({
+src/services/api.ts:33: const response = await axios.post(`${BASE_URL}/auth/refresh/`, {
+src/services/authService.ts:26: const { data } = await api.post<RegisterResponse>('/auth/register/', {
+src/services/authService.ts:36: const { data } = await api.post<AuthTokens>('/auth/login/', { email, password });
+src/services/authService.ts:47: await api.post('/auth/logout/', { refresh });
+src/services/authService.ts:54: const { data } = await api.get<User>('/auth/me/');
+src/services/websiteService.ts:44: const { data } = await api.get<PaginatedResponse<Website>>('/websites/');
+src/services/websiteService.ts:49: const { data } = await api.get<Website>(`/websites/${id}/`);
+src/services/websiteService.ts:54: const { data } = await api.post<Website>('/websites/', {
+src/services/websiteService.ts:62: await api.delete(`/websites/${id}/`);
+src/services/websiteService.ts:66: const { data } = await api.post<Scan>(`/websites/${id}/scan/`);
+src/services/websiteService.ts:75: const { data } = await api.get<PaginatedResponse<Scan>>(`/scans/${params}`);
+src/services/websiteService.ts:82: const { data } = await api.get<Scan>(`/scans/${id}/`);
+src/services/websiteService.ts:87: const { data } = await api.get<any>(`/scans/${id}/results/`);
+
+==================== AUTHENTIFICATION / TOKENS / LOGOUT ====================
+src/context/AuthContext.tsx:10: logout: () => Promise<void>;
+src/context/AuthContext.tsx:26: localStorage.clear();
+src/context/AuthContext.tsx:45: const logout = async () => {
+src/context/AuthContext.tsx:46: await authService.logout();
+src/context/AuthContext.tsx:57: logout,
+src/pages/Alerts.tsx:5: import { RefreshCw } from "lucide-react";
+src/pages/Alerts.tsx:79: <RefreshCw size={16} className={`text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
+src/pages/Dashboard.tsx:3: import { Globe, TrendingUp, Clock, AlertTriangle, ArrowRight, RefreshCw } from "lucide-react";
+src/pages/Dashboard.tsx:84: <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+src/pages/Dashboard.tsx:85: Refresh
+src/pages/Monitoring.tsx:5: import { RefreshCw } from "lucide-react";
+src/pages/Reports.tsx:4: import { Download, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
+src/pages/Reports.tsx:119: <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
+src/pages/Reviews.tsx:3: import { Star, RefreshCw } from "lucide-react";
+src/pages/Reviews.tsx:68: <RefreshCw size={12} className={regenerating ? "animate-spin" : ""} />
+src/pages/Settings.tsx:9: const { user, logout } = useAuth();
+src/pages/Settings.tsx:119: onClick={logout}>
+src/pages/Settings.tsx:120: Sign out
+src/pages/WebsiteDetails.tsx:3: import { ArrowLeft, RefreshCw, Settings, ChevronDown } from "lucide-react";
+src/pages/WebsiteDetails.tsx:177: <RefreshCw size={14} className={isScanning ? "animate-spin" : ""} />
+src/pages/Websites.tsx:3: import { Globe, Plus, X, RefreshCw, Trash2 } from "lucide-react";
+src/pages/Websites.tsx:286: <RefreshCw size={14} className={`text-slate-400 ${scanningId === site.id ? 'animate-spin' : ''}`} />
+src/services/api.ts:12: const token = localStorage.getItem('access_token');
+src/services/api.ts:30: const refreshToken = localStorage.getItem('refresh_token');
+src/services/api.ts:31: if (!refreshToken) throw new Error('No refresh token');
+src/services/api.ts:33: const response = await axios.post(`${BASE_URL}/auth/refresh/`, {
+src/services/api.ts:34: refresh: refreshToken,
+src/services/api.ts:38: localStorage.setItem('access_token', access);
+src/services/api.ts:43: localStorage.removeItem('access_token');
+src/services/api.ts:44: localStorage.removeItem('refresh_token');
+src/services/api.ts:45: localStorage.removeItem('user');
+src/services/authService.ts:13: refresh: string;
+src/services/authService.ts:34: // Login : retourne access + refresh + user
+src/services/authService.ts:37: localStorage.setItem('access_token', data.access);
+src/services/authService.ts:38: localStorage.setItem('refresh_token', data.refresh);
+src/services/authService.ts:39: localStorage.setItem('user', JSON.stringify(data.user));
+src/services/authService.ts:43: async logout(): Promise<void> {
+src/services/authService.ts:44: const refresh = localStorage.getItem('refresh_token');
+src/services/authService.ts:45: if (refresh) {
+src/services/authService.ts:47: await api.post('/auth/logout/', { refresh });
+src/services/authService.ts:50: localStorage.clear();
+src/services/authService.ts:55: localStorage.setItem('user', JSON.stringify(data));
+src/services/authService.ts:60: const raw = localStorage.getItem('user');
+src/services/authService.ts:65: return !!localStorage.getItem('access_token');
+
+==================== LANGUE / I18N ====================
+src/components/AppShell.tsx:69: ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+src/components/AppShell.tsx:70: lg:translate-x-0 lg:static lg:z-auto
+src/components/AppShell.tsx:171: <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+src/components/ui.tsx:318: className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-1"}`}
+src/pages/Auth.tsx:100: className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+src/pages/BlogPage.tsx:10: description: "A plain-language guide to website monitoring — what it is, why it matters, and how it works.",
+src/pages/BlogPage.tsx:62: description="Plain-language guides on website monitoring, SSL, DNS, email security, uptime and digital presence for small businesses."
+src/pages/BlogPage.tsx:89: <p className="text-lg text-slate-500">Plain-language articles on website monitoring, SSL, DNS, email security, and everything else that affects your digital presence.</p>
+src/pages/BlogPage.tsx:107: {new Date(article.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+src/pages/FAQPage.tsx:12: { q: "Does Presence work for small businesses?", a: "Absolutely. Presence is designed specifically for small business owners who don't have a technical team. Everything is explained in plain language, and you don't need any technical knowledge to use it." },
+src/pages/FeaturePage.tsx:120: { q: "What is DNS?", a: "DNS (Domain Name System) translates your domain name (like example.com) into the IP address of your server. It also controls where your email is delivered and other important settings." },
+src/pages/FeaturePage.tsx:142: solution: "Presence checks your SPF, DKIM and DMARC configuration and explains the results in plain language. No technical knowledge required — we tell you exactly what's working and what needs improvement.",
+src/pages/FeaturePage.tsx:145: "Plain-language explanations — no technical jargon",
+src/pages/FeaturePage.tsx:153: { step: "3. Clear results", desc: "You receive a plain-language summary: what's working, what needs attention, and what to do next." },
+src/pages/FeaturePage.tsx:220: "Clear, plain-language recommendations",
+src/pages/FeaturePage.tsx:248: intro: "Security headers are simple configuration settings that protect your visitors from common web attacks. Many small business websites are missing these basic protections. Presence checks your security headers and tells you exactly what to improve — in plain language.",
+src/pages/FeaturePage.tsx:250: solution: "Presence checks your website's security headers and explains each finding in plain language. We don't just report the technical details — we tell you what the risk is and what to do about it.",
+src/pages/FeaturePage.tsx:253: "Plain-language explanations of each finding",
+src/pages/FeaturePage.tsx:261: { step: "3. Plain-language results", desc: "You receive a clear summary of what's configured, what's missing, and what to add." },
+src/pages/FeaturePage.tsx:266: { q: "Do I need to be technical to fix security header issues?", a: "Not with Presence. We explain what needs to be done in plain language. Your hosting provider or website developer can implement the changes with our recommendations." },
+src/pages/Landing.tsx:42: { q: "Do I need technical knowledge?", a: "Not at all. Presence is designed specifically for non-technical business owners. Everything is explained in plain language, and technical details are always optional." },
+src/pages/Landing.tsx:279: { step: "02", title: "Get your health score", desc: "See what's healthy and what needs attention — in plain language.", icon: CheckCircle },
+src/pages/Landing.tsx:450: <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+src/pages/Monitoring.tsx:8: return new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+src/pages/Monitoring.tsx:12: return new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+src/pages/Pricing.tsx:127: <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+src/pages/Reports.tsx:28: return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+src/pages/Reports.tsx:86: name: new Date(r.period_start).toLocaleDateString('en-US', { month: 'short' }),
+src/pages/Settings.tsx:6: const sections = ["Account", "Business", "Websites", "Notifications", "PWA", "Security", "Subscription", "Language"];
+src/pages/Settings.tsx:178: {section === "Language" && (
+src/pages/Settings.tsx:180: <h2 className="font-bold text-slate-900 mb-6">Language & region</h2>
+src/pages/Settings.tsx:183: <p className="text-sm font-medium text-slate-700 mb-2">Display language</p>
+src/pages/Settings.tsx:198: {!["Account", "Notifications", "Subscription", "Language"].includes(section) && (
+src/pages/ToolPage.tsx:51: howItWorks: ["Enter your domain", "We run automated checks across 6 health dimensions", "See your results instantly with plain-language explanations", "Get specific recommendations to improve your digital health"],
+src/pages/ToolPage.tsx:105: howItWorks: ["Enter your domain", "We query public DNS servers for your records", "See all your DNS records in plain language", "Identify issues or unexpected configurations"],
+src/pages/ToolPage.tsx:112: intro: "Check your SPF, DKIM and DMARC email security configuration in seconds. Protect your business email from spoofing and impersonation — explained in plain language.",
+src/pages/ToolPage.tsx:132: howItWorks: ["Enter your domain", "We look up your email security DNS records", "Results show what's configured and what's missing", "Plain-language recommendations for each finding"],
+src/pages/WebsiteDetails.tsx:172: {scan?.completed_at ? `Last checked: ${new Date(scan.completed_at).toLocaleString()}` : 'Not yet scanned'}
+
+==================== PWA / MANIFEST / SERVICE WORKER ====================
+index.html:44: <link rel="manifest" href="/manifest.json" />
+index.html:45: <meta name="apple-mobile-web-app-capable" content="yes" />
+index.html:46: <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+index.html:47: <meta name="apple-mobile-web-app-title" content="Presence" />
+
+==================== TODO / MOCK / PLACEHOLDERS ====================
+src/components/AppShell.tsx:174: placeholder="Search..."
+src/components/AppShell.tsx:175: className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+src/components/ui.tsx:124: placeholder,
+src/components/ui.tsx:132: placeholder?: string;
+src/components/ui.tsx:150: placeholder={placeholder}
+src/components/ui.tsx:153: className={`flex-1 px-3 py-2 text-sm border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${prefix ? "rounded-r-lg" : "rounded-lg"}`}
+src/pages/Auth.tsx:83: placeholder="you@example.com"
+src/pages/Auth.tsx:92: placeholder="••••••••"
+src/pages/Auth.tsx:130: Continue with Google (coming soon)
+src/pages/Auth.tsx:194: <Input label="Full name" placeholder="Maria Schmidt" value={name} onChange={setName} />
+src/pages/Auth.tsx:195: <Input label="Email address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
+src/pages/Auth.tsx:196: <Input label="Password" type="password" placeholder="Min. 12 characters" value={password} onChange={setPassword} />
+src/pages/Auth.tsx:272: placeholder="you@example.com"
+src/pages/FAQPage.tsx:100: placeholder="Search questions..."
+src/pages/Landing.tsx:234: placeholder="yourwebsite.com"
+src/pages/Landing.tsx:237: className="flex-1 px-3 py-3 text-sm bg-transparent placeholder:text-slate-400 focus:outline-none"
+src/pages/Landing.tsx:401: {/* Phone mockup */}
+src/pages/Onboarding.tsx:141: <Input label="Business name" placeholder="Schmidt's Bakery" value={business.name} onChange={(v) => setBusiness({ ...business, name: v })} />
+src/pages/Onboarding.tsx:170: <Input label="Your website domain" placeholder="example.com" value={domain} onChange={setDomain}
+src/pages/ToolPage.tsx:13: inputPlaceholder: string;
+src/pages/ToolPage.tsx:31: inputPlaceholder: "example.com",
+src/pages/ToolPage.tsx:59: inputPlaceholder: "example.com",
+src/pages/ToolPage.tsx:86: inputPlaceholder: "example.com",
+src/pages/ToolPage.tsx:113: inputPlaceholder: "example.com",
+src/pages/ToolPage.tsx:218: placeholder={config.inputPlaceholder}
+src/pages/ToolPage.tsx:222: className="flex-1 px-3 py-3 text-sm bg-transparent focus:outline-none placeholder:text-slate-400"
+src/pages/Websites.tsx:103: placeholder="example.com"
+
+==================== CONTRATS WEBSITE / WEBSITE_ID ====================
+src/hooks/useDashboard.ts:145: const siteAlerts = alerts.filter(a => a.website_id === site.id);
+src/pages/Alerts.tsx:119: <Link to={`/app/websites/${alert.website_id}`}>
+src/pages/Reports.tsx:53: const { data } = await api.get(`/reports/?website_id=${siteId}`);
+src/pages/Reports.tsx:66: website_id: selectedSite,
+src/pages/Websites.tsx:161: const siteAlerts = alerts.filter(a => a.website === site.id);
+src/services/alertService.ts:6: website_id: number;
+src/services/websiteService.ts:73: async list(websiteId?: number): Promise<Scan[]> {
+src/services/websiteService.ts:74: const params = websiteId ? `?website=${websiteId}` : '';
+
+==================== CONTROLES POTENTIELLEMENT INERTES ====================
+src/components/AppShell.tsx:137: <button className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all ${collapsed ? >
+src/components/AppShell.tsx:181: <button className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 transition-colors">
+src/pages/Alerts.tsx:120: <Button size="sm">
+src/pages/Auth.tsx:119: <button type="button" disabled className="w-full flex items-center justify-center gap-3 border border-slate-300 rounded-lg py-2.5 text-sm font-medium text-slate-700 opa>
+src/pages/BlogPage.tsx:81: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+src/pages/BlogPage.tsx:122: <button className="px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition-colors">
+src/pages/Dashboard.tsx:108: <button className="flex items-center gap-1.5 text-sm font-medium text-amber-700 hover:text-amber-800">
+src/pages/Dashboard.tsx:122: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+src/pages/Dashboard.tsx:213: <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-indigo-400 >
+src/pages/FAQPage.tsx:88: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+src/pages/FAQPage.tsx:158: <button className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 whitespace-nowrap>
+src/pages/FeaturePage.tsx:357: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+src/pages/FeaturePage.tsx:380: <button className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2">
+src/pages/FeaturePage.tsx:385: <button className="px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors">
+src/pages/FeaturePage.tsx:508: <button className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+src/pages/FeaturePage.tsx:513: <button className="px-6 py-3 border border-slate-700 text-slate-300 font-semibold rounded-xl hover:bg-slate-800 transition-colors">
+src/pages/Landing.tsx:84: <Button size="sm">
+src/pages/Landing.tsx:100: <Button variant="outline" className="w-full">
+src/pages/Landing.tsx:101: <Button className="w-full">
+src/pages/Landing.tsx:241: <Button size="lg" className="sm:w-auto w-full whitespace-nowrap">
+src/pages/Landing.tsx:394: <Button >
+src/pages/Landing.tsx:395: <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800">
+src/pages/Landing.tsx:471: <button className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${plan.highlight ? "bg-white text-indigo-700 hover:bg-indigo-50" : "bg-indigo-600 text>
+src/pages/Landing.tsx:517: <Button size="lg">
+src/pages/Landing.tsx:518: <Button variant="outline" size="lg">
+src/pages/Pricing.tsx:162: <button className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${ plan.highlight ? "bg-white text-indigo-700 hover:bg-indigo-50" : "bg-indigo-600 text->
+src/pages/Reviews.tsx:71: <Button size="sm" variant="outline">
+src/pages/Settings.tsx:193: <Button className="self-start">
+src/pages/ToolPage.tsx:192: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+src/pages/ToolPage.tsx:277: <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+src/pages/ToolPage.tsx:278: <button className="px-4 py-2 border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-100 transition-colors">
+src/pages/ToolPage.tsx:351: <button className="px-4 py-2.5 border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-100 transition-colors">
+src/pages/ToolPage.tsx:355: <button className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
+src/pages/Auth.tsx:207: <a href="#" className="text-indigo-600">Terms of Service</a>{" "}
+src/pages/Auth.tsx:209: <a href="#" className="text-indigo-600">Privacy Policy</a>
+src/pages/Landing.tsx:547: {col.links.map(l => <li key={l}><a href="#" className="text-sm text-slate-500 hover:text-slate-900">{l}</a></li>)}
+
+Attention : cette section est heuristique et peut contenir de faux positifs.
+
+==================== ASSETS PWA ====================
+
+Manifest : public/manifest.json
+  name       : Presence
+  short_name : Presence
+  start_url  : /app/dashboard
+  display    : standalone
+  icons      : 2
+  - /icons/icon-192.png declared=192x192 type=image/png => ABSENT 
+  - /icons/icon-512.png declared=512x512 type=image/png => ABSENT 
+
+==================== FIN DU RAPPORT ====================
