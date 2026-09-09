@@ -1,0 +1,29 @@
+{
+  "title": "Vos sites web",
+  "add": "Ajouter un site",
+  "back": "Retour aux sites",
+  "score": "Score réel",
+  "checks": "Vérifications",
+  "checks_title": "Diagnostic complet",
+  "health_tab": "Santé & Remédiation",
+  "reports_tab": "Rapports PDF",
+  "security_tab": "Sécurité",
+  "seo_tab": "Audit SEO",
+  "scan_now": "Relancer un scan",
+  "scanning": "Scan en cours...",
+  "no_scans": "Aucun scan enregistré pour ce site.",
+  "first_scan": "Lancer le premier scan",
+  "never_scanned": "Jamais scanné",
+  "last_scan": "Dernier scan",
+  "details": "Voir le diagnostic",
+  "security_title": "Sécurité Active",
+  "security_desc": "Dernière vérification pour {domain} exécutée avec succès.",
+  "seo_title": "Audit SEO Technique",
+  "seo_desc": "Indexation et balises du domaine {domain}.",
+  "errors": {
+    "unauthorized": "Session expirée. Veuillez vous connecter.",
+    "not_found": "Site introuvable dans votre compte.",
+    "load_failed": "Erreur lors du chargement des données.",
+    "scan_failed": "Erreur lors du lancement du scan."
+  }
+}

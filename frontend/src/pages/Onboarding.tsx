@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, Loader } from "lucide-react";
 import { Button, Input, ScoreRing } from "../components/ui";

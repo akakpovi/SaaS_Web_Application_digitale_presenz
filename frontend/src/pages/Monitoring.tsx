@@ -1,555 +1,303 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
-import { Card } from "../components/ui";
-import { websiteService, scanService, Website, Scan } from "../services/websiteService";
-import { RefreshCw, Settings, Check, Loader2, Bell, BellOff } from "lucide-react";
-import api from "../services/api";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useParams, Link } from 'react-router-dom';
+import { Activity, Clock, AlertCircle, CheckCircle, RefreshCw, Plus, Play, Power, Globe } from 'lucide-react';
+import { api } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+interface Website {
+  id: string;
+  domain: string;
+  display_name: string;
+  health_score: number;
+  health_status: 'healthy' | 'warning' | 'critical' | 'neutral';
+  is_active: boolean;
+  last_scan_at: string | null;
+}
 
 interface MonitoringConfig {
-  id: number;
-  website_id: number;
-  website_domain: string;
+  id: string;
+  website: string;
   enabled: boolean;
-  interval: string;
+  interval: '5m' | '15m' | '30m' | '1h' | '6h' | '24h';
   last_scan_at: string | null;
   next_scan_at: string | null;
   consecutive_failures: number;
   escalation_level: number;
 }
 
-const INTERVALS = [
-  { value: "5m",  label: "Every 5 minutes",  plan: "Business" },
-  { value: "15m", label: "Every 15 minutes", plan: "Business" },
-  { value: "30m", label: "Every 30 minutes", plan: "Pro" },
-  { value: "1h",  label: "Every hour",       plan: "Pro" },
-  { value: "6h",  label: "Every 6 hours",    plan: "Free" },
-  { value: "24h", label: "Every 24 hours",   plan: "Free" },
-];
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-function formatDateTime(d: string) {
-  return new Date(d).toLocaleString([], {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-function timeAgo(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-function timeUntil(d: string) {
-  const diff = new Date(d).getTime() - Date.now();
-  if (diff <= 0) return "Soon";
-  const m = Math.floor(diff / 60000);
-  if (m < 60) return `in ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `in ${h}h`;
-  return `in ${Math.floor(h / 24)}d`;
+interface MergedSite {
+  website: Website;
+  config: MonitoringConfig | null;
 }
 
-// ─── Composant config panel ───────────────────────────────────────────────────
-
-function MonitoringConfigPanel({
-
-  config,
-  onSaved,
-}: {
-  config: MonitoringConfig;
-  onSaved: (updated: MonitoringConfig) => void;
-}) {
+export const Monitoring: React.FC = () => {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(config.enabled);
-  const [interval, setInterval] = useState(config.interval);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
-  // Sync si le site change
-  useEffect(() => {
-    setEnabled(config.enabled);
-    setInterval(config.interval);
-    setSaved(false);
-    setError("");
-  }, [config.id]);
-
-  const isDirty = enabled !== config.enabled || interval !== config.interval;
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      const { data } = await api.patch<MonitoringConfig>(
-        `/monitoring/websites/${config.website_id}/`,
-        { enabled, interval },
-      );
-      onSaved(data);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail
-        ?? err?.response?.data?.interval?.[0]
-        ?? "Failed to save configuration.";
-      setError(detail);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleTriggerScan = async () => {
-    try {
-      await api.post(`/monitoring/websites/${config.website_id}/scan/`);
-    } catch {
-      // Ignore — le scan sera lancé en arrière-plan
-    }
-  };
-
-  return (
-    <Card className="p-5 mb-6">
-      <div className="flex items-center gap-2 mb-5">
-        <Settings size={16} className="text-slate-400" />
-        <h2 className="font-bold text-slate-900">Monitoring configuration</h2>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Enable / Disable */}
-        <div>
-          <p className="text-sm font-medium text-slate-700 mb-3">Monitoring status</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setEnabled(!enabled)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                enabled ? "bg-indigo-600" : "bg-slate-200"
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
-                  enabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-            <span className={`text-sm font-medium ${enabled ? "text-emerald-600" : "text-slate-400"}`}>
-              {enabled ? (
-                <span className="flex items-center gap-1"><Bell size={14} /> Active</span>
-              ) : (
-                <span className="flex items-center gap-1"><BellOff size={14} /> Paused</span>
-              )}
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            {enabled
-              ? t("monitoring.auto_running")
-              : t("monitoring.paused_note")}
-          </p>
-        </div>
-
-        {/* Interval */}
-        <div>
-          <p className="text-sm font-medium text-slate-700 mb-3">Scan interval</p>
-          <select
-            value={interval}
-            onChange={(e) => setInterval(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            {INTERVALS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label} ({opt.plan})
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-400 mt-2">
-            Available intervals depend on your plan.
-          </p>
-        </div>
-      </div>
-
-      {/* Stats ligne */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-100">
-        {[
-          {
-            label: t("monitoring.last_scan"),
-            value: config.last_scan_at ? timeAgo(config.last_scan_at) : "Never",
-          },
-          {
-            label: t("monitoring.next_scan"),
-            value: config.next_scan_at ? timeUntil(config.next_scan_at) : "—",
-          },
-          {
-            label: t("monitoring.failures"),
-            value: String(config.consecutive_failures),
-          },
-          {
-            label: t("monitoring.escalation"),
-            value: config.escalation_level === 0
-              ? "✅ Normal"
-              : config.escalation_level === 1
-              ? "🟠 Warning"
-              : "🔴 Critical",
-          },
-        ].map((s) => (
-          <div key={s.label} className="bg-slate-50 rounded-xl p-3">
-            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-            <p className="text-sm font-semibold text-slate-800">{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-3 mt-5 flex-wrap">
-        <button
-          onClick={handleSave}
-          disabled={saving || !isDirty}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            isDirty
-              ? "bg-indigo-600 text-white hover:bg-indigo-700"
-              : "bg-slate-100 text-slate-400 cursor-not-allowed"
-          }`}
-        >
-          {saving ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : saved ? (
-            <Check size={14} />
-          ) : null}
-          {saving ? t("settings.saving") : saved ? t("settings.saved") : t("monitoring.save")}
-        </button>
-
-        <button
-          onClick={handleTriggerScan}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-        >
-          <RefreshCw size={14} />
-          Trigger scan now
-        </button>
-
-        {error && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-// ─── Page principale ──────────────────────────────────────────────────────────
-
-export default function Monitoring() {
-  const { t } = useTranslation();
-  const [websites, setWebsites] = useState<Website[]>([]);
-  const [selectedSite, setSelectedSite] = useState<number | null>(null);
-  const [scans, setScans] = useState<Scan[]>([]);
-  const [config, setConfig] = useState<MonitoringConfig | null>(null);
+  const { lang = 'en' } = useParams<{ lang: string }>();
+  const [mergedSites, setMergedSites] = useState<MergedSite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState<Record<string, boolean>>({});
+  const [isToggling, setIsToggling] = useState<Record<string, boolean>>({});
 
-  // Chargement initial
-  useEffect(() => {
-    websiteService.list().then((sites) => {
-      setWebsites(sites);
-      if (sites.length > 0) setSelectedSite(sites[0].id);
-      setIsLoading(false);
-    }).catch(() => setIsLoading(false));
-  }, []);
-
-  // Chargement scans + config quand le site change
-  const loadSiteData = useCallback(async (siteId: number) => {
-    setIsRefreshing(true);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const [scansData, configData] = await Promise.all([
-        scanService.list(siteId),
-        api.get<MonitoringConfig>(`/monitoring/websites/${siteId}/`).then((r) => r.data),
+      const [websitesRes, configsRes] = await Promise.all([
+        api.get('/websites/'),
+        api.get('/monitoring/')
       ]);
-      setScans(scansData);
-      setConfig(configData);
-    } catch {
-      // Config peut ne pas exister encore
+
+      const websitesData = Array.isArray(websitesRes.data) ? websitesRes.data : (websitesRes.data.results || []);
+      const configsData = Array.isArray(configsRes.data) ? configsRes.data : (configsRes.data.results || []);
+
+      const merged = websitesData.map((website: Website) => {
+        const config = configsData.find((c: MonitoringConfig) => c.website === website.id) || null;
+        return { website, config };
+      });
+
+      setMergedSites(merged);
+    } catch (err) {
+      console.error('Failed to fetch monitoring data', err);
+      setError(t('monitoring.errors.load_failed', 'Erreur lors de la récupération des données de surveillance'));
     } finally {
-      setIsRefreshing(false);
+      setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    if (!selectedSite) return;
-    loadSiteData(selectedSite);
-  }, [selectedSite, loadSiteData]);
+    fetchData();
+  }, [fetchData]);
 
-  // Données graphique
-  const chartData = scans
-    .filter((s) => s.completed_at)
-    .slice(0, 48)
-    .reverse()
-    .map((s) => ({
-      time: formatDate(s.completed_at!),
-      score: s.health_score ?? 0,
-      status: s.health_status === "critical" ? 0 : 100,
-    }));
+  const handleToggleMonitoring = async (websiteId: string, currentStatus: boolean) => {
+    setIsToggling(prev => ({ ...prev, [websiteId]: true }));
+    try {
+      await api.patch(`/monitoring/websites/${websiteId}/`, { enabled: !currentStatus });
+      setMergedSites(prev => prev.map(site => {
+        if (site.website.id === websiteId && site.config) {
+          return { ...site, config: { ...site.config, enabled: !currentStatus } };
+        }
+        return site;
+      }));
+    } catch (err) {
+      console.error('Failed to toggle monitoring', err);
+    } finally {
+      setIsToggling(prev => ({ ...prev, [websiteId]: false }));
+    }
+  };
 
-  const completedScans = scans.filter((s) => s.status === "completed");
-  const uptimePct =
-    completedScans.length > 0
-      ? (
-          (completedScans.filter((s) => s.health_status !== "critical").length /
-            completedScans.length) *
-          100
-        ).toFixed(2)
-      : "—";
+  const handleScanNow = async (websiteId: string) => {
+    setIsScanning(prev => ({ ...prev, [websiteId]: true }));
+    try {
+      await api.post(`/monitoring/websites/${websiteId}/scan/`);
+      // Optimistically trigger a refetch after a short delay
+      setTimeout(fetchData, 2000);
+    } catch (err) {
+      console.error('Failed to trigger scan', err);
+    } finally {
+      setIsScanning(prev => ({ ...prev, [websiteId]: false }));
+    }
+  };
 
-  const lastScan = scans[0];
-  const currentStatus = lastScan?.health_status ?? "neutral";
-  const statusIcon =
-    currentStatus === "healthy" ? "🟢"
-    : currentStatus === "warning" ? "🟠"
-    : currentStatus === "critical" ? "🔴"
-    : "⚪";
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return t('monitoring.never', 'Jamais');
+    return new Date(dateString).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  };
 
-  // Timeline
-  const timeline = scans.slice(0, 15).map((s) => ({
-    time: s.completed_at
-      ? formatDateTime(s.completed_at)
-      : formatDateTime(s.created_at),
-    event:
-      s.status === "completed"
-        ? s.health_status === "critical"
-          ? "🔴 Issue detected"
-          : s.health_status === "warning"
-          ? "🟠 Warning detected"
-          : "✅ Scan completed"
-        : s.status === "failed"
-        ? "❌ Scan failed"
-        : "⏳ Scan queued",
-    detail:
-      s.status === "completed"
-        ? `Health score: ${s.health_score ?? "—"}/100`
-        : s.status === "failed"
-        ? "Scan could not complete"
-        : "Waiting for worker",
-    type:
-      s.health_status === "critical"
-        ? "incident"
-        : s.health_status === "warning"
-        ? "warning"
-        : s.status === "failed"
-        ? "incident"
-        : "check",
-  }));
+  const totalSites = mergedSites.length;
+  const sitesOnline = mergedSites.filter(s => s.website.health_status === 'healthy' || s.website.health_status === 'warning').length;
+  const sitesOffline = mergedSites.filter(s => s.website.health_status === 'critical').length;
+  const activeConfigs = mergedSites.filter(s => s.config?.enabled).length;
 
-  const selectedWebsite = websites.find((w) => w.id === selectedSite);
+  if (isLoading && mergedSites.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8 gap-4">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Monitoring</h1>
-          <p className="text-slate-500 mt-1">
-            Configure and track automatic monitoring for your websites.
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            {t('monitoring.title', 'Surveillance')}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {t('monitoring.subtitle', 'Surveillez l\'état de vos sites en temps réel')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {websites.length > 1 && (
-            <select
-              value={selectedSite ?? ""}
-              onChange={(e) => setSelectedSite(Number(e.target.value))}
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            >
-              {websites.map((w) => (
-                <option key={w.id} value={w.id}>{w.domain}</option>
-              ))}
-            </select>
-          )}
-          <button
-            onClick={() => selectedSite && loadSiteData(selectedSite)}
-            disabled={isRefreshing}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            title={t("dashboard.refresh")}
-          >
-            <RefreshCw
-              size={16}
-              className={`text-slate-500 ${isRefreshing ? "animate-spin" : ""}`}
-            />
+        <button 
+          onClick={fetchData}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm font-medium text-sm"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          {t('monitoring.refresh', 'Actualiser')}
+        </button>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between">
+          <div className="flex items-center gap-3 text-red-700">
+            <AlertCircle className="w-5 h-5" />
+            <p className="font-medium">{error}</p>
+          </div>
+          <button onClick={fetchData} className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200">
+            {t('common.retry', 'Réessayer')}
           </button>
         </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : websites.length === 0 ? (
-        <Card className="p-12 text-center">
-          <p className="text-4xl mb-4">🌐</p>
-          <p className="font-semibold text-slate-900 mb-1">No websites yet</p>
-          <p className="text-sm text-slate-500">Add a website to start monitoring.</p>
-        </Card>
-      ) : (
-        <>
-          {/* Configuration panel */}
-          {config && (
-            <MonitoringConfigPanel
-              config={config}
-              onSaved={(updated) => setConfig(updated)}
-            />
-          )}
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[
-              {
-                label: t("monitoring.title"),
-                value: config?.enabled ? t("monitoring.active") : t("monitoring.paused"),
-                sub: config
-                  ? `Every ${INTERVALS.find((i) => i.value === config.interval)?.label.toLowerCase().replace("every ", "") ?? config.interval}`
-                  : "—",
-                icon: config?.enabled ? "🟢" : "⏸️",
-              },
-              {
-                label: t("monitoring.current_status"),
-                value:
-                  currentStatus === "healthy"
-                    ? "Online"
-                    : currentStatus === "critical"
-                    ? "Offline"
-                    : currentStatus === "warning"
-                    ? "Warning"
-                    : "Unknown",
-                sub: lastScan?.completed_at
-                  ? timeAgo(lastScan.completed_at)
-                  : "No scan yet",
-                icon: statusIcon,
-              },
-              {
-                label: t("monitoring.total_scans"),
-                value: String(scans.length),
-                sub: `${completedScans.length} completed`,
-                icon: "📊",
-              },
-              {
-                label: t("monitoring.uptime_rate"),
-                value: uptimePct === "—" ? "—" : `${uptimePct}%`,
-                sub: t("monitoring.based_on"),
-                icon: "📈",
-              },
-            ].map((s) => (
-              <Card key={s.label} className="p-4">
-                <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{s.icon}</span>
-                  <span className="font-bold text-slate-900">{s.value}</span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">{s.sub}</p>
-              </Card>
-            ))}
-          </div>
-
-          {/* Graphique */}
-          <Card className="p-5 mb-6">
-            <div className="mb-4">
-              <h2 className="font-bold text-slate-900">Status history</h2>
-              <p className="text-sm text-slate-500">
-                {selectedWebsite?.domain} · Health score over time
-              </p>
-            </div>
-            {chartData.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
-                No scan data yet — run a scan to see the chart.
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart
-                  data={chartData}
-                  margin={{ top: 5, right: 5, bottom: 5, left: -10 }}
-                >
-                  <defs>
-                    <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis
-                    dataKey="time"
-                    tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `${v}`}
-                  />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
-                    formatter={(v) => [`${v}/100`, "Score"]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#4f46e5"
-                    strokeWidth={2}
-                    fill="url(#scoreGrad)"
-                    dot={false}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </Card>
-
-          {/* Timeline */}
-          <Card className="p-5">
-            <h2 className="font-bold text-slate-900 mb-5">Scan timeline</h2>
-            {timeline.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                No scan history yet.
-              </p>
-            ) : (
-              <div className="relative">
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200" />
-                <div className="space-y-3">
-                  {timeline.map((event, i) => (
-                    <div key={i} className="relative flex items-start gap-4 pl-10">
-                      <div
-                        className={`absolute left-2.5 top-2 w-3 h-3 rounded-full border-2 ${
-                          event.type === "incident"
-                            ? "bg-red-100 border-red-500"
-                            : event.type === "warning"
-                            ? "bg-amber-100 border-amber-500"
-                            : "bg-slate-100 border-slate-300"
-                        }`}
-                      />
-                      <div className="flex-1 bg-slate-50 rounded-xl px-4 py-3">
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          <p className="text-sm font-medium text-slate-900">
-                            {event.event}
-                          </p>
-                          <span className="text-xs text-slate-400 flex-shrink-0">
-                            {event.time}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {event.detail}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-        </>
       )}
+
+      {/* KPIs */}
+      {mergedSites.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-500">{t('monitoring.total_sites', 'Total Sites')}</h3>
+              <Globe className="w-5 h-5 text-indigo-500" />
+            </div>
+            <p className="text-3xl font-black text-slate-900">{totalSites}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-500">{t('monitoring.sites_online', 'En ligne')}</h3>
+              <Activity className="w-5 h-5 text-emerald-500" />
+            </div>
+            <p className="text-3xl font-black text-slate-900">{sitesOnline}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-500">{t('monitoring.sites_offline', 'Hors ligne')}</h3>
+              <AlertCircle className="w-5 h-5 text-red-500" />
+            </div>
+            <p className="text-3xl font-black text-slate-900">{sitesOffline}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-500">{t('monitoring.active_monitors', 'Surveillances Actives')}</h3>
+              <Clock className="w-5 h-5 text-indigo-500" />
+            </div>
+            <p className="text-3xl font-black text-slate-900">{activeConfigs}</p>
+          </div>
+        </div>
+      )}
+
+      {mergedSites.length === 0 && !isLoading && !error && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+          <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="w-8 h-8 text-indigo-600" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">
+            {t('monitoring.empty.title', 'Aucun site à surveiller')}
+          </h3>
+          <p className="text-slate-500 mb-6 max-w-md mx-auto">
+            {t('monitoring.empty.subtitle', 'Ajoutez votre premier site web pour commencer à surveiller sa disponibilité et ses performances.')}
+          </p>
+          <Link
+            to={`/${lang}/app/websites/new`}
+            className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 py-3 font-bold transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            {t('monitoring.add_first_site', 'Ajouter un site')}
+          </Link>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {mergedSites.map(({ website, config }) => {
+          const isOnline = website.health_status === 'healthy' || website.health_status === 'warning';
+          const isOffline = website.health_status === 'critical';
+          const isUnknown = website.health_status === 'neutral' || !config;
+          const statusColor = isOnline ? 'text-emerald-500 bg-emerald-50 border-emerald-200' : isOffline ? 'text-red-500 bg-red-50 border-red-200' : 'text-slate-500 bg-slate-50 border-slate-200';
+          const dotColor = isOnline ? 'bg-emerald-500' : isOffline ? 'bg-red-500' : 'bg-slate-500';
+
+          return (
+            <div key={website.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 flex-1">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{website.display_name}</h3>
+                    <p className="text-sm text-slate-500">{website.domain}</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full border text-xs font-bold flex items-center gap-2 ${statusColor}`}>
+                    <span className="relative flex h-2 w-2">
+                      {isOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${dotColor}`}></span>
+                    </span>
+                    {isOnline ? t('monitoring.status.online', 'En ligne') : isOffline ? t('monitoring.status.offline', 'Hors ligne') : t('monitoring.status.unknown', 'Inconnu')}
+                  </div>
+                </div>
+
+                {config ? (
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-6 mt-6">
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{t('monitoring.interval', 'Intervalle')}</p>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        {config.interval}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{t('monitoring.failures', 'Échecs consécutifs')}</p>
+                      <span className={`text-sm font-bold ${config.consecutive_failures > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                        {config.consecutive_failures}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{t('monitoring.last_scan', 'Dernier scan')}</p>
+                      <p className="text-sm text-slate-700 font-medium">{formatDate(config.last_scan_at)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{t('monitoring.next_scan', 'Prochain scan')}</p>
+                      <p className="text-sm text-slate-700 font-medium">{formatDate(config.next_scan_at)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    <p className="text-sm text-slate-500">{t('monitoring.no_config', 'Aucune configuration de surveillance')}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  onClick={() => handleToggleMonitoring(website.id, config?.enabled ?? false)}
+                  disabled={!config || isToggling[website.id]}
+                  className={`inline-flex items-center gap-2 text-sm font-bold transition-colors ${
+                    !config ? 'text-slate-400 cursor-not-allowed' :
+                    config.enabled ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700'
+                  }`}
+                >
+                  {isToggling[website.id] ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Power className="w-4 h-4" />
+                  )}
+                  {config?.enabled ? t('monitoring.disabled', 'Désactiver') : t('monitoring.enabled', 'Activer')}
+                </button>
+                
+                <button
+                  onClick={() => handleScanNow(website.id)}
+                  disabled={isScanning[website.id]}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                >
+                  {isScanning[website.id] ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  {t('monitoring.trigger_scan', 'Scanner maintenant')}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-}
+};
+
+export default Monitoring;

@@ -1,264 +1,200 @@
-import React, { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Card, Button, ScoreRing } from "../components/ui";
-import { Download, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
-import api from "../services/api";
-import { useTranslation } from "react-i18next";
-import { websiteService, Website } from "../services/websiteService";
+import React, { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
+import { WhiteLabelReport } from '../components/WhiteLabelReport';
+import { FileText, Calendar, Clock, Download, Settings, RefreshCw } from 'lucide-react';
+import { api } from '../services/api';
 
-interface Report {
-  id: string;
-  period: string;
-  period_start: string;
-  period_end: string;
-  status: string;
-  current_score: number | null;
-  previous_score: number | null;
-  score_change: number | null;
-  score_trend: string;
-  check_breakdown: Record<string, any>;
-  improvements: string[];
-  problems: string[];
-  recommendations: string[];
-  total_scans: number;
-  generated_at: string;
-  website: number;
-}
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
-function formatMonth(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
+export function Reports() {
+  const { lang } = useParams<{ lang?: string }>();
+  const { t, i18n } = useTranslation();
+  const { plan } = useAuth();
+  const currentLang = (lang || i18n.language || 'fr').split('-')[0].toLowerCase();
 
-export default function Reports() {
-  const { t } = useTranslation();
-  const [websites, setWebsites] = useState<Website[]>([]);
-  const [selectedSite, setSelectedSite] = useState<number | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState('');
+  const [websites, setWebsites] = useState<any[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'history' | 'generate'>('history');
 
-  useEffect(() => {
-    websiteService.list().then(sites => {
-      setWebsites(sites);
-      if (sites.length > 0) setSelectedSite(sites[0].id);
-    }).catch(() => {}).finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (!selectedSite) return;
-    loadReports(selectedSite);
-  }, [selectedSite]);
-
-  const loadReports = async (siteId: number) => {
+  const fetchReports = async () => {
     try {
-      const { data } = await api.get(`/reports/?website_id=${siteId}`);
-      setReports(data.results ?? data);
-    } catch { setReports([]); }
-  };
-
-  const generateReport = async () => {
-    if (!selectedSite) return;
-    setIsGenerating(true);
-    setError('');
-    try {
-      const now = new Date();
-      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      await api.post('/reports/generate/', {
-        website_id: selectedSite,
-        period: 'monthly',
-        period_start: periodStart,
-      });
-      setTimeout(() => {
-        loadReports(selectedSite);
-        setIsGenerating(false);
-      }, 3000);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Failed to generate report.');
-      setIsGenerating(false);
+      const token = localStorage.getItem('access_token');
+      const res = await api.get('/reports/', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      setReports(res.data?.results || res.data || []);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const current = reports[0];
+  useEffect(() => {
+    const fetchInit = async () => {
+      setLoading(true);
+      const token = localStorage.getItem('access_token');
+      try {
+        const res = await api.get('/websites/', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        const list = res.data?.results || res.data || [];
+        setWebsites(list);
+        if (list.length > 0) setSelectedSiteId(list[0].id);
+        await fetchReports();
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInit();
+  }, []);
 
-  const chartData = reports
-    .slice(0, 6)
-    .reverse()
-    .map(r => ({
-      name: new Date(r.period_start).toLocaleDateString('en-US', { month: 'short' }),
-      score: r.current_score ?? 0,
-    }));
-
-  const CATEGORY_LABELS: Record<string, string> = {
-    website: 'Website availability',
-    ssl: 'SSL certificate',
-    dns: 'DNS configuration',
-    email_security: 'Email security',
-    security_headers: 'Security headers',
-    performance: 'Performance',
+  const handleGenerateNow = async () => {
+    if (!selectedSiteId) return;
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      await api.post('/reports/generate/', { website_id: selectedSiteId }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      await fetchReports();
+      setActiveTab('history');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const CATEGORY_MAX: Record<string, number> = {
-    website: 20, ssl: 20, dns: 15,
-    email_security: 15, security_headers: 15, performance: 15,
-  };
+  if (loading) return <div className="h-64 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div>;
+
+  if (websites.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-xl mx-auto space-y-4">
+        <div className="w-16 h-16 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-sm">📄</div>
+        <h3 className="text-lg font-bold text-slate-900">{t('reports.empty.title', 'Aucun rapport disponible')}</h3>
+        <p className="text-sm text-slate-500">{t('reports.empty.desc', 'Ajoutez un site web pour générer des rapports PDF marque blanche.')}</p>
+        <Link to={`/${currentLang}/app/websites`} className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg">
+          + {t('monitoring.add_first_site', 'Ajouter mon premier site')}
+        </Link>
+      </div>
+    );
+  }
+
+  const activeSite = websites.find(w => w.id === selectedSiteId) || websites[0];
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
-          <p className="text-slate-500 mt-1">Your monthly digital presence reports.</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <FileText className="text-indigo-600" />
+            {t('reports.title', 'Rapports & Historique')}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">{t('reports.desc', 'Consultez l\'historique de vos audits et générez de nouveaux rapports PDF.')}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {websites.length > 1 && (
-            <select value={selectedSite ?? ''} onChange={e => setSelectedSite(Number(e.target.value))}
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-              {websites.map(w => <option key={w.id} value={w.id}>{w.domain}</option>)}
-            </select>
-          )}
-          <Button size="sm" onClick={generateReport} disabled={isGenerating || !selectedSite}>
-            <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-            {isGenerating ? 'Generating...' : 'Generate report'}
-          </Button>
-        </div>
+
+        <select
+          value={selectedSiteId || ''}
+          onChange={(e) => setSelectedSiteId(Number(e.target.value))}
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        >
+          {websites.map((w) => (
+            <option key={w.id} value={w.id}>
+              🌐 {w.display_name || w.domain}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
+      {/* Tabs */}
+      <div className="flex items-center gap-4 border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'history' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          {t('reports.tabs.history', 'Historique')}
+        </button>
+        <button
+          onClick={() => setActiveTab('generate')}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'generate' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          {t('reports.tabs.generate', 'Générer / Planifier')}
+        </button>
+      </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : !current ? (
-        <Card className="p-12 text-center">
-          <p className="text-4xl mb-4">📊</p>
-          <p className="font-semibold text-slate-900 mb-1">No reports yet</p>
-          <p className="text-sm text-slate-500 mb-4">Generate your first monthly report to see insights.</p>
-          <Button onClick={generateReport} disabled={isGenerating || !selectedSite}>
-            {isGenerating ? 'Generating...' : 'Generate first report'}
-          </Button>
-        </Card>
-      ) : (
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Current report */}
-          <div className="lg:col-span-2">
-            <Card className="p-6">
-              <div className="flex items-start justify-between gap-4 mb-6">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
-                    {current.period === 'monthly' ? 'Monthly Report' : 'Weekly Report'}
-                  </p>
-                  <h2 className="text-xl font-bold text-slate-900">{formatMonth(current.period_start)}</h2>
-                </div>
-                <span className={`px-3 py-1 text-xs font-bold rounded-full ${current.status === 'generated' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {current.status}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-8 mb-6 pb-6 border-b border-slate-100">
-                <ScoreRing score={current.current_score ?? 0} size={100} />
-                <div>
-                  <p className="text-sm text-slate-500 mb-2">Overall health</p>
-                  {current.score_change !== null && (
-                    <div className="flex items-center gap-2 mb-1">
-                      {current.score_change >= 0
-                        ? <TrendingUp size={16} className="text-emerald-500" />
-                        : <TrendingDown size={16} className="text-red-500" />}
-                      <span className={`font-semibold ${current.score_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {current.score_change >= 0 ? '+' : ''}{current.score_change} points vs last month
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-sm text-slate-500">{current.total_scans} scans this period</p>
-                </div>
-              </div>
-
-              {/* Score breakdown */}
-              {current.check_breakdown && Object.keys(current.check_breakdown).length > 0 && (
-                <div className="space-y-4 mb-6">
-                  <h3 className="font-semibold text-slate-800">Score breakdown</h3>
-                  {Object.entries(current.check_breakdown).map(([key, val]: [string, any]) => {
-                    const max = CATEGORY_MAX[key] ?? 15;
-                    const score = Math.round((val.avg_score ?? 0));
-                    const isHealthy = score >= max * 0.9;
-                    return (
-                      <div key={key} className="flex items-center gap-4">
-                        <span className="text-sm text-slate-600 w-44 flex-shrink-0">{CATEGORY_LABELS[key] ?? key}</span>
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                            style={{ width: `${Math.min((score / max) * 100, 100)}%` }} />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-800 tabular-nums w-10 text-right">{score}/{max}</span>
-                        <span>{isHealthy ? '🟢' : '🟠'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Recommendations */}
-              {current.recommendations && current.recommendations.length > 0 && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <p className="text-sm font-semibold text-amber-800 mb-2">Recommended actions</p>
-                  <ul className="space-y-1">
-                    {current.recommendations.slice(0, 5).map((rec, i) => (
-                      <li key={i} className="text-sm text-amber-700">• {rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </Card>
+      {activeTab === 'history' && (
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Clock size={18} className="text-slate-500" /> {t('reports.history.title', 'Historique des rapports')}
+            </h2>
+            <button onClick={fetchReports} className="p-1.5 text-slate-500 hover:text-indigo-600 transition rounded-lg hover:bg-white border border-transparent hover:border-slate-200">
+              <RefreshCw size={16} />
+            </button>
           </div>
-
-          {/* Sidebar */}
-          <div className="flex flex-col gap-4">
-            {chartData.length > 0 && (
-              <Card className="p-5">
-                <h3 className="font-semibold text-slate-900 mb-4">Score history</h3>
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                      formatter={(v) => [v as number, "Score"]} />
-                    <Bar dataKey="score" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            )}
-
-            <Card className="overflow-hidden">
-              <div className="p-4 pb-0">
-                <h3 className="font-semibold text-slate-900">Past reports</h3>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {reports.map((report) => (
-                  <div key={report.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{formatMonth(report.period_start)}</p>
-                      {report.score_change !== null && (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {report.score_change >= 0
-                            ? <TrendingUp size={10} className="text-emerald-500" />
-                            : <TrendingDown size={10} className="text-red-500" />}
-                          <span className={`text-xs ${report.score_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {report.score_change >= 0 ? '+' : ''}{report.score_change}
-                          </span>
-                        </div>
-                      )}
+          {reports.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">{t('reports.history.empty', 'Aucun rapport généré pour le moment.')}</div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {reports.map((report) => (
+                <div key={report.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                  <div>
+                    <div className="font-semibold text-slate-900">{report.domain} - Rapport d'audit</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {t('reports.history.generated_at', 'Généré le :')} {new Date(report.created_at).toLocaleString('fr-FR')} • {t('reports.history.score', 'Score :')} {report.score !== null ? `${report.score}/100` : 'N/A'}
                     </div>
-                    <span className={`text-lg font-black ${(report.current_score ?? 0) >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {report.current_score ?? '—'}
-                    </span>
                   </div>
-                ))}
+                  <button onClick={() => window.open(`${API_BASE}/reports/pdf/${report.scan_id}/?lang=${currentLang}&token=${localStorage.getItem('access_token')}`, '_blank')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition shadow-sm">
+                    <Download size={14} /> PDF
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'generate' && activeSite && (
+        <div className="space-y-6">
+          {plan?.tier === 'free' ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center max-w-2xl mx-auto">
+              <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText size={32} />
               </div>
-            </Card>
-          </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">{t('reports.pro.title', 'Rapports Marque Blanche')}</h3>
+              <p className="text-slate-500 mb-6">{t('reports.pro.desc', 'La génération de rapports PDF détaillés et personnalisés avec votre logo est une fonctionnalité exclusive au plan Pro.')}</p>
+              <Link to={`/${currentLang}/pricing`} className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition">
+                {t('reports.pro.cta', 'Découvrir le plan Pro →')}
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
+                  <Settings size={18} className="text-indigo-600" /> {t('reports.generate.quick_action', 'Action Rapide')}
+                </h2>
+                <p className="text-sm text-slate-600 mb-4">{t('reports.generate.quick_action_desc', 'Déclenchez manuellement la génération d\'un rapport avec les dernières données d\'audit.')}</p>
+                <button
+                  onClick={handleGenerateNow}
+                  disabled={generating}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition disabled:opacity-50"
+                >
+                  {generating ? <RefreshCw size={16} className="animate-spin" /> : <Calendar size={16} />}
+                  {generating ? t('reports.generate.generating', 'Génération en cours...') : t('reports.generate.btn', 'Générer un rapport maintenant')}
+                </button>
+              </div>
+              <WhiteLabelReport scanId={String(activeSite.id)} domain={activeSite.domain} />
+            </>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+export default Reports;

@@ -1,351 +1,505 @@
-import React, { useEffect, useState } from "react";
-import { 
-  Search, Globe, Play, CheckCircle2, AlertTriangle, 
-  XCircle, Plus, Loader, RefreshCw, BarChart2, FileText, Smartphone 
-} from "lucide-react";
-import api from "../services/api";
-import { Badge } from "../components/ui";
+import React, { useEffect, useState, useCallback } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { api } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
+import {
+  Search, TrendingUp, TrendingDown, Minus,
+  RefreshCw, Plus, X, AlertCircle, CheckCircle,
+  BarChart3, Globe, FileText, Link as LinkIcon,
+  Rocket, Zap, Shield
+} from 'lucide-react';
 
-interface Website {
+interface KeywordItem {
   id: number;
-  domain: string;
-  name: string;
+  term: string;
+  current_rank: number;
+  previous_rank: number | null;
+  search_volume: number;
+  difficulty: number;
+  trend: 'up' | 'down' | 'stable' | null;
 }
 
 interface SEOAudit {
-  id: string;
-  overall_score: number;
-  technical_score: number;
-  content_score: number;
-  mobile_score: number;
-  meta_tags: Record<string, any>;
-  robots_txt: string;
-  sitemap: string;
-  issues: Array<{ type: string; message: string; severity?: string }>;
+  id: number;
+  title: string;
+  meta_description: string;
+  robots_txt: boolean;
+  sitemap_xml: boolean;
+  h1_count: number;
+  h2_count: number;
+  images_with_alt: number;
+  total_images: number;
+  load_time: number;
+  score: number;
   created_at: string;
 }
 
-interface Keyword {
-  id: number;
-  term: string;
-  country: string;
-  position: number | null;
-  previous_position: number | null;
-  search_volume: number | null;
-  updated_at: string;
-}
+export function SEOPage() {
+  const { lang } = useParams<{ lang?: string }>();
+  const { t, i18n } = useTranslation();
+  const { plan } = useAuth();
+  const currentLang = lang || i18n.language || 'fr';
 
-export const SEOPage: React.FC = () => {
-  const [websites, setWebsites] = useState<Website[]>([]);
-  const [selectedWebsiteId, setSelectedWebsiteId] = useState<number | null>(null);
-  const [audit, setAudit] = useState<SEOAudit | null>(null);
-  const [keywords, setKeywords] = useState<Keyword[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [newKeyword, setNewKeyword] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "keywords">("overview");
-
-  useEffect(() => {
-    loadWebsites();
-  }, []);
-
-  useEffect(() => {
-    if (selectedWebsiteId) {
-      loadData(selectedWebsiteId);
-    }
-  }, [selectedWebsiteId]);
-
-  const loadWebsites = async () => {
+  // Utiliser les traductions i18n avec fallback
+  const getTranslation = (key: string, fallback: string) => {
     try {
-      const res = await api.get("/websites/");
-      const list = res.data.results || res.data || [];
-      setWebsites(list);
-      if (list.length > 0) {
-        setSelectedWebsiteId(list[0].id);
-      }
-    } catch (e) {
-      console.error(e);
+      const translation = t(key);
+      return translation && translation !== key ? translation : fallback;
+    } catch {
+      return fallback;
     }
   };
 
-  const loadData = async (siteId: number) => {
-    setIsLoading(true);
+  // Traductions complètes avec fallback
+  const translations = {
+    title: getTranslation('seo.title', 'SEO Optimization & Audit'),
+    subtitle: getTranslation('seo.subtitle', 'Track your keyword rankings and technical meta tags health.'),
+    techTab: getTranslation('seo.tech_tab', 'Technical Audit'),
+    keywordsTab: getTranslation('seo.keywords_tab', 'Tracked Keywords'),
+    addKeyword: getTranslation('seo.add_keyword', 'Track a Keyword'),
+    keywordLabel: getTranslation('seo.keyword_label', 'Keyword *'),
+    placeholderKeyword: getTranslation('seo.placeholder_keyword', 'e.g. best italian restaurant'),
+    cancel: getTranslation('common.cancel', 'Cancel'),
+    submit: getTranslation('common.submit', 'Add'),
+    position: getTranslation('seo.position', 'Position'),
+    volume: getTranslation('seo.volume', 'Monthly Volume'),
+    emptyTitle: getTranslation('seo.empty_title', 'No websites configured yet'),
+    emptyDesc: getTranslation('seo.empty_desc', 'Add a website first to analyze its SEO performance.'),
+    emptyBtn: getTranslation('websites.add', 'Add my first website'),
+    noKeywords: getTranslation('seo.no_keywords', 'No keywords tracked for this website yet.'),
+    runAudit: getTranslation('seo.run_audit', 'Run audit'),
+    scanning: getTranslation('seo.scanning', 'Scanning...'),
+    backlinks: getTranslation('seo.backlinks', 'Backlinks'),
+    noBacklinks: getTranslation('seo.no_backlinks', 'No backlinks detected'),
+    proFeature: getTranslation('seo.pro_feature', '🔒 Advanced SEO audit available with Pro plan'),
+    upgrade: getTranslation('plan.upgrade', 'Upgrade to Pro →'),
+    score: getTranslation('seo.score', 'SEO Score'),
+    titleTag: getTranslation('seo.title_tag', 'Title'),
+    metaDesc: getTranslation('seo.meta_desc', 'Meta description'),
+    robotsTxt: getTranslation('seo.robots_txt', 'Robots.txt'),
+    sitemap: getTranslation('seo.sitemap', 'Sitemap.xml'),
+    images: getTranslation('seo.images', 'images'),
+    notDefined: getTranslation('seo.not_defined', '❌ Not defined'),
+    present: getTranslation('seo.present', '✅ Present'),
+    missing: getTranslation('seo.missing', '❌ Missing'),
+    trend: getTranslation('seo.trend', 'Trend'),
+    difficulty: getTranslation('seo.difficulty', 'Difficulty'),
+    noAudit: getTranslation('seo.no_audit', 'No SEO audit available'),
+    backlinksTab: getTranslation('seo.backlinks_tab', 'Backlinks'),
+  };
+
+  const [websites, setWebsites] = useState<any[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [keywords, setKeywords] = useState<KeywordItem[]>([]);
+  const [audit, setAudit] = useState<SEOAudit | null>(null);
+  const [backlinks, setBacklinks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [keywordInput, setKeywordInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'keywords' | 'audit' | 'backlinks'>('keywords');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    api
+      .get("websites/", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then((res) => {
+        const list = res.data?.results || res.data || [];
+        setWebsites(Array.isArray(list) ? list : []);
+        if (list.length > 0) {
+          setSelectedSiteId(list[0].id);
+        }
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fetchSEOData = useCallback(() => {
+    if (!selectedSiteId) return;
+    const token = localStorage.getItem('access_token');
+
+    api
+      .get(`websites/${selectedSiteId}/seo/keywords/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then((res) => {
+        const data = res.data?.results || res.data || [];
+        setKeywords(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setKeywords([]));
+
+    api
+      .get(`websites/${selectedSiteId}/seo/audits/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then((res) => {
+        const data = res.data?.results || res.data || [];
+        setAudit(Array.isArray(data) && data.length > 0 ? data[0] : null);
+      })
+      .catch(() => setAudit(null));
+
+    api
+      .get(`websites/${selectedSiteId}/seo/backlinks/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then((res) => {
+        const data = res.data?.results || res.data || [];
+        setBacklinks(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setBacklinks([]));
+  }, [selectedSiteId]);
+
+  useEffect(() => {
+    fetchSEOData();
+  }, [fetchSEOData]);
+
+  const handleAddKeyword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keywordInput.trim() || !selectedSiteId) return;
+    const token = localStorage.getItem('access_token');
     try {
-      const [auditsRes, kwRes] = await Promise.all([
-        api.get(`/websites/${siteId}/seo/audits/`),
-        api.get(`/websites/${siteId}/seo/keywords/`),
-      ]);
-      const auditList = auditsRes.data.results || auditsRes.data || [];
-      setAudit(auditList[0] || null);
-      setKeywords(kwRes.data.results || kwRes.data || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
+      await api.post(
+        `websites/${selectedSiteId}/seo/keywords/`,
+        { term: keywordInput.trim() },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setKeywordInput('');
+      setShowAddForm(false);
+      setSuccess('✅ Keyword added');
+      setTimeout(() => setSuccess(null), 3000);
+      fetchSEOData();
+    } catch {
+      setError('Error adding keyword');
+      setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleRunAudit = async () => {
-    if (!selectedWebsiteId) return;
-    setRunning(true);
+    if (!selectedSiteId) return;
+    setScanning(true);
+    const token = localStorage.getItem('access_token');
     try {
-      await api.post(`/websites/${selectedWebsiteId}/seo/audits/run/`);
-      // Pause courte pour laisser le temps au scan de finir
-      setTimeout(() => {
-        loadData(selectedWebsiteId);
-        setRunning(false);
-      }, 2500);
-    } catch (e) {
-      console.error(e);
-      setRunning(false);
+      await api.post(`websites/${selectedSiteId}/seo/audits/run/`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setSuccess('✅ SEO audit launched');
+      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(fetchSEOData, 3000);
+    } catch {
+      setError('Error launching audit');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setScanning(false);
     }
   };
 
-  const handleAddKeyword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKeyword.trim() || !selectedWebsiteId) return;
-    try {
-      await api.post(`/websites/${selectedWebsiteId}/seo/keywords/`, {
-        term: newKeyword.trim(),
-        country: "FR",
-      });
-      setNewKeyword("");
-      loadData(selectedWebsiteId);
-    } catch (e) {
-      console.error(e);
-    }
+  const getTrendIcon = (trend: string | null) => {
+    if (!trend) return null;
+    const icons = {
+      up: <TrendingUp size={14} className="text-green-500" />,
+      down: <TrendingDown size={14} className="text-red-500" />,
+      stable: <Minus size={14} className="text-gray-400" />,
+    };
+    return icons[trend as keyof typeof icons] || null;
   };
+
+  const getTrendColor = (trend: string | null) => {
+    if (!trend) return '';
+    const colors = {
+      up: 'text-green-600',
+      down: 'text-red-600',
+      stable: 'text-gray-400',
+    };
+    return colors[trend as keyof typeof colors] || '';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+        <p className="text-xs text-slate-400 font-medium">Loading SEO data...</p>
+      </div>
+    );
+  }
+
+  if (websites.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4 max-w-xl mx-auto">
+        <div className="w-16 h-16 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-sm">
+          🔍
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">{translations.emptyTitle}</h3>
+          <p className="text-sm text-slate-500 mt-1">{translations.emptyDesc}</p>
+        </div>
+        <Link
+          to={`/${currentLang}/app/websites`}
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg transition active:scale-95"
+        >
+          + {translations.emptyBtn}
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Audit & Optimisation SEO</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Analyse technique, suivi des mots-clés, conformité mobile et balisage méta.
-          </p>
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      {success && (
+        <div className="fixed bottom-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg bg-emerald-600 text-white animate-slide-up">
+          {success}
         </div>
+      )}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+          <AlertCircle size={18} />
+          {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+            <X size={18} />
+          </button>
+        </div>
+      )}
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {websites.length > 1 && (
-            <select
-              value={selectedWebsiteId || ""}
-              onChange={(e) => setSelectedWebsiteId(Number(e.target.value))}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {websites.map((w) => (
-                <option key={w.id} value={w.id}>{w.domain}</option>
-              ))}
-            </select>
-          )}
-
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">🔍 {translations.title}</h1>
+          <p className="text-sm text-slate-500 mt-1">{translations.subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedSiteId || ''}
+            onChange={(e) => setSelectedSiteId(Number(e.target.value))}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:outline-none"
+          >
+            {websites.map((w) => (
+              <option key={w.id} value={w.id}>
+                🌐 {w.display_name || w.domain}
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleRunAudit}
-            disabled={running || !selectedWebsiteId}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+            disabled={scanning}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition disabled:opacity-50"
           >
-            {running ? <Loader size={16} className="animate-spin" /> : <Play size={16} />}
-            {running ? "Audit en cours..." : "Lancer un audit SEO"}
+            <RefreshCw size={16} className={scanning ? 'animate-spin' : ''} />
+            {scanning ? translations.scanning : translations.runAudit}
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "overview"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+          onClick={() => setActiveTab('keywords')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition ${activeTab === 'keywords'
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
         >
-          Vue générale & Technique
+          {translations.keywordsTab} ({keywords.length})
         </button>
         <button
-          onClick={() => setActiveTab("keywords")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "keywords"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+          onClick={() => setActiveTab('audit')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition ${activeTab === 'audit'
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
         >
-          Mots-clés suivis ({keywords.length})
+          {translations.techTab} {audit ? `(${audit.score}/100)` : ''}
+        </button>
+        <button
+          onClick={() => setActiveTab('backlinks')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition ${activeTab === 'backlinks'
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+        >
+          {translations.backlinksTab} ({backlinks.length})
         </button>
       </div>
 
-      {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-          <Loader size={32} className="animate-spin text-indigo-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">Chargement des données SEO...</p>
-        </div>
-      ) : activeTab === "overview" ? (
-        !audit ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Search size={26} />
-            </div>
-            <h3 className="font-semibold text-slate-900 mb-1">Aucun audit SEO enregistré</h3>
-            <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-              Lancez votre premier audit pour analyser l'état de santé technique, la conformité mobile et le balisage de votre site.
-            </p>
+      {activeTab === 'keywords' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.keywordsTab} ({keywords.length})</h3>
             <button
-              onClick={handleRunAudit}
-              disabled={running}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
+              onClick={() => setShowAddForm(true)}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
             >
-              Lancer l'audit maintenant
+              <Plus size={14} /> {translations.addKeyword}
             </button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Score Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                <p className="text-3xl font-black text-indigo-600">{audit.overall_score}/100</p>
-                <p className="text-xs text-slate-500 mt-1">Score Global</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                <p className="text-3xl font-black text-slate-900">{audit.technical_score}/100</p>
-                <p className="text-xs text-slate-500 mt-1">Technique</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                <p className="text-3xl font-black text-slate-900">{audit.content_score}/100</p>
-                <p className="text-xs text-slate-500 mt-1">Contenu / Méta</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                <p className="text-3xl font-black text-slate-900">{audit.mobile_score}/100</p>
-                <p className="text-xs text-slate-500 mt-1">Mobile & Vitesse</p>
-              </div>
-            </div>
 
-            {/* Technical checklist */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h3 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
-                  <FileText size={16} className="text-indigo-600" /> Fichiers d'indexation
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                    <span className="text-slate-600">Robots.txt</span>
-                    <Badge variant={audit.robots_txt === "valid" ? "success" : "warning"}>
-                      {audit.robots_txt}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-600">Sitemap XML</span>
-                    <Badge variant={audit.sitemap === "valid" ? "success" : "warning"}>
-                      {audit.sitemap}
-                    </Badge>
-                  </div>
-                </div>
+          {showAddForm && (
+            <form onSubmit={handleAddKeyword} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{translations.keywordLabel}</label>
+                <input
+                  type="text"
+                  required
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  placeholder={translations.placeholderKeyword}
+                  className="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
               </div>
-
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h3 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
-                  <Smartphone size={16} className="text-indigo-600" /> Balises Méta
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                    <span className="text-slate-600">Balise Title</span>
-                    <span className="font-medium text-slate-900 truncate max-w-[200px]">
-                      {audit.meta_tags?.title || "Non définie"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-600">Meta Description</span>
-                    <span className="font-medium text-slate-900 truncate max-w-[200px]">
-                      {audit.meta_tags?.description || "Non définie"}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setShowAddForm(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 rounded-lg">{translations.cancel}</button>
+                <button type="submit" className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">{translations.submit}</button>
               </div>
-            </div>
-
-            {/* Issues */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h3 className="font-semibold text-slate-900 text-sm mb-3">Recommandations & Problèmes détectés</h3>
-              {audit.issues && audit.issues.length > 0 ? (
-                <div className="space-y-2">
-                  {audit.issues.map((issue, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-slate-800">{issue.type || "Avertissement"}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{issue.message}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-emerald-600 text-sm py-2">
-                  <CheckCircle2 size={16} />
-                  <span>Aucun problème critique détecté sur ce domaine !</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      ) : (
-        /* Keywords Tab */
-        <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <form onSubmit={handleAddKeyword} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Ajouter un mot-clé à suivre (ex: présence digitale saas)"
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-lg text-sm"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium flex items-center gap-2 shadow-sm"
-              >
-                <Plus size={16} /> Suivre
-              </button>
             </form>
-          </div>
+          )}
 
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            {keywords.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">
-                Aucun mot-clé suivi pour l'instant. Ajoutez votre premier mot-clé ci-dessus.
-              </div>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-600">
-                  <tr>
-                    <th className="p-3.5">Mot-clé</th>
-                    <th className="p-3.5">Pays</th>
-                    <th className="p-3.5 text-center">Position Google</th>
-                    <th className="p-3.5 text-right">Dernière mise à jour</th>
+          {keywords.length === 0 ? (
+            <p className="text-xs text-slate-400 py-8 text-center">{translations.noKeywords}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="pb-3">Keyword</th>
+                    <th className="pb-3">{translations.position}</th>
+                    <th className="pb-3">{translations.trend}</th>
+                    <th className="pb-3">{translations.volume}</th>
+                    <th className="pb-3">{translations.difficulty}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                   {keywords.map((kw) => (
-                    <tr key={kw.id} className="hover:bg-slate-50">
-                      <td className="p-3.5 font-medium text-slate-900">{kw.term}</td>
-                      <td className="p-3.5 text-slate-500">{kw.country}</td>
-                      <td className="p-3.5 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded font-bold text-indigo-700 bg-indigo-50">
-                          #{kw.position ?? "—"}
+                    <tr key={kw.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 font-semibold text-slate-900">{kw.term}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${kw.current_rank <= 3 ? 'bg-emerald-50 text-emerald-700' : kw.current_rank <= 10 ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                          #{kw.current_rank}
                         </span>
                       </td>
-                      <td className="p-3.5 text-right text-xs text-slate-400">
-                        {new Date(kw.updated_at).toLocaleDateString()}
+                      <td className="py-3">
+                        <span className={`flex items-center gap-1 ${getTrendColor(kw.trend)}`}>
+                          {getTrendIcon(kw.trend)}
+                          {kw.previous_rank && kw.current_rank !== kw.previous_rank && (
+                            <span>{kw.previous_rank > kw.current_rank ? '+' : ''}{kw.previous_rank - kw.current_rank}</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-3">{kw.search_volume?.toLocaleString() || 0}</td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${kw.difficulty < 30 ? 'bg-emerald-500' : kw.difficulty < 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${kw.difficulty || 0}%` }} />
+                          </div>
+                          <span className="text-[10px] text-slate-500">{kw.difficulty || 0}%</span>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'audit' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          {audit ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl font-bold text-indigo-600">{audit.score}/100</div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{translations.score}</p>
+                    <p className="text-xs text-slate-500">{new Date(audit.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-slate-600">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle size={14} className="text-green-500" />
+                    {audit.images_with_alt}/{audit.total_images} {translations.images}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FileText size={14} className="text-blue-500" />
+                    H1: {audit.h1_count}, H2: {audit.h2_count}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs text-slate-500">{translations.titleTag}</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">{audit.title || translations.notDefined}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs text-slate-500">{translations.metaDesc}</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">{audit.meta_description || translations.notDefined}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs text-slate-500">{translations.robotsTxt}</p>
+                  <p className="text-sm font-medium text-slate-900">{audit.robots_txt ? translations.present : translations.missing}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs text-slate-500">{translations.sitemap}</p>
+                  <p className="text-sm font-medium text-slate-900">{audit.sitemap_xml ? translations.present : translations.missing}</p>
+                </div>
+              </div>
+
+              {plan?.tier === 'free' && (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
+                  <span className="text-sm text-indigo-700">{translations.proFeature}</span>
+                  <Link to="/pricing" className="text-sm font-medium text-indigo-600 hover:underline">
+                    {translations.upgrade}
+                  </Link>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">📊</div>
+              <p className="text-slate-500">{translations.noAudit}</p>
+              <button
+                onClick={handleRunAudit}
+                disabled={scanning}
+                className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {scanning ? translations.scanning : translations.runAudit}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'backlinks' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{translations.backlinks} ({backlinks.length})</h3>
+          {backlinks.length === 0 ? (
+            <p className="text-xs text-slate-400 py-8 text-center">{translations.noBacklinks}</p>
+          ) : (
+            <div className="space-y-3">
+              {backlinks.map((bl, index) => (
+                <div key={index} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">{bl.source_url}</p>
+                    <p className="text-xs text-slate-500 truncate">{bl.anchor_text || 'No anchor'}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
+                      DA: {bl.domain_authority || 0}
+                    </span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${bl.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {bl.status === 'active' ? '✅ Active' : '⏸ Inactive'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
-};
+}
 
 export default SEOPage;

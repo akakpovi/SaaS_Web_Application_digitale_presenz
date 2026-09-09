@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 
 interface RateLimitConversionModalProps {
   isOpen: boolean;
@@ -13,9 +12,6 @@ export function RateLimitConversionModal({
   onClose,
   scannedUrl,
 }: RateLimitConversionModalProps) {
-  const navigate = useNavigate();
-
-  // Verrouiller le scroll de l'arrière-plan lorsque la modale est active
   useEffect(() => {
     if (!isOpen) return;
     const originalStyle = document.body.style.overflow;
@@ -34,7 +30,8 @@ export function RateLimitConversionModal({
       params.set('url', scannedUrl);
     }
     onClose();
-    navigate(`/register?${params.toString()}`);
+    // Redirection directe infaillible vers /register
+    window.location.href = `/register?${params.toString()}`;
   };
 
   const modalJSX = (
@@ -43,17 +40,14 @@ export function RateLimitConversionModal({
       aria-modal="true"
       aria-labelledby="rate-limit-title"
       className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ zIndex: 2147483647 }} // z-index maximal pour bypasser les bannières cookies/PWA
+      style={{ zIndex: 2147483647 }}
     >
-      {/* Overlay flouté */}
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Conteneur de la modale */}
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl transition-all scale-100">
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-4 flex justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
             <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -61,27 +55,24 @@ export function RateLimitConversionModal({
             </svg>
           </div>
         </div>
-
         <h3 id="rate-limit-title" className="text-center text-lg font-bold text-gray-900">
           Limite de scans atteinte
         </h3>
-        
-        <p className="mt-2 text-center text-sm text-gray-500">
+        <p className="mt-2 text-center text-sm text-gray-600">
           Vous avez atteint la limite publique. Créez un compte gratuit instantanément pour lancer des scans illimités.
         </p>
-
         <div className="mt-6 flex flex-col gap-2">
           <button
             type="button"
             onClick={handleRegisterRedirect}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700 active:scale-95 cursor-pointer"
           >
             Créer un compte gratuit
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 border border-gray-300"
+            className="w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-slate-200 transition cursor-pointer"
           >
             Plus tard
           </button>
@@ -92,3 +83,5 @@ export function RateLimitConversionModal({
 
   return createPortal(modalJSX, document.body);
 }
+
+export default RateLimitConversionModal;

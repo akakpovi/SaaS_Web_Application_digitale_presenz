@@ -1,0 +1,29 @@
+{
+  "title": "Tableau de bord",
+  "subtitle": "Surveillez la santé de votre présence digitale en temps réel.",
+  "last_updated": "Dernière mise à jour",
+  "kpi": {
+    "average_score": "Score moyen",
+    "monitored_sites": "Sites surveillés",
+    "automated_247": "24/7 Automatique",
+    "uptime": "Disponibilité",
+    "open_issues": "Problèmes ouverts",
+    "all_clear": "Tout est OK"
+  },
+  "upgrade": {
+    "title": "Gratuit - {used}/{max} sites",
+    "description": "Passez à Pro pour débloquer plus de sites et fonctionnalités.",
+    "cta": "Passer à Pro"
+  },
+  "errors": {
+    "load_failed": "Erreur lors du chargement des données."
+  },
+  "status": {
+    "healthy": "Sain",
+    "good": "Bon",
+    "needs_improvement": "À améliorer",
+    "critical": "Critique",
+    "excellent": "Excellent",
+    "operational": "Opérationnel"
+  }
+}

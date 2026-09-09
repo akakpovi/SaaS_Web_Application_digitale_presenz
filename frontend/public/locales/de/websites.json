@@ -1,0 +1,29 @@
+{
+  "title": "Ihre Websites",
+  "add": "Website hinzufügen",
+  "back": "Zurück zu Websites",
+  "score": "Tatsächlicher Score",
+  "checks": "Prüfungen",
+  "checks_title": "Vollständige Diagnose",
+  "health_tab": "Gesundheit & Behebung",
+  "reports_tab": "PDF-Berichte",
+  "security_tab": "Sicherheit",
+  "seo_tab": "SEO-Audit",
+  "scan_now": "Scan starten",
+  "scanning": "Scan läuft...",
+  "no_scans": "Keine Scans für diese Website aufgezeichnet.",
+  "first_scan": "Ersten Scan starten",
+  "never_scanned": "Nie gescannt",
+  "last_scan": "Letzter Scan",
+  "details": "Details anzeigen",
+  "security_title": "Aktive Sicherheit",
+  "security_desc": "Letzte Prüfung für {domain} erfolgreich abgeschlossen.",
+  "seo_title": "Technisches SEO-Audit",
+  "seo_desc": "Indexierung und Tags für Domain {domain}.",
+  "errors": {
+    "unauthorized": "Sitzung abgelaufen. Bitte anmelden.",
+    "not_found": "Website in Ihrem Konto nicht gefunden.",
+    "load_failed": "Fehler beim Laden der Daten.",
+    "scan_failed": "Fehler beim Starten des Scans."
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import SEO, { faqSchema } from "../components/SEO";

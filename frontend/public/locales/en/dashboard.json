@@ -1,0 +1,29 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Monitor your digital presence health in real time.",
+  "last_updated": "Last updated",
+  "kpi": {
+    "average_score": "Average Score",
+    "monitored_sites": "Monitored Sites",
+    "automated_247": "24/7 Automated",
+    "uptime": "Uptime",
+    "open_issues": "Open Issues",
+    "all_clear": "All Clear"
+  },
+  "upgrade": {
+    "title": "Free - {used}/{max} sites",
+    "description": "Upgrade to Pro to unlock more sites and features.",
+    "cta": "Upgrade to Pro"
+  },
+  "errors": {
+    "load_failed": "Failed to load data."
+  },
+  "status": {
+    "healthy": "Healthy",
+    "good": "Good",
+    "needs_improvement": "Needs Improvement",
+    "critical": "Critical",
+    "excellent": "Excellent",
+    "operational": "Operational"
+  }
+}

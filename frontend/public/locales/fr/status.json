@@ -1,0 +1,13 @@
+{
+  "active": "Actif",
+  "inactive": "Inactif",
+  "paused": "En pause",
+  "healthy": "Sain",
+  "good": "Bon",
+  "excellent": "Excellent",
+  "warning": "Attention",
+  "critical": "Critique",
+  "unknown": "Inconnu",
+  "operational": "Opérationnel",
+  "needs_improvement": "À améliorer"
+}

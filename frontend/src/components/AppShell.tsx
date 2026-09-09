@@ -1,230 +1,262 @@
-import { AdBanner } from "./AdBanner";
-import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import {
-  LayoutDashboard, Globe, Activity, Bell, FileText,
-  Search, Shield, Settings, TrendingUp, ChevronRight, Menu, ChevronDown, LogOut,
-} from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { useTranslation } from "react-i18next";
-import type { Lang } from "../i18n";
+import { useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
 
-const NAV_ITEMS = [
-  { key: "Overview",       label: "Vue d'ensemble", icon: LayoutDashboard, path: "/app/dashboard" },
-  { key: "Websites",       label: "Sites Web",       icon: Globe,           path: "/app/websites" },
-  { key: "Monitoring",     label: "Surveillance",    icon: Activity,        path: "/app/monitoring" },
-  { key: "SEO",            label: "SEO",             icon: Search,          path: "/app/seo" },
-  { key: "Security",       label: "Sécurité",        icon: Shield,          path: "/app/security" },
-  { key: "Reports",        label: "Rapports",        icon: FileText,        path: "/app/reports" },
-  { key: "Alerts",         label: "Alertes",         icon: Bell,            path: "/app/alerts" },
-  { key: "Admin",          label: "👑 Admin Pilotage", icon: TrendingUp,     path: "/app/admin" },
-];
+const SHELL_TEXTS = {
+  fr: {
+    home: "Accueil",
+    dashboard: "Vue d'ensemble",
+    websites: "Sites Web",
+    monitoring: "Surveillance",
+    seo: "SEO",
+    security: "Sécurité",
+    social: "Réseaux Sociaux",
+    reports: "Rapports",
+    alerts: "Alertes",
+    admin: "👑 Admin Pilotage",
+    settings: "Paramètres",
+    logout: "Déconnexion",
+    freePlan: "Plan Gratuit",
+    unlimited: "Gratuit - {used}/{max} sites",
+    blog: "Blog",
+  },
+  en: {
+    home: "Home",
+    dashboard: "Dashboard",
+    websites: "Websites",
+    monitoring: "Monitoring",
+    seo: "SEO",
+    security: "Security",
+    social: "Social Media",
+    reports: "Reports",
+    alerts: "Alertes",
+    admin: "👑 Admin Dashboard",
+    settings: "Settings",
+    logout: "Sign out",
+    freePlan: "Free Plan",
+    unlimited: "Free - {used}/{max} sites",
+    blog: "Blog",
+  },
+  de: {
+    home: "Startseite",
+    dashboard: "Übersicht",
+    websites: "Websites",
+    monitoring: "Überwachung",
+    seo: "SEO",
+    security: "Sicherheit",
+    social: "Social Media",
+    reports: "Berichte",
+    alerts: "Warnungen",
+    admin: "👑 Admin-Cockpit",
+    settings: "Einstellungen",
+    logout: "Abmelden",
+    freePlan: "Kostenlos",
+    unlimited: "Kostenlos - {used}/{max} Websites",
+    blog: "Blog",
+  },
+};
 
-const LANGUAGES = [
-  { code: "en", label: "EN", full: "English" },
-  { code: "fr", label: "FR", full: "Français" },
-  { code: "de", label: "DE", full: "Deutsch" },
-  { code: "es", label: "ES", full: "Español" },
-];
-
-function useDropdown() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-  return { open, setOpen, ref };
-}
-
-function Logo({ collapsed }: { collapsed?: boolean }) {
-  return (
-    <Link to="/app/dashboard" className="flex items-center gap-2.5 group">
-      <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-700 transition-colors">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="6" stroke="white" strokeWidth="1.5" opacity="0.5"/>
-          <circle cx="8" cy="8" r="3" fill="white"/>
-          <path d="M8 2v2M8 12v2M2 8h2M12 8h2" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/>
-        </svg>
-      </div>
-      {!collapsed && <span className="font-bold text-slate-900 text-base tracking-tight">Presence</span>}
-    </Link>
-  );
-}
-
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell() {
   const location = useLocation();
-  const navigate  = useNavigate();
-  const { user, logout } = useAuth();
-  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { lang } = useParams<{ lang?: string }>();
+  const { i18n } = useTranslation();
+  const { plan } = useAuth();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed,   setCollapsed]   = useState(false);
-  const langDropdown = useDropdown();
-  const userDropdown = useDropdown();
+  const currentLang = ((lang || i18n.language || 'fr').split('-')[0].toLowerCase()) as 'fr' | 'en' | 'de';
+  const t = SHELL_TEXTS[currentLang] || SHELL_TEXTS.fr;
+  const langUpper = currentLang.toUpperCase();
 
-  const handleLangChange = (code: string) => {
-    i18n.changeLanguage(code);
-    langDropdown.setOpen(false);
+  const maxSites = plan?.tier === 'free' ? 3 : (plan?.tier === 'pro' ? 10 : '∞');
+  const usedSites = plan?.active_websites || 0;
+
+  const handleLanguageChange = (targetLang: string) => {
+    i18n.changeLanguage(targetLang.toLowerCase());
+    setLangMenuOpen(false);
+    const currentPathWithoutLang = location.pathname.replace(/^\/(fr|en|de)/, '');
+    navigate(`/${targetLang}${currentPathWithoutLang}`);
   };
 
-  const handleLogout = async () => {
-    userDropdown.setOpen(false);
-    try { await logout(); } catch { /* ok */ }
-    navigate("/login", { replace: true });
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    navigate(`/${currentLang}/login`);
   };
 
-  const initials = user?.full_name
-    ?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
-
-  const currentLang = LANGUAGES.find((l) => l.code === (i18n.language?.slice(0,2))) ?? LANGUAGES[0];
+  const navItems = [
+    { path: `/${currentLang}/app/dashboard`, icon: '📊', label: t.dashboard },
+    { path: `/${currentLang}/app/websites`, icon: '🌐', label: t.websites },
+    { path: `/${currentLang}/app/monitoring`, icon: '⚡', label: t.monitoring },
+    { path: `/${currentLang}/app/seo`, icon: '🔍', label: t.seo },
+    { path: `/${currentLang}/app/security`, icon: '🔒', label: t.security },
+    { path: `/${currentLang}/app/social`, icon: '🌐', label: t.social },
+    { path: `/${currentLang}/app/reports`, icon: '📄', label: t.reports },
+    { path: `/${currentLang}/app/alerts`, icon: '🔔', label: t.alerts },
+    { path: `/${currentLang}/blog`, icon: '✍️', label: t.blog },
+    { path: `/${currentLang}/app/admin`, icon: '👑', label: t.admin },
+  ];
 
   return (
-    <div className="flex h-full bg-slate-50">
-      <Helmet><meta name="robots" content="noindex,nofollow"/></Helmet>
-
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-20 bg-slate-900/40 lg:hidden" onClick={() => setSidebarOpen(false)}/>
-      )}
-
-      <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200 transition-all duration-300
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto
-        ${collapsed ? "w-16" : "w-56"}`}>
-
-        <div className={`flex items-center p-4 h-16 border-b border-slate-100 ${collapsed ? "justify-center" : "justify-between"}`}>
-          <Logo collapsed={collapsed}/>
-          {!collapsed && (
-            <button onClick={() => setCollapsed(true)}
-              className="hidden lg:flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
-              <ChevronRight size={14}/>
-            </button>
-          )}
-          {collapsed && (
-            <button onClick={() => setCollapsed(false)}
-              className="hidden lg:flex absolute -right-3 top-7 w-6 h-6 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-400 shadow-sm">
-              <ChevronRight size={12} style={{ transform: "rotate(180deg)" }}/>
-            </button>
-          )}
+    <div className="flex h-screen bg-slate-50 overflow-hidden w-full">
+      {/* SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 lg:static lg:z-auto w-64 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="flex items-center p-4 h-16 border-b border-slate-100 justify-between">
+          <Link to={`/${currentLang}/app/dashboard`} className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-sm">
+              P
+            </div>
+            <span className="font-bold text-slate-900 text-base tracking-tight">Presence</span>
+          </Link>
+          <button onClick={() => setMobileMenuOpen(false)} className="lg:hidden text-slate-400 hover:text-slate-600">
+            ✕
+          </button>
         </div>
 
-        <nav className="flex-1 py-3 px-2 overflow-y-auto">
-          <div className="flex flex-col gap-0.5">
-            {NAV_ITEMS.map(({ key, label, icon: Icon, path }) => {
-              const active = location.pathname.startsWith(path);
-              return (
-                <Link key={path} to={path} onClick={() => setSidebarOpen(false)}
-                  title={collapsed ? (label || t(key)) : undefined}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all
-                    ${active ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}
-                    ${collapsed ? "justify-center" : ""}`}>
-                  <Icon size={18} className="flex-shrink-0"/>
-                  {!collapsed && <span>{label || t(key)}</span>}
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span className="text-base">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="p-2 border-t border-slate-100 flex flex-col gap-0.5">
-          <Link to="/app/settings"
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all ${collapsed ? "justify-center" : ""}`}>
-            <Settings size={18}/>
-            {!collapsed && <span>{t("Paramètres")}</span>}
+        <div className="p-3 border-t border-slate-100 space-y-2">
+          <Link
+            to={`/${currentLang}/app/settings`}
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+          >
+            <span>⚙️</span>
+            <span>{t.settings}</span>
           </Link>
-          <button onClick={handleLogout} title={collapsed ? t("nav.signout") : undefined}
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all ${collapsed ? "justify-center" : ""}`}>
-            <LogOut size={18}/>
-            {!collapsed && <span>{t("nav.signout")}</span>}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition cursor-pointer"
+          >
+            <span>🚪</span>
+            <span>{t.logout}</span>
           </button>
-          {!collapsed && (
-            <div className="mt-2 space-y-2">
-              {/* Badge Plan Gratuit */}
-              <div className="px-3 py-1 bg-emerald-50 border border-emerald-200/80 rounded-lg flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase text-emerald-700">Plan Gratuit</span>
-                <span className="text-[10px] font-semibold text-emerald-600">Illimité</span>
-              </div>
 
-              {/* User Profil */}
-              <div className="p-2.5 bg-slate-50 rounded-xl flex items-center gap-2">
-                <div className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-indigo-700">{initials}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 truncate">{user?.full_name ?? "—"}</p>
-                  <p className="text-[11px] text-slate-500 truncate">{user?.email ?? ""}</p>
-                </div>
-              </div>
-
-              {/* Encart Sponsor Sidebar */}
-              <AdBanner slot="sidebar" />
+          <div className="pt-2">
+            <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase text-emerald-700">{t.freePlan}</span>
+              <span className="text-[10px] font-semibold text-emerald-600">{t.unlimited}</span>
             </div>
-          )}
+          </div>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center px-4 lg:px-6 gap-4 flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)}
-            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100">
-            <Menu size={20}/>
+      {/* MAIN CONTAINER */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+          >
+            ☰
           </button>
-          <div className="flex-1"/>
-          <div className="flex items-center gap-2">
 
-            <div ref={langDropdown.ref} className="relative">
-              <button onClick={() => { langDropdown.setOpen((o) => !o); userDropdown.setOpen(false); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                <Globe size={14} className="text-slate-400"/>
-                <span className="text-xs font-semibold text-slate-700">{currentLang.label}</span>
-                <ChevronDown size={12} className={`text-slate-400 transition-transform ${langDropdown.open ? "rotate-180" : ""}`}/>
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link 
+              to={`/${currentLang}/`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 transition text-xs font-bold"
+            >
+              <span>🏠</span>
+              <span className="hidden sm:inline">{t.home}</span>
+            </Link>
+
+            {/* SELECTEUR DE LANGUE DYNAMIQUE */}
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-700 transition cursor-pointer"
+              >
+                <span>🌐 {langUpper}</span>
+                <span className="text-[10px]">▼</span>
               </button>
-              {langDropdown.open && (
-                <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
-                  {LANGUAGES.map((l) => (
-                    <button key={l.code} onClick={() => handleLangChange(l.code)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left
-                        ${currentLang.code === l.code ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-slate-700 hover:bg-slate-50"}`}>
-                      {currentLang.code === l.code ? "✓ " : "\u00A0\u00A0"}{l.full}
-                    </button>
-                  ))}
+
+              {langMenuOpen && (
+                <div className="absolute right-0 mt-1 w-28 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-50">
+                  <button
+                    onClick={() => handleLanguageChange('fr')}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-indigo-50 ${langUpper === 'FR' ? 'text-indigo-600 font-bold' : 'text-slate-700'}`}
+                  >
+                    🇫🇷 Français
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange('en')}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-indigo-50 ${langUpper === 'EN' ? 'text-indigo-600 font-bold' : 'text-slate-700'}`}
+                  >
+                    🇬🇧 English
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange('de')}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-indigo-50 ${langUpper === 'DE' ? 'text-indigo-600 font-bold' : 'text-slate-700'}`}
+                  >
+                    🇩🇪 Deutsch
+                  </button>
                 </div>
               )}
             </div>
 
-            <div ref={userDropdown.ref} className="relative">
-              <button onClick={() => { userDropdown.setOpen((o) => !o); langDropdown.setOpen(false); }}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                <div className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-indigo-700">{initials}</span>
-                </div>
-                <ChevronDown size={12} className={`text-slate-400 transition-transform ${userDropdown.open ? "rotate-180" : ""}`}/>
+            {/* USER PROFILE DROPDOWN */}
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs hover:bg-indigo-200 transition cursor-pointer"
+              >
+                U
               </button>
-              {userDropdown.open && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-900 truncate">{user?.full_name ?? "—"}</p>
-                    <p className="text-xs text-slate-500 truncate">{user?.email ?? ""}</p>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-800">Utilisateur</p>
                   </div>
-                  <Link to="/app/settings" onClick={() => userDropdown.setOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                    <Settings size={14}/> {t("Paramètres")}
-                  </Link>
-                  <button onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                    <LogOut size={14}/> {t("nav.signout")}
-                  </button>
+                  <div className="p-2">
+                    <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col mb-2">
+                      <span className="text-[10px] font-bold uppercase text-emerald-700">{t.freePlan}</span>
+                      <span className="text-[10px] font-semibold text-emerald-600">
+                        {t.unlimited.replace('{used}', usedSites.toString()).replace('{max}', maxSites.toString())}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                    >
+                      <span>🚪</span> {t.logout}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">{children}</main>
+
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+          <Outlet />
+        </main>
       </div>
     </div>
   );
 }
+
+export default AppShell;

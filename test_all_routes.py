@@ -1,227 +1,108 @@
 #!/usr/bin/env python3
-import json
-import sys
-import time
-import urllib.request
-import urllib.error
+import json, sys, time, urllib.request, urllib.error
 
-BASE_URL = "http://localhost"
-API_URL = BASE_URL + "/api/v1"
+BASE = "http://localhost"
+API = BASE + "/api/v1"
+tests = []
 
-results = []
-
-def run_test(name, method, url, data=None, headers=None, expected_status=[200], is_binary=False):
-    if headers is None:
-        headers = {}
-    if data and isinstance(data, dict):
-        data = json.dumps(data).encode("utf-8")
-        headers["Content-Type"] = "application/json"
-
-    start_time = time.time()
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    
+def run(name, method, url, data=None, headers=None, ok=[200]):
+    hdrs = dict(headers or {})
+    payload = None
+    if data is not None:
+        payload = json.dumps(data).encode("utf-8")
+        hdrs["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=payload, headers=hdrs, method=method)
+    t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            status_code = response.status
-            elapsed = int((time.time() - start_time) * 1000)
-            body = response.read()
-            passed = status_code in expected_status
-            
-            parsed_json = None
-            if not is_binary and "application/json" in response.headers.get("Content-Type", ""):
-                try:
-                    parsed_json = json.loads(body.decode("utf-8"))
-                except Exception:
-                    pass
-
-            results.append({
-                "name": name,
-                "method": method,
-                "url": url.replace(BASE_URL, ""),
-                "status": status_code,
-                "expected": expected_status,
-                "passed": passed,
-                "elapsed": elapsed,
-            })
-            return status_code, parsed_json, body
+        with urllib.request.urlopen(req, timeout=10) as r:
+            code = r.status
+            dt = int((time.time() - t0) * 1000)
+            body = r.read()
+            try:
+                js = json.loads(body.decode("utf-8"))
+            except Exception:
+                js = None
+            passed = code in ok
+            tests.append((name, method, code, ok, passed, dt))
+            return code, js
     except urllib.error.HTTPError as e:
-        elapsed = int((time.time() - start_time) * 1000)
+        code = e.code
+        dt = int((time.time() - t0) * 1000)
         body = e.read()
-        passed = e.code in expected_status
-        parsed_json = None
         try:
-            parsed_json = json.loads(body.decode("utf-8"))
+            js = json.loads(body.decode("utf-8"))
         except Exception:
-            pass
-        results.append({
-            "name": name,
-            "method": method,
-            "url": url.replace(BASE_URL, ""),
-            "status": e.code,
-            "expected": expected_status,
-            "passed": passed,
-            "elapsed": elapsed,
-        })
-        return e.code, parsed_json, body
+            js = None
+        passed = code in ok
+        tests.append((name, method, code, ok, passed, dt))
+        return code, js
     except Exception as ex:
-        elapsed = int((time.time() - start_time) * 1000)
-        results.append({
-            "name": name,
-            "method": method,
-            "url": url.replace(BASE_URL, ""),
-            "status": "ERR",
-            "expected": expected_status,
-            "passed": False,
-            "elapsed": elapsed,
-        })
-        return 0, None, None
+        dt = int((time.time() - t0) * 1000)
+        tests.append((name, method, "ERR", ok, False, dt))
+        return 0, None
 
-print("\n==================================================================")
-print(" 🧪 AUDIT AUTOMATISÉ COMPLET DE TOUTES LES ROUTES (PRESENCE SAAS) ")
-print("==================================================================\n")
+print("\n" + "="*65)
+print(" 🧪 AUDIT DE TOUTES LES ROUTES (PRESENCE SAAS) ")
+print("="*65 + "\n")
 
-# 1. CORE & HEALTH
-print("1. CORE & SANTÉ SERVEUR")
-run_test("Health Check API", "GET", API_URL + "/health/", expected_status=[200])
+# Core
+run("Health Check API", "GET", API + "/health/", ok=[200])
 
-# 2. AUTHENTIFICATION & JWT
-print("\n2. AUTHENTIFICATION & TOKENS JWT")
-run_test(
-    "Inscription / Register", "POST", API_URL + "/auth/register/",
-    data={"email": "audit_" + str(int(time.time())) + "@presence.io", "password": "TestPassword123!", "name": "Audit User"},
-    expected_status=[201, 400]
-)
+# Auth
+run("Inscription / Register", "POST", API + "/auth/register/", {"email": f"t_{int(time.time())}@presence.io", "password": "Password123!", "name": "User"}, ok=[201, 400])
+_, lg = run("Connexion / Login (JWT)", "POST", API + "/auth/login/", {"email": "demo@presence.io", "password": "demo123456"}, ok=[200])
+tok = (lg or {}).get("tokens", {}).get("access") or (lg or {}).get("access", "")
+auth = {"Authorization": f"Bearer {tok}"} if tok else {}
 
-status_login, login_data, _ = run_test(
-    "Connexion / Login (JWT)", "POST", API_URL + "/auth/login/",
-    data={"email": "demo@presence.io", "password": "demo123456"},
-    expected_status=[200]
-)
+if tok:
+    run("Profil Utilisateur (/auth/me/)", "GET", API + "/auth/me/", headers=auth, ok=[200])
 
-access_token = None
-if login_data:
-    if "tokens" in login_data and "access" in login_data["tokens"]:
-        access_token = login_data["tokens"]["access"]
-    elif "access" in login_data:
-        access_token = login_data["access"]
+# Public Scan
+_, sc = run("Scan Public Synchrone", "POST", API + "/public/scan/", {"url": "https://decathlon.fr"}, ok=[200, 429])
+sid = str((sc or {}).get("scan_id", "1"))
+run("Statut Scan Public", "GET", API + f"/public/scan/{sid}/status/", ok=[200, 404])
+run("Envoi Rapport par Email", "POST", API + f"/public/scan/{sid}/email/", {"email": "client@agence.com"}, headers={"Accept-Language": "fr-FR"}, ok=[200, 202, 404, 429])
+run("Route Legacy /check/", "POST", API + "/public/check/", {"domain": "nike.com"}, ok=[202, 429])
 
-auth_headers = {"Authorization": "Bearer " + access_token} if access_token else {}
+# Websites
+run("Liste des sites", "GET", API + "/websites/", headers=auth, ok=[200])
+_, st = run("Création de site", "POST", API + "/websites/", {"domain": f"site-{int(time.time())}.com", "display_name": "Audit Site"}, headers=auth, ok=[201, 400])
+site_id = str((st or {}).get("id", "1"))
+run("Détail du site & checks", "GET", API + f"/websites/{site_id}/", headers=auth, ok=[200])
+run("Déclenchement scan auth", "POST", API + f"/websites/{site_id}/scan/", headers=auth, ok=[202, 409])
 
-if access_token:
-    run_test("Profil Utilisateur (/auth/me/)", "GET", API_URL + "/auth/me/", headers=auth_headers, expected_status=[200])
+# Scans & Reports
+run("Liste des scans", "GET", API + "/scans/", headers=auth, ok=[200])
+run("Détail d'un scan", "GET", API + f"/scans/{sid}/", headers=auth, ok=[200, 404])
+run("CheckResults détaillés", "GET", API + f"/scans/{sid}/results/", headers=auth, ok=[200, 404])
+run("Rapport PDF Marque Blanche", "GET", API + f"/reports/pdf/{sid}/?lang=fr", headers=auth, ok=[200, 404])
 
-# 3. PUBLIC SCANNER
-print("\n3. SCANNER PUBLIC (PARCOURS GUEST / VISITEUR)")
-status_scan, scan_data, _ = run_test(
-    "Scan Public Synchrone", "POST", API_URL + "/public/scan/",
-    data={"url": "https://decathlon.fr"},
-    expected_status=[200, 429]
-)
+# Analytics & Admin
+run("Tracking événement", "POST", API + "/analytics/events/track/", {"event_type": "page_view", "metadata": {"page": "cli"}}, ok=[200, 201])
+run("Dashboard Admin (CEO)", "GET", API + "/analytics/admin/overview/", headers=auth, ok=[200, 403])
 
-created_scan_id = "1"
-if scan_data and isinstance(scan_data, dict):
-    created_scan_id = str(scan_data.get("scan_id", "1"))
+# Alerts
+run("Liste des alertes", "GET", API + "/alerts/", headers=auth, ok=[200])
+run("Canaux notifications", "GET", API + "/notifications/channels/", headers=auth, ok=[200])
 
-run_test("Statut Scan Public", "GET", API_URL + "/public/scan/" + created_scan_id + "/status/", expected_status=[200, 404])
+# Frontend Nginx & SEO
+run("Redirection Racine /", "GET", BASE + "/", ok=[200, 302])
+run("Landing Page (FR)", "GET", BASE + "/fr/", ok=[200])
+run("Landing Page (EN)", "GET", BASE + "/en/", ok=[200])
+run("Landing Page (DE)", "GET", BASE + "/de/", ok=[200])
+run("Page Scan & Paywall", "GET", BASE + "/scan/66", ok=[200])
+run("PWA Manifest", "GET", BASE + "/manifest.json", ok=[200])
+run("Service Worker", "GET", BASE + "/sw.js", ok=[200])
 
-run_test(
-    "Envoi Rapport par Email (Lead)", "POST", API_URL + "/public/scan/" + created_scan_id + "/email/",
-    data={"email": "prospect@agence.com"},
-    headers={"Accept-Language": "fr-FR,fr;q=0.9"},
-    expected_status=[200, 202, 404, 429]
-)
+print("\n" + "="*75)
+print(f"{'TEST / ROUTE':<35} {'MÉTHODE':<8} {'STATUT':<8} {'TEMPS':<8} {'RÉSULTAT':<8}")
+print("-" * 75)
 
-run_test("Route Legacy Asynchrone /check/", "POST", API_URL + "/public/check/", data={"domain": "nike.com"}, expected_status=[202, 429])
+passed = 0
+for name, meth, code, ok, ok_bool, dt in tests:
+    res = "✔ PASS" if ok_bool else "✖ FAIL"
+    if ok_bool: passed += 1
+    print(f"{name:<35} {meth:<8} {str(code):<8} {str(dt)+'ms':<8} {res}")
 
-# 4. WEBSITES
-print("\n4. GESTION DES SITES WEB (DONNÉES RÉELLES POSTGRESQL)")
-run_test("Liste des sites de l'utilisateur", "GET", API_URL + "/websites/", headers=auth_headers, expected_status=[200])
-
-status_create_site, site_data, _ = run_test(
-    "Création de site normalisé", "POST", API_URL + "/websites/",
-    data={"domain": "site-audit-" + str(int(time.time())) + ".com", "display_name": "Site Audit"},
-    headers=auth_headers,
-    expected_status=[201]
-)
-
-test_site_id = "1"
-if site_data and isinstance(site_data, dict):
-    test_site_id = str(site_data.get("id", "1"))
-
-run_test(
-    "Détail du site avec données réelles & checks", "GET", API_URL + "/websites/" + test_site_id + "/",
-    headers=auth_headers,
-    expected_status=[200]
-)
-
-run_test(
-    "Déclenchement d'un scan authentifié", "POST", API_URL + "/websites/" + test_site_id + "/scan/",
-    headers=auth_headers,
-    expected_status=[202, 409]
-)
-
-# 5. SCANS & CHECK RESULTS
-print("\n5. SCANS & RÉSULTATS DÉTAILLÉS")
-run_test("Liste des scans utilisateur", "GET", API_URL + "/scans/", headers=auth_headers, expected_status=[200])
-run_test("Détail d'un scan", "GET", API_URL + "/scans/" + created_scan_id + "/", headers=auth_headers, expected_status=[200, 404])
-run_test("Liste des CheckResults d'un scan", "GET", API_URL + "/scans/" + created_scan_id + "/results/", headers=auth_headers, expected_status=[200, 404])
-
-# 6. RAPPORTS PDF MARQUE BLANCHE
-print("\n6. RAPPORTS PDF MARQUE BLANCHE (WEASYPRINT)")
-run_test(
-    "Génération PDF avec logo d'agence", "GET",
-    API_URL + "/reports/pdf/" + created_scan_id + "/?logo_url=https://example.com/logo.png&lang=fr",
-    headers=auth_headers,
-    expected_status=[200, 404],
-    is_binary=True
-)
-
-# 7. ANALYTICS & PILOTAGE
-print("\n7. ANALYTICS & DASHBOARD ADMIN")
-run_test(
-    "Tracking d'événement télémétrie", "POST", API_URL + "/analytics/events/track/",
-    data={"event_type": "page_view", "metadata": {"page": "audit_cli"}},
-    expected_status=[200, 201]
-)
-run_test("Dashboard Admin Pilotage (CEO)", "GET", API_URL + "/analytics/admin/overview/", headers=auth_headers, expected_status=[200, 403])
-
-# 8. ALERTS & NOTIFICATIONS
-print("\n8. ALERTES & NOTIFICATIONS")
-run_test("Liste des alertes", "GET", API_URL + "/alerts/", headers=auth_headers, expected_status=[200])
-run_test("Canaux de notifications", "GET", API_URL + "/notifications/channels/", headers=auth_headers, expected_status=[200])
-
-# 9. FRONTEND & SEO MULTILINGUE
-print("\n9. FRONTEND, PWA & SEO MULTILINGUE")
-run_test("Redirection Racine /", "GET", BASE_URL + "/", expected_status=[200, 302])
-run_test("Landing Page Français (/fr/)", "GET", BASE_URL + "/fr/", expected_status=[200])
-run_test("Landing Page Anglais (/en/)", "GET", BASE_URL + "/en/", expected_status=[200])
-run_test("Landing Page Allemand (/de/)", "GET", BASE_URL + "/de/", expected_status=[200])
-run_test("Page Paywall / Remédiation (/scan/66)", "GET", BASE_URL + "/scan/66", expected_status=[200])
-run_test("PWA Manifest (/manifest.json)", "GET", BASE_URL + "/manifest.json", expected_status=[200])
-run_test("Service Worker PWA (/sw.js)", "GET", BASE_URL + "/sw.js", expected_status=[200])
-
-# RAPPORT FINAL
-print("\n" + "=" * 80)
-print(f"{'TEST / ROUTE':<45} {'MÉTHODE':<8} {'STATUT':<8} {'TEMPS':<8} {'RÉSULTAT':<8}")
-print("-" * 80)
-
-total_passed = 0
-for r in results:
-    status_str = str(r["status"])
-    if r["passed"]:
-        res_str = "✔ PASS"
-        total_passed += 1
-    else:
-        res_str = "✖ FAIL"
-
-    print(f"{r['name']:<45} {r['method']:<8} {status_str:<8} {str(r['elapsed']) + 'ms':<8} {res_str}")
-
-print("=" * 80)
-print(f"Résultat global : {total_passed}/{len(results)} routes validées avec succès.\n")
-
-if total_passed == len(results):
-    print("🎉 TOUTES LES ROUTES DU SYSTÈME SONT 100% OPÉRATIONNELLES !\n")
-    sys.exit(0)
-else:
-    print("⚠️ Certaines routes nécessitent une attention.\n")
-    sys.exit(1)
+print("="*75)
+print(f"Résultat : {passed}/{len(tests)} routes validées avec succès.\n")

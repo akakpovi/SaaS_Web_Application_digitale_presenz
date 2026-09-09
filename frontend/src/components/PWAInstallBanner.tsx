@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
 import { Download, BellRing, Smartphone, CheckCircle2, Loader } from "lucide-react";
 import api from "../services/api";
 

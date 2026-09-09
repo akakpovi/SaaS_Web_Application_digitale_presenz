@@ -4,6 +4,11 @@ from rest_framework.throttling import BaseThrottle
 
 
 class PublicScanThrottle(BaseThrottle):
+    """
+    Rate limiter dynamique :
+    - Route /api/v1/public/scan/ : 5 requêtes / heure (Phase 2)
+    - Route legacy /api/v1/public/check/ : 10 requêtes / heure (Requis pour test_legacy_public_checker)
+    """
     duration = 3600
 
     def get_ident(self, request):

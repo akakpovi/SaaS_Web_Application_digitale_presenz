@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
 import { BellRing, Bell, X } from "lucide-react";
 import api from "../services/api";
 

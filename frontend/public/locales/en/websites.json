@@ -1,0 +1,29 @@
+{
+  "title": "Your Websites",
+  "add": "Add website",
+  "back": "Back to websites",
+  "score": "Real Score",
+  "checks": "Checks",
+  "checks_title": "Complete Diagnosis",
+  "health_tab": "Health & Remediation",
+  "reports_tab": "PDF Reports",
+  "security_tab": "Security",
+  "seo_tab": "SEO Audit",
+  "scan_now": "Run scan",
+  "scanning": "Scanning...",
+  "no_scans": "No scans recorded for this site.",
+  "first_scan": "Run first scan",
+  "never_scanned": "Never scanned",
+  "last_scan": "Last scan",
+  "details": "View details",
+  "security_title": "Active Security",
+  "security_desc": "Last check for {domain} completed successfully.",
+  "seo_title": "Technical SEO Audit",
+  "seo_desc": "Indexing and tags for domain {domain}.",
+  "errors": {
+    "unauthorized": "Session expired. Please log in.",
+    "not_found": "Site not found in your account.",
+    "load_failed": "Failed to load data.",
+    "scan_failed": "Failed to start scan."
+  }
+}

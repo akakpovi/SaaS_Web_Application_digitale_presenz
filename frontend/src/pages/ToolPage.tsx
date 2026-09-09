@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle, Loader, ChevronDown, Globe } from "lucide-react";
 import SEO, { faqSchema, breadcrumbSchema, softwareAppSchema } from "../components/SEO";

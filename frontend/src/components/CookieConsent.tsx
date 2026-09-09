@@ -1,144 +1,145 @@
-import React, { useState, useEffect } from "react";
-import { Cookie, ShieldCheck, TrendingUp, Bell, Lock, X, Check } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { Cookie, Check } from "lucide-react";
 import api from "../services/api";
 
-const COOLDOWN_MS = 3 * 60 * 1000; // ⏱️ Rappel après 3 minutes
+import { useTranslation } from 'react-i18next';
+
+const COOLDOWN_MS = 3 * 60 * 1000; // Rappel après 3 minutes
 
 const TRANSLATIONS: Record<string, any> = {
   fr: {
     title: "Gestion des Cookies",
     desc: "Nous utilisons des cookies pour améliorer votre expérience, sécuriser votre compte et mesurer l'audience de manière anonyme (RGPD).",
-    acceptAll: "Accepter tout & Activer les avantages",
+    acceptAll: "Tout accepter",
     essential: "Essentiels uniquement",
-    benefitsTitle: "Pourquoi accepter les cookies ?",
-    benefits: [
-      { icon: "lock", text: "Session sécurisée : restez connecté automatiquement sur mobile et PC" },
-      { icon: "bell", text: "Alertes push instantanées en cas de panne de votre site" },
-      { icon: "trending", text: "Recommandations de sponsors & codes promos hébergement" },
-    ],
+    customize: "Personnaliser",
   },
   en: {
     title: "Cookie Management",
     desc: "We use cookies to improve your experience, secure your account, and measure traffic anonymously (GDPR compliant).",
-    acceptAll: "Accept all & Enable benefits",
+    acceptAll: "Accept all",
     essential: "Essential only",
-    benefitsTitle: "Why accept cookies?",
-    benefits: [
-      { icon: "lock", text: "Secure session: stay logged in automatically on mobile and PC" },
-      { icon: "bell", text: "Instant push alerts when your website goes down" },
-      { icon: "trending", text: "Sponsor recommendations & hosting discount codes" },
-    ],
+    customize: "Customize",
   },
   de: {
     title: "Cookie-Verwaltung",
     desc: "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern, Ihr Konto zu sichern und den Traffic anonym zu messen (DSGVO-konform).",
-    acceptAll: "Alle akzeptieren & Vorteile aktivieren",
+    acceptAll: "Alle akzeptieren",
     essential: "Nur notwendige",
-    benefitsTitle: "Warum Cookies akzeptieren?",
-    benefits: [
-      { icon: "lock", text: "Sichere Sitzung: auf Handy und PC automatisch angemeldet bleiben" },
-      { icon: "bell", text: "Sofortige Push-Benachrichtigungen bei Ausfall Ihrer Website" },
-      { icon: "trending", text: "Sponsoren-Empfehlungen & Hosting-Rabattcodes" },
-    ],
+    customize: "Anpassen",
   },
 };
 
-function detectLang(): string {
-  const nav = navigator.language?.slice(0, 2).toLowerCase() || "en";
-  if (["fr", "en", "de"].includes(nav)) return nav;
-  return "en";
-}
-
 export const CookieConsent: React.FC = () => {
+  const { i18n } = useTranslation();
   const [visible, setVisible] = useState(false);
-  const [lang, setLang] = useState("en");
+  const [isDismissed, setIsDismissed] = useState(true);
+
+  // Sync language with app state
+  const lang = (i18n.language?.split('-')[0] || 'fr') as 'fr' | 'en' | 'de';
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
 
   useEffect(() => {
-    setLang(detectLang());
+    let timeoutId: NodeJS.Timeout;
 
     const checkConsent = () => {
       const consent = localStorage.getItem("presence_cookie_consent");
       const dismissedAt = localStorage.getItem("presence_cookie_dismissed_at");
       const isDismissedRecently = dismissedAt && (Date.now() - Number(dismissedAt)) < COOLDOWN_MS;
 
-      if (consent === "all") {
+      if (consent === "all" || consent === "essential") {
         setVisible(false);
+        setIsDismissed(true);
       } else if (!isDismissedRecently) {
-        setVisible(true);
+        // Add a 3-second delay before showing the banner to avoid immediate popup
+        timeoutId = setTimeout(() => {
+          setVisible(true);
+          setIsDismissed(false);
+        }, 3000);
+      } else {
+        setIsDismissed(true);
       }
     };
 
     checkConsent();
-    const interval = setInterval(checkConsent, 30000); // Vérifie toutes les 30s si le délai de 3 min est écoulé
-    return () => clearInterval(interval);
-  }, []);
+    const interval = setInterval(() => {
+      // Don't use checkConsent here to avoid the 3s timeout repeating, 
+      // instead check directly
+      const consent = localStorage.getItem("presence_cookie_consent");
+      if (consent !== "all" && consent !== "essential" && isDismissed) {
+         // Logic to potentially reshow could go here if needed
+      }
+    }, 30000);
 
-  const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isDismissed]);
 
   const handleAcceptAll = () => {
     localStorage.setItem("presence_cookie_consent", "all");
     localStorage.removeItem("presence_cookie_dismissed_at");
     setVisible(false);
+    setIsDismissed(true);
     api.post("/analytics/events/track/", { event_type: "cookie_accept" }).catch(() => {});
   };
 
   const handleEssentialOnly = () => {
+    localStorage.setItem("presence_cookie_consent", "essential");
     localStorage.setItem("presence_cookie_dismissed_at", Date.now().toString());
     setVisible(false);
+    setIsDismissed(true);
     api.post("/analytics/events/track/", { event_type: "cookie_essential" }).catch(() => {});
   };
 
-  const iconMap: Record<string, React.ReactNode> = {
-    lock: <Lock size={14} className="text-emerald-400" />,
-    bell: <Bell size={14} className="text-indigo-400" />,
-    trending: <TrendingUp size={14} className="text-amber-400" />,
+  const openBanner = () => {
+    setVisible(true);
+    setIsDismissed(false);
   };
 
-  if (!visible) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-slate-900/95 text-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-700/50 max-w-md w-full animate-in zoom-in-95 duration-300 space-y-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-2xl flex-shrink-0">
-              <Cookie size={22} />
+    <>
+      {/* 🛑 Sticky Bottom Banner (No Overlay) */}
+      {visible && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 bg-slate-900 border-t border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-300">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-4 md:gap-8 justify-between">
+            <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="hidden sm:flex p-3 bg-indigo-600/20 text-indigo-400 rounded-full flex-shrink-0">
+                <Cookie size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm sm:text-base mb-1">{t.title} 🍪</h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+                  {t.desc}
+                </p>
+              </div>
             </div>
-            <h3 className="font-extrabold text-lg text-white">{t.title} 🍪</h3>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+              <button
+                onClick={openBanner}
+                className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+              >
+                {t.customize}
+              </button>
+              <button
+                onClick={handleEssentialOnly}
+                className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+              >
+                {t.essential}
+              </button>
+              <button
+                onClick={handleAcceptAll}
+                className="w-full sm:w-auto py-2.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-1.5"
+              >
+                <Check size={16} /> {t.acceptAll}
+              </button>
+            </div>
           </div>
-          <button onClick={handleEssentialOnly} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
-            <X size={18} />
-          </button>
         </div>
-
-        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{t.desc}</p>
-
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
-          <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider">{t.benefitsTitle}</h4>
-          {t.benefits.map((b: any, i: number) => (
-            <div key={i} className="flex items-start gap-2.5 text-xs text-slate-200">
-              <div className="mt-0.5 flex-shrink-0">{iconMap[b.icon]}</div>
-              <span className="leading-tight">{b.text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2 pt-2">
-          <button
-            onClick={handleAcceptAll}
-            className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-1.5"
-          >
-            <Check size={16} /> {t.acceptAll}
-          </button>
-          <button
-            onClick={handleEssentialOnly}
-            className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs sm:text-sm font-semibold transition-colors border border-slate-700"
-          >
-            {t.essential}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

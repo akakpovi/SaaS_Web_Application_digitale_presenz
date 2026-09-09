@@ -1,0 +1,10 @@
+{
+  "free": "Gratuit",
+  "pro": "Pro",
+  "business": "Business",
+  "badge": "{used}/{max} sites",
+  "free_badge": "Gratuit - {used}/{max} sites",
+  "pro_badge": "Pro",
+  "active": "Actif",
+  "upgrade": "Passer à Pro"
+}

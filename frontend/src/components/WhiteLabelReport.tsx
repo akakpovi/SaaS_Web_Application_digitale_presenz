@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
@@ -9,6 +10,7 @@ interface WhiteLabelReportProps {
 }
 
 export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
+  const { t } = useTranslation();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -20,7 +22,7 @@ export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setError('Le logo doit faire moins de 2 Mo.');
+      setError(t('reports.whitelabel.error_size', 'Le logo doit faire moins de 2 Mo.'));
       return;
     }
 
@@ -69,8 +71,8 @@ export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
     } catch (err: any) {
       setError(
         err.response?.status === 403
-          ? 'Accès refusé. Ce rapport nécessite un plan Pro ou Business.'
-          : 'Erreur lors de la génération du PDF.'
+          ? t('reports.whitelabel.error_forbidden', 'Accès refusé. Ce rapport nécessite un plan Pro ou Business.')
+          : t('reports.whitelabel.error_general', 'Erreur lors de la génération du PDF.')
       );
     } finally {
       setGenerating(false);
@@ -80,16 +82,16 @@ export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h3 className="text-lg font-bold text-slate-900">
-        Rapport PDF Marque Blanche
+        {t('reports.whitelabel.title', 'Rapport PDF Marque Blanche')}
       </h3>
       <p className="mt-1 text-sm text-slate-500">
-        Générez un rapport professionnel personnalisé avec votre logo d'agence.
+        {t('reports.whitelabel.desc', 'Générez un rapport professionnel personnalisé avec votre logo d\'agence.')}
       </p>
 
       {/* Upload Logo */}
       <div className="mt-4">
         <label className="block text-sm font-medium text-slate-700">
-          Logo personnalisé (optionnel)
+          {t('reports.whitelabel.logo', 'Logo personnalisé (optionnel)')}
         </label>
         <div className="mt-2 flex items-center gap-4">
           {logoPreview ? (
@@ -110,7 +112,7 @@ export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
             onClick={() => fileInputRef.current?.click()}
             className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
-            Choisir un fichier
+            {t('reports.whitelabel.choose_file', 'Choisir un fichier')}
           </button>
           <input
             ref={fileInputRef}
@@ -136,14 +138,14 @@ export function WhiteLabelReport({ scanId, domain }: WhiteLabelReportProps) {
         {generating ? (
           <>
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            Génération en cours...
+            {t('reports.whitelabel.generating', 'Génération en cours...')}
           </>
         ) : (
           <>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Générer le rapport PDF
+            {t('reports.whitelabel.generate_btn', 'Générer le rapport PDF')}
           </>
         )}
       </button>

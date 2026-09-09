@@ -1,0 +1,13 @@
+{
+  "active": "Active",
+  "inactive": "Inactive",
+  "paused": "Paused",
+  "healthy": "Healthy",
+  "good": "Good",
+  "excellent": "Excellent",
+  "warning": "Warning",
+  "critical": "Critical",
+  "unknown": "Unknown",
+  "operational": "Operational",
+  "needs_improvement": "Needs Improvement"
+}

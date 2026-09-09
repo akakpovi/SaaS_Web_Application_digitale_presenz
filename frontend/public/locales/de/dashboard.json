@@ -1,0 +1,29 @@
+{
+  "title": "Übersicht",
+  "subtitle": "Überwachen Sie die Gesundheit Ihrer digitalen Präsenz in Echtzeit.",
+  "last_updated": "Zuletzt aktualisiert",
+  "kpi": {
+    "average_score": "Durchschnittlicher Score",
+    "monitored_sites": "Überwachte Websites",
+    "automated_247": "24/7 Automatisch",
+    "uptime": "Verfügbarkeit",
+    "open_issues": "Offene Probleme",
+    "all_clear": "Alles in Ordnung"
+  },
+  "upgrade": {
+    "title": "Kostenlos - {used}/{max} Websites",
+    "description": "Upgraden Sie auf Pro für weitere Websites und Funktionen.",
+    "cta": "Auf Pro upgraden"
+  },
+  "errors": {
+    "load_failed": "Fehler beim Laden der Daten."
+  },
+  "status": {
+    "healthy": "Gesund",
+    "good": "Gut",
+    "needs_improvement": "Verbesserungswürdig",
+    "critical": "Kritisch",
+    "excellent": "Exzellent",
+    "operational": "Funktionsfähig"
+  }
+}

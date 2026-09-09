@@ -1,7 +1,10 @@
-import { useCallback, useState } from 'react';
+// frontend/src/hooks/usePublicScan.ts
+// Hook réservé au déclenchement d'un nouveau scan public depuis l'accueil
+
+import React, { useCallback, useState } from 'react';
 import axios, { AxiosError } from 'axios';
 
-interface PublicScanResponse {
+interface PublicScanTriggerResponse {
   scan_id: string;
   score: number;
   status: string;
@@ -11,7 +14,7 @@ interface UsePublicScanReturn {
   loading: boolean;
   error: string | null;
   isRateLimited: boolean;
-  scanResult: PublicScanResponse | null;
+  scanResult: PublicScanTriggerResponse | null;
   triggerScan: (url: string) => Promise<void>;
   dismissRateLimitModal: () => void;
 }
@@ -19,10 +22,11 @@ interface UsePublicScanReturn {
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
 export function usePublicScan(): UsePublicScanReturn {
+  // Initialisé à false pour éviter le blocage "Analyse..." au chargement
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
-  const [scanResult, setScanResult] = useState<PublicScanResponse | null>(null);
+  const [scanResult, setScanResult] = useState<PublicScanTriggerResponse | null>(null);
 
   const triggerScan = useCallback(async (url: string) => {
     setLoading(true);
@@ -30,7 +34,7 @@ export function usePublicScan(): UsePublicScanReturn {
     setIsRateLimited(false);
 
     try {
-      const response = await axios.post<PublicScanResponse>(
+      const response = await axios.post<PublicScanTriggerResponse>(
         `${API_BASE}/public/scan/`,
         { url },
         { headers: { 'Content-Type': 'application/json' } }
@@ -40,12 +44,11 @@ export function usePublicScan(): UsePublicScanReturn {
       try {
         sessionStorage.setItem('has_scanned', 'true');
       } catch {
-        // Ignoré silencieusement (mode navigation privée)
+        // Ignoré (mode navigation privée)
       }
     } catch (err) {
       const axiosError = err as AxiosError<{ detail?: string }>;
 
-      // 🚦 Interception stricte du code HTTP 429 Too Many Requests
       if (axiosError.response?.status === 429) {
         setIsRateLimited(true);
       } else {
@@ -72,3 +75,5 @@ export function usePublicScan(): UsePublicScanReturn {
     dismissRateLimitModal,
   };
 }
+
+export default usePublicScan;

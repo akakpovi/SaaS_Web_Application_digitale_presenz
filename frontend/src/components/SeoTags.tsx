@@ -34,7 +34,7 @@ export function SeoTags({ title, description }: SeoTagsProps) {
 
   return (
     <Helmet>
-      <title>{pageTitle}</title>
+      <title>{String(pageTitle)}</title>
       <meta name="description" content={pageDesc} />
 
       {/* Hreflang tags pour le SEO multilingue */}

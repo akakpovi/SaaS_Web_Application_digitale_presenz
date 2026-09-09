@@ -1,6 +1,6 @@
+import React, { ReactNode, createContext, useContext } from 'react';
 // Wrapper de compatibilité — utilise i18next directement
 // Conservé pour les imports existants, mais useTranslation() est préférable
-import React, { createContext, useContext, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Lang } from "../i18n";
 

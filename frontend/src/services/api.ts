@@ -1,52 +1,48 @@
-import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+import axiosInstance from "axios";
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api/v1";
+
+export const api = axiosInstance.create({
+  baseURL: API_BASE,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
+// Intercepteur pour injecter automatiquement le token JWT à chaque requête
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Intercepteur pour gérer les expirations de session (401)
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  (error) => {
+    if (error.response?.status === 401) {
+      // Nettoyer les tokens obsolètes
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const response = await axios.post(`${BASE_URL}/auth/refresh/`, {
-          refresh: refreshToken,
-        });
-
-        const { access } = response.data;
-        localStorage.setItem('access_token', access);
-        originalRequest.headers.Authorization = `Bearer ${access}`;
-        return api(originalRequest);
-
-      } catch {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+      // Détecter la langue courante de l'URL pour rediriger proprement
+      const currentLang = window.location.pathname.split("/")[1] || "fr";
+      const langPrefix = ["fr", "en", "de"].includes(currentLang) ? `/${currentLang}` : "/fr";
+      
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = `${langPrefix}/login?expired=true`;
       }
     }
-
     return Promise.reject(error);
   }
 );

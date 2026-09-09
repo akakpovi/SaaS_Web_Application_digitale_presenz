@@ -54,7 +54,7 @@ const articles = [
   },
 ];
 
-export default function BlogPage() {
+export function BlogPage() {
   return (
     <div className="min-h-full bg-white">
       <SEO
@@ -68,15 +68,14 @@ export default function BlogPage() {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="white" /></svg>
+              <span className="text-white font-bold text-sm">P</span>
             </div>
             <span className="font-bold text-slate-900">Presence</span>
           </Link>
           <nav className="hidden md:flex items-center gap-5 text-sm text-slate-600">
             <Link to="/#features" className="hover:text-slate-900">Features</Link>
             <Link to="/pricing" className="hover:text-slate-900">Pricing</Link>
-            <Link to="/tools/website-checker" className="hover:text-slate-900">Free checker</Link>
-            <Link to="/faq" className="hover:text-slate-900">FAQ</Link>
+            <Link to="/blog" className="hover:text-slate-900">Blog</Link>
           </nav>
           <Link to="/register"><button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">Get started</button></Link>
         </div>
@@ -118,7 +117,7 @@ export default function BlogPage() {
         <div className="mt-16 p-8 bg-indigo-600 rounded-2xl text-center text-white">
           <h2 className="text-2xl font-bold mb-3">Check your website for free</h2>
           <p className="text-indigo-200 mb-6">See your website health score in seconds. No account required.</p>
-          <Link to="/tools/website-checker">
+          <Link to="/">
             <button className="px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition-colors">
               Check my website
             </button>
@@ -127,7 +126,7 @@ export default function BlogPage() {
       </main>
 
       <footer className="border-t border-slate-200 py-8 px-4 text-center mt-8">
-        <p className="text-sm text-slate-400">© 2026 Presence — <Link to="/" className="hover:text-slate-600">Home</Link> · <Link to="/pricing" className="hover:text-slate-600">Pricing</Link> · <Link to="/faq" className="hover:text-slate-600">FAQ</Link></p>
+        <p className="text-sm text-slate-400">© 2026 Presence — <Link to="/" className="hover:text-slate-600">Home</Link> · <Link to="/pricing" className="hover:text-slate-600">Pricing</Link></p>
       </footer>
     </div>
   );

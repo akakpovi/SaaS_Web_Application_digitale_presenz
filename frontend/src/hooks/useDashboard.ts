@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { websiteService, scanService, Website, Scan } from '../services/websiteService';
 import { alertService, Alert } from '../services/alertService';
 import { useAuth } from '../context/AuthContext';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicScan } from '../hooks/usePublicScan';
 import { RateLimitConversionModal } from './RateLimitConversionModal';
@@ -26,7 +26,11 @@ export function PublicScanForm({ className = '' }: PublicScanFormProps) {
   };
 
   if (scanResult?.scan_id) {
-    navigate(`/scan/${scanResult.scan_id}`);
+    
+    const currentLang = window.location.pathname.split('/')[1] || 'fr';
+    const langPrefix = ['fr', 'en', 'de'].includes(currentLang) ? `/${currentLang}` : '/fr';
+    navigate(`${langPrefix}/scan/${scanResult.scan_id}`);
+
   }
 
   return (

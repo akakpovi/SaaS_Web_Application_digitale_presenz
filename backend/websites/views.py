@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Website
-from .serializers import WebsiteSerializer, WebsiteDetailSerializer
+from .serializers import WebsiteSerializer, WebsiteListSerializer, WebsiteDetailSerializer
 from scans.models import Scan, HealthStatus
 from scans.serializers import ScanSerializer
 from scans.tasks import run_authenticated_scan
@@ -17,6 +17,8 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "retrieve":
             return WebsiteDetailSerializer
+        elif self.action == "list":
+            return WebsiteListSerializer
         return WebsiteSerializer
 
     def perform_create(self, serializer):

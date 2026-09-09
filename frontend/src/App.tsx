@@ -1,73 +1,53 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { SeoTags } from './components/SeoTags';
-import { ModalQueueProvider } from './context/ModalQueueContext';
-import { PWAInstallToast } from './components/PWAInstallToast';
-import { CookieBanner } from './components/CookieBanner';
 import { AppShell } from './components/AppShell';
-
-import AdminDashboard from './pages/AdminDashboard';
-import Alerts from './pages/Alerts';
-import Auth from './pages/Auth';
-import BlogPage from './pages/BlogPage';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import CookieConsent from './components/CookieConsent';
 import Dashboard from './pages/Dashboard';
-import FAQPage from './pages/FAQPage';
-import FeaturePage from './pages/FeaturePage';
-import Landing from './pages/Landing';
+import Websites from './pages/Websites';
+import WebsiteDetails from './pages/WebsiteDetails';
+import SecurityPage from './pages/SecurityPage';
+import SEOPage from './pages/SEOPage';
+import Alerts from './pages/Alerts';
 import Monitoring from './pages/Monitoring';
-import Onboarding from './pages/Onboarding';
+import Reports from './pages/Reports';
+import AdminDashboard from './pages/AdminDashboard';
+import Settings from './pages/Settings';
+import Reviews from './pages/Reviews';
+import Social from './pages/Social';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Pricing from './pages/Pricing';
 import PublicScanResult from './pages/PublicScanResult';
-import Reports from './pages/Reports';
-import Reviews from './pages/Reviews';
-import SEOPage from './pages/SEOPage';
-import SecurityPage from './pages/SecurityPage';
-import Settings from './pages/Settings';
-import ToolPage from './pages/ToolPage';
-import WebsiteDetails from './pages/WebsiteDetails';
-import Websites from './pages/Websites';
-
-const SUPPORTED_LANGS = ['fr', 'en', 'de'];
-const DEFAULT_LANG = 'en';
-
-function RootRedirect() {
-  const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
-  const targetLang = SUPPORTED_LANGS.includes(browserLang) ? browserLang : DEFAULT_LANG;
-  return <Navigate to={`/${targetLang}/`} replace />;
-}
-
-function LangRouteWrapper({ children }: { children: React.ReactNode }) {
-  const { lang } = useParams<{ lang: string }>();
-  if (lang && !SUPPORTED_LANGS.includes(lang)) {
-    return <Navigate to={`/${DEFAULT_LANG}/`} replace />;
-  }
-  return <React.Fragment key={lang}>{children}</React.Fragment>;
-}
-
-export function App() {
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { BlogPage } from './pages/BlogPage';
+function App() {
   return (
     <HelmetProvider>
-      <BrowserRouter>
-        <ModalQueueProvider>
-          <SeoTags />
+      <Router>
+        <AuthProvider>
+          <CookieConsent />
           <Routes>
-            {/* 1. Redirection de la racine */}
-            <Route path="/" element={<RootRedirect />} />
+            {/* Public routes */}
+            <Route path="/:lang/" element={<Landing />} />
+            <Route path="/:lang/login" element={<Login />} />
+            <Route path="/:lang/register" element={<Register />} />
+            <Route path="/:lang/pricing" element={<Pricing />} />
+            <Route path="/:lang/blog" element={<BlogPage />} />
+            <Route path="/:lang/blog/:slug" element={<BlogPage />} />
+            <Route path="/:lang/scan/:scanId" element={<PublicScanResult />} />
+            <Route path="/:lang/forgot-password" element={<ForgotPassword />} />
+            <Route path="/:lang/reset-password/:uidb64/:token" element={<ResetPassword />} />
+            <Route path="/:lang/verify-email/:uidb64/:token" element={<VerifyEmail />} />
 
-            {/* 2. Routes directes publiques */}
-            <Route path="/scan/:scanId" element={<PublicScanResult />} />
-            <Route path="/pricing" element={<Pricing />} />
-
-            {/* 3. Routes multilingues (/fr/, /en/, /de/) */}
-            <Route path="/:lang" element={<LangRouteWrapper><Landing /></LangRouteWrapper>} />
-            <Route path="/:lang/" element={<LangRouteWrapper><Landing /></LangRouteWrapper>} />
-            <Route path="/:lang/scan/:scanId" element={<LangRouteWrapper><PublicScanResult /></LangRouteWrapper>} />
-            <Route path="/:lang/pricing" element={<LangRouteWrapper><Pricing /></LangRouteWrapper>} />
-
-            {/* 4. Espace Connecté Privé (/app/*) */}
-            <Route path="/app" element={<AppShell />}>
-              <Route index element={<Navigate to="/app/dashboard" replace />} />
+            {/* Protected app routes */}
+            <Route path="/:lang/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="websites" element={<Websites />} />
               <Route path="websites/:id" element={<WebsiteDetails />} />
@@ -76,19 +56,16 @@ export function App() {
               <Route path="security" element={<SecurityPage />} />
               <Route path="reports" element={<Reports />} />
               <Route path="alerts" element={<Alerts />} />
+              <Route path="reviews" element={<Reviews />} />
+              <Route path="social" element={<Social />} />
               <Route path="admin" element={<AdminDashboard />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
-            {/* 5. Fallback */}
-            <Route path="*" element={<Navigate to={`/${DEFAULT_LANG}/`} replace />} />
+            <Route path="*" element={<Navigate to="/fr/" replace />} />
           </Routes>
-
-          {/* Overlays globaux */}
-          <CookieBanner />
-          <PWAInstallToast />
-        </ModalQueueProvider>
-      </BrowserRouter>
+        </AuthProvider>
+      </Router>
     </HelmetProvider>
   );
 }

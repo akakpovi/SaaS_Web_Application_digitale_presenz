@@ -1,66 +1,88 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from 'react';
 
-export const usePWAEligibility = () => {
-  const [isEligible, setIsEligible] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+const DISMISS_KEY = 'pwa_dismissed_at';
+const DISMISS_DAYS = 7;
+
+interface UsePWAEligibilityResult {
+  showPWAToast: boolean;
+  dismissPWA: () => void;
+  installPWA: () => void;
+  isIOS: boolean;
+}
+
+export function usePWAEligibility(
+  scanCompleted: boolean,
+  cookieConsentResolved: boolean = true
+): UsePWAEligibilityResult {
+  const [showPWAToast, setShowPWAToast] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    const checkInstalled = () => {
-      const standalone = window.matchMedia("(display-mode: standalone)").matches
-        || (window.navigator as any).standalone === true
-        || localStorage.getItem("presence_pwa_installed") === "true";
-      setIsInstalled(standalone);
-    };
+    // 1. Ne pas afficher si déjà en mode PWA installée (standalone)
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone) return;
 
-    checkInstalled();
+    // 2. Détection iOS Safari
+    const ua = navigator.userAgent;
+    const isIosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    setIsIOS(isIosDevice);
 
+    // 3. Ne pas afficher si l'utilisateur a cliqué sur "Plus tard" récemment
+    const dismissedAt = localStorage.getItem(DISMISS_KEY);
+    if (dismissedAt) {
+      const daysSince = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
+      if (daysSince < DISMISS_DAYS) return;
+    }
+
+    // 4. Capturer l'événement natif Chrome/Android beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      // Dès que le navigateur est prêt, stocker l'event
+      (window as any).__pwaInstallEvent = e;
     };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => {
-      localStorage.setItem("presence_pwa_installed", "true");
-      setIsInstalled(true);
-      setIsEligible(false);
-    });
+    window.addEventListener('beforeinstallprompt', handler);
 
-    // Vérifier les conditions toutes les 5 secondes
-    const interval = setInterval(() => {
-      const cookieDone = localStorage.getItem("cookie_consent") !== null;
-      const hasScanned = sessionStorage.getItem("has_scanned") === "true";
-      const dismissedAt = localStorage.getItem("pwa_dismissed_at");
-      const dismissedRecently = dismissedAt && (Date.now() - Number(dismissedAt)) < 7 * 24 * 60 * 60 * 1000;
-
-      if (cookieDone && hasScanned && !dismissedRecently && !isInstalled) {
-        setIsEligible(true);
-      }
-    }, 5000);
+    // 5. Déclenchement rapide après 3 secondes (au lieu de 30s) dès que le scan est prêt
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (scanCompleted) {
+      timer = setTimeout(() => {
+        setShowPWAToast(true);
+      }, 3000); // 3 secondes pour un affichage visible en test et fluide en UX
+    }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      clearInterval(interval);
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handler);
     };
-  }, [isInstalled]);
+  }, [scanCompleted]);
 
-  const dismiss = useCallback(() => {
-    localStorage.setItem("pwa_dismissed_at", Date.now().toString());
-    setIsEligible(false);
+  const dismissPWA = useCallback(() => {
+    setShowPWAToast(false);
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
   }, []);
 
-  const install = useCallback(async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        localStorage.setItem("presence_pwa_installed", "true");
-        setIsInstalled(true);
-        setIsEligible(false);
-      }
-      setDeferredPrompt(null);
+  const installPWA = useCallback(() => {
+    const promptEvent = deferredPrompt || (window as any).__pwaInstallEvent;
+    if (promptEvent) {
+      promptEvent.prompt();
+      promptEvent.userChoice.then((choice: { outcome: string }) => {
+        if (choice.outcome === 'accepted') {
+          localStorage.setItem('pwa_installed', 'true');
+        }
+      });
+    } else if (isIOS) {
+      alert("Sur iOS : appuyez sur le bouton de partage en bas de Safari, puis sur 'Sur l'écran d'accueil'.");
+    } else {
+      alert("Pour installer : cliquez sur l'icône d'installation dans la barre d'adresse de votre navigateur.");
     }
-  }, [deferredPrompt]);
+    setShowPWAToast(false);
+  }, [deferredPrompt, isIOS]);
 
-  return { isEligible, isInstalled, dismiss, install };
-};
+  return { showPWAToast, dismissPWA, installPWA, isIOS };
+}
+
+export default usePWAEligibility;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { BellRing, ShieldAlert, AlertTriangle, Sparkles, Send, Loader, X, RefreshCw } from "lucide-react";
 import api from "../services/api";
 
