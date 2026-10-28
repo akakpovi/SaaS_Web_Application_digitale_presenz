@@ -1,0 +1,84 @@
+{
+  "_comment": "Miroir de subscriptions/pricing.py. L'API reste la source de verite; ce fichier sert au prerendu SEO et de repli si l'API est indisponible. Verifier avec scripts/check_pricing_sync.py.",
+  "currency": "EUR",
+  "plans": [
+    {
+      "tier": "free",
+      "name": "Free",
+      "description": "Get started with basic monitoring",
+      "price_monthly": 0,
+      "price_yearly": 0,
+      "max_websites": 1,
+      "max_scans_per_month": 10,
+      "max_alert_channels": 1,
+      "can_export_reports": false,
+      "can_use_api": false,
+      "features": [
+        "1 website",
+        "10 scans/month",
+        "Basic alerts",
+        "Email notifications"
+      ]
+    },
+    {
+      "tier": "pro",
+      "name": "Pro",
+      "description": "For professionals and small businesses",
+      "price_monthly": 9,
+      "price_yearly": 90,
+      "max_websites": 10,
+      "max_scans_per_month": 500,
+      "max_alert_channels": 5,
+      "can_export_reports": true,
+      "can_use_api": true,
+      "features": [
+        "10 websites",
+        "500 scans/month",
+        "Hourly monitoring",
+        "PDF reports",
+        "API access",
+        "Slack/Discord alerts"
+      ]
+    },
+    {
+      "tier": "business",
+      "name": "Business",
+      "description": "For growing teams and multi-site businesses",
+      "price_monthly": 29,
+      "price_yearly": 290,
+      "max_websites": 50,
+      "max_scans_per_month": 5000,
+      "max_alert_channels": 10,
+      "can_export_reports": true,
+      "can_use_api": true,
+      "features": [
+        "50 websites",
+        "5000 scans/month",
+        "5-min monitoring",
+        "Team access",
+        "Priority support",
+        "Custom webhooks"
+      ]
+    },
+    {
+      "tier": "agency",
+      "name": "Agency",
+      "description": "For agencies managing many client websites",
+      "price_monthly": 79,
+      "price_yearly": 790,
+      "max_websites": 200,
+      "max_scans_per_month": 20000,
+      "max_alert_channels": 25,
+      "can_export_reports": true,
+      "can_use_api": true,
+      "features": [
+        "200 websites",
+        "20000 scans/month",
+        "5-min monitoring",
+        "White-label PDF reports",
+        "Team access (20 seats)",
+        "Priority support"
+      ]
+    }
+  ]
+}

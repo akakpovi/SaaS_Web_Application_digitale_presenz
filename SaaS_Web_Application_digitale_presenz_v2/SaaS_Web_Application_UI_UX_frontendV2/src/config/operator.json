@@ -1,0 +1,107 @@
+{
+  "_readme": "Single source of truth for the operator (Anbieter) identity shown on /impressum, /privacy, /terms and /widerruf. Replace one value here and every legal page follows. value: null = still missing (a clearly marked placeholder is rendered); notApplicable: 'reason' = legally not applicable for this operator (row omitted, reason kept for the audit); requirement: mandatory = blocks a complete identity, conditional = depends on the legal form (documented in condition), optional = published only when provided. Never paste a bracketed placeholder into value: scripts/check-operator-identity.mjs rejects it.",
+  "legalName": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum", "/privacy", "/terms", "/widerruf"],
+    "labelKey": "legal.providerTitle",
+    "placeholderKey": "legal.operator.legalNamePlaceholder",
+    "value": null
+  },
+  "legalForm": {
+    "requirement": "conditional",
+    "condition": "Only for a registered legal form (e.g. GmbH, UG, AG); a sole trader has none.",
+    "usedOn": ["/impressum", "/privacy", "/terms"],
+    "labelKey": "legal.legalFormTitle",
+    "placeholderKey": "legal.operator.legalFormPlaceholder",
+    "value": null
+  },
+  "representedBy": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.representativeTitle",
+    "placeholderKey": "legal.operator.representedByPlaceholder",
+    "value": null
+  },
+  "street": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum", "/privacy", "/terms", "/widerruf"],
+    "labelKey": "legal.streetTitle",
+    "placeholderKey": "legal.operator.streetPlaceholder",
+    "value": null
+  },
+  "postalCity": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum", "/privacy", "/terms", "/widerruf"],
+    "labelKey": "legal.postalCityTitle",
+    "placeholderKey": "legal.operator.postalCityPlaceholder",
+    "value": null
+  },
+  "country": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum", "/privacy", "/terms", "/widerruf"],
+    "labelKey": "legal.countryTitle",
+    "placeholderKey": "legal.operator.countryPlaceholder",
+    "value": null
+  },
+  "email": {
+    "requirement": "mandatory",
+    "usedOn": ["/impressum", "/privacy", "/terms", "/widerruf"],
+    "labelKey": "common.email",
+    "placeholderKey": "legal.operator.emailPlaceholder",
+    "value": null
+  },
+  "phone": {
+    "requirement": "optional",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.phoneTitle",
+    "value": null
+  },
+  "registerCourt": {
+    "requirement": "conditional",
+    "condition": "Only when the operator is entered in a register (Handels-, Partnerschafts- or Genossenschaftsregister).",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.registerCourtTitle",
+    "placeholderKey": "legal.operator.registerCourtPlaceholder",
+    "value": null
+  },
+  "registerNumber": {
+    "requirement": "conditional",
+    "condition": "Only when the operator is entered in a register (Handels-, Partnerschafts- or Genossenschaftsregister).",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.registerNumberTitle",
+    "placeholderKey": "legal.operator.registerNumberPlaceholder",
+    "value": null
+  },
+  "vatId": {
+    "requirement": "conditional",
+    "condition": "Only when a USt-IdNr. exists; a small business under § 19 UStG may not have one.",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.vatIdTitle",
+    "placeholderKey": "legal.operator.vatIdPlaceholder",
+    "value": null
+  },
+  "editorialResponsible": {
+    "requirement": "conditional",
+    "condition": "Only when editorial content is offered (§ 18 (2) MStV) — the planned blog counts.",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.responsibleTitle",
+    "placeholderKey": "legal.operator.editorialResponsiblePlaceholder",
+    "value": null
+  },
+  "supervisoryAuthority": {
+    "requirement": "conditional",
+    "condition": "Only for a regulated profession (chamber, professional title, supervisory authority).",
+    "usedOn": ["/impressum"],
+    "labelKey": "legal.supervisoryTitle",
+    "placeholderKey": "legal.operator.supervisoryAuthorityPlaceholder",
+    "value": null
+  },
+  "dataProtectionOfficer": {
+    "requirement": "conditional",
+    "condition": "Only when a DPO has to be appointed — still to be assessed.",
+    "usedOn": ["/impressum", "/privacy"],
+    "labelKey": "legal.dpoTitle",
+    "placeholderKey": "legal.operator.dpoPlaceholder",
+    "value": null
+  }
+}

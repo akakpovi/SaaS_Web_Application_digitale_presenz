@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <!-- Subtle grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1e293b" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.5"/>
+
+  <!-- Indigo glow -->
+  <ellipse cx="600" cy="315" rx="500" ry="300" fill="#4f46e5" opacity="0.08"/>
+
+  <!-- Logo mark -->
+  <g transform="translate(120, 120)">
+    <rect width="72" height="72" rx="18" fill="#4f46e5"/>
+    <circle cx="36" cy="36" r="22" stroke="white" stroke-width="3" fill="none" opacity="0.4"/>
+    <circle cx="36" cy="36" r="10" fill="white"/>
+    <line x1="36" y1="14" x2="36" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="36" y1="52" x2="36" y2="58" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="14" y1="36" x2="20" y2="36" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="52" y1="36" x2="58" y2="36" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- Logo text -->
+  <text x="210" y="172" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="700" fill="white" letter-spacing="-1">Presence</text>
+
+  <!-- Main headline -->
+  <text x="120" y="290" font-family="system-ui, -apple-system, sans-serif" font-size="60" font-weight="800" fill="white" letter-spacing="-2">Your digital presence,</text>
+  <text x="120" y="360" font-family="system-ui, -apple-system, sans-serif" font-size="60" font-weight="800" fill="#818cf8" letter-spacing="-2">under control.</text>
+
+  <!-- Description -->
+  <text x="120" y="430" font-family="system-ui, -apple-system, sans-serif" font-size="26" fill="#94a3b8">Website monitoring · SSL · DNS · Email security · Reviews</text>
+
+  <!-- Status indicators -->
+  <g transform="translate(120, 490)">
+    <rect width="180" height="44" rx="22" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <circle cx="22" cy="22" r="7" fill="#10b981"/>
+    <text x="40" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#e2e8f0" font-weight="500">Website Online</text>
+  </g>
+  <g transform="translate(316, 490)">
+    <rect width="160" height="44" rx="22" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <circle cx="22" cy="22" r="7" fill="#10b981"/>
+    <text x="40" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#e2e8f0" font-weight="500">SSL Valid</text>
+  </g>
+  <g transform="translate(492, 490)">
+    <rect width="200" height="44" rx="22" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <circle cx="22" cy="22" r="7" fill="#10b981"/>
+    <text x="40" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#e2e8f0" font-weight="500">Uptime 99.98%</text>
+  </g>
+
+  <!-- Score badge (right side) -->
+  <g transform="translate(820, 200)">
+    <rect width="260" height="220" rx="24" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="130" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#64748b" font-weight="500">Digital Health Score</text>
+    <text x="130" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#10b981">82</text>
+    <text x="130" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#64748b">/ 100</text>
+    <rect x="40" y="180" width="180" height="26" rx="13" fill="#064e3b"/>
+    <text x="130" y="198" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#34d399" font-weight="600">🟢 Good</text>
+  </g>
+</svg>

@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+
+  --color-slate-25: #f9fafb;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth transitions */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Technical / monospace values */
+.font-mono, .tabular-nums {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Dark mode CSS custom properties */
+:root {
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-muted: #f1f5f9;
+  --border-default: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --ring-focus: #4f46e5;
+}
+
+[data-theme="dark"] {
+  --bg-app: #0d1117;
+  --bg-surface: #161b22;
+  --bg-muted: #1c2333;
+  --border-default: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --ring-focus: #818cf8;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode sidebar / app shell */
+[data-theme="dark"] .dark-surface {
+  background-color: var(--bg-surface);
+  border-color: var(--border-default);
+}
+
+/* Toast layer anchor */
+#toast-root {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}

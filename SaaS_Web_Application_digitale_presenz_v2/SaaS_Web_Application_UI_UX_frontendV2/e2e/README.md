@@ -1,0 +1,68 @@
+# E2E tests (Playwright)
+
+Two critical user journeys are covered end to end against the real stack:
+
+| Test | Flow |
+| --- | --- |
+| `registration-verification.spec.ts` | sign-up → real verification e-mail in Mailpit → link → verified account → login |
+| `public-scan.spec.ts` | visitor scans a domain → real API report → `/report/:id` redirect → share link → lead capture e-mail |
+| `legal-seo-dist.spec.ts` | serves the built `dist/` with the nginx rules and checks the pre-rendered legal pages, sitemap and robots (no Docker needed) |
+| `bilingual-shell-dist.spec.ts` | same harness: every URL advertised by `hreflang` serves that language as raw HTML, plus hydration, noindex and switcher behaviour |
+
+The two `*-dist.spec.ts` suites verify the *artifact* rather than the dev
+server: nginx serves `dist/<route>/index.html` directly and answers 404 for a
+public route that was never pre-rendered, which the SPA fallback of the dev
+server hides. They therefore need a completed `pnpm build` and fail with that
+instruction instead of skipping. `helpers/static-dist.ts` replays the
+`try_files` rules of `nginx.conf`, including the bilingual one (`?lang=en`
+selects `dist/_i18n/…`, and that folder is `internal`).
+
+The legal pages covered by the first suite are `/impressum`, `/cookies`,
+`/privacy`, `/terms` and `/widerruf`. `scripts/verify-nginx.sh` goes one step
+further and runs the real `nginx.conf` in a throwaway nginx container against
+the same `dist/` (Docker required, skipped with an explicit message otherwise);
+run it when a change touches `nginx.conf`, the pre-rendered shells or the
+variant folder.
+
+## Prerequisites
+
+The tests exercise the real API, database, Celery worker and Mailpit — there
+are no API mocks.
+
+```bash
+# from the repository root
+docker compose up -d          # Django, PostgreSQL, Redis, Celery, Mailpit, nginx
+```
+
+The browser talks to the Vite dev server (`http://localhost:5173`), whose
+`/api` proxy reaches the stack, so the local self-signed TLS certificate never
+reaches Playwright. The dev server is started automatically by the Playwright
+`webServer` block unless one is already running.
+
+## Run
+
+```bash
+cd SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+pnpm install
+pnpm exec playwright install chromium   # first run only
+pnpm test:e2e
+```
+
+Useful environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `E2E_BASE_URL` | `http://localhost:5173` | origin under test |
+| `MAILPIT_URL` | `http://localhost:8025` | Mailpit HTTP API |
+| `E2E_SKIP_DOCKER_SETUP` | unset | do not touch Docker (remote stack, no cleanup) |
+
+Failed runs keep a trace and a screenshot in `test-results/` (gitignored).
+
+## Test data hygiene
+
+- Both tests generate unique `e2e-…@example.com` addresses.
+- `global-setup.ts` clears only the public-scan Redis throttle keys, so repeat
+  runs stay deterministic (the public endpoint allows 5 requests/hour/IP).
+- `global-teardown.ts` deletes only accounts and public leads whose address
+  starts with `e2e-`. Guest scans are anonymous and are purged by the nightly
+  cleanup task.

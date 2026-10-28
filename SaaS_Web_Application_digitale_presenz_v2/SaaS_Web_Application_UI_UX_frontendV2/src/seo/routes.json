@@ -1,0 +1,303 @@
+[
+  {
+    "path": "/",
+    "title": "Website Monitoring for Small Businesses | Presence",
+    "description": "Monitor your website, SSL, DNS, email security, uptime and online reputation from one simple dashboard. Built for small businesses.",
+    "priority": "1.0",
+    "changefreq": "weekly",
+    "titleDe": "Website-Monitoring für kleine Unternehmen | Presence",
+    "descriptionDe": "Website, SSL, DNS, E-Mail-Sicherheit, Erreichbarkeit und Online-Ruf in einem Dashboard überwachen. Für kleine Unternehmen."
+  },
+  {
+    "path": "/pricing",
+    "title": "Simple Website Monitoring Pricing | Presence",
+    "description": "Free, Pro (€9/month), Business (€29/month) and Agency (€79/month) plans. Automatic website monitoring, SSL alerts, DNS monitoring and more. Cancel anytime.",
+    "priority": "0.9",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring: einfache Preise | Presence",
+    "descriptionDe": "Tarife Free, Pro (9 €/Monat), Business (29 €/Monat) und Agency (79 €/Monat). Automatische Website-Überwachung, SSL-Alarme, DNS-Überwachung und mehr. Jederzeit kündbar."
+  },
+  {
+    "path": "/faq",
+    "title": "Frequently Asked Questions | Presence",
+    "description": "Answers about website monitoring, plans, alerts, SSL checks, data privacy and cancellation.",
+    "priority": "0.6",
+    "changefreq": "monthly",
+    "titleDe": "Häufige Fragen | Presence",
+    "descriptionDe": "Antworten zu Website-Überwachung, Tarifen, Benachrichtigungen, SSL-Prüfungen, Datenschutz und Kündigung."
+  },
+  {
+    "path": "/blog",
+    "title": "Website Monitoring Blog | Presence",
+    "description": "Plain-language guides on website monitoring, SSL, DNS, email security, uptime and digital presence for small businesses.",
+    "priority": "0.8",
+    "changefreq": "weekly",
+    "titleDe": "Blog zu Website-Monitoring | Presence",
+    "descriptionDe": "Verständliche Leitfäden zu Website-Überwachung, SSL, DNS, E-Mail-Sicherheit, Erreichbarkeit und digitaler Präsenz für kleine Unternehmen."
+  },
+  {
+    "path": "/about",
+    "title": "About Presence | Website Monitoring for Small Businesses",
+    "description": "Presence helps small businesses monitor their website, SSL, DNS, email security and online reputation from one dashboard.",
+    "priority": "0.5",
+    "changefreq": "yearly",
+    "titleDe": "Über Presence | Website-Monitoring für kleine Unternehmen",
+    "descriptionDe": "Presence hilft kleinen Unternehmen, Website, SSL, DNS, E-Mail-Sicherheit und Online-Ruf in einem Dashboard zu überwachen."
+  },
+  {
+    "path": "/contact",
+    "title": "Contact Presence",
+    "description": "Contact the Presence team about website monitoring, plans, partnerships or support.",
+    "priority": "0.5",
+    "changefreq": "yearly",
+    "titleDe": "Kontakt zu Presence",
+    "descriptionDe": "Nehmen Sie Kontakt zum Presence-Team auf: Website-Überwachung, Tarife, Partnerschaften oder Support."
+  },
+  {
+    "path": "/privacy",
+    "title": "Privacy Policy | Presence",
+    "description": "How Presence collects, uses and protects your personal data, including GDPR rights.",
+    "priority": "0.3",
+    "changefreq": "yearly",
+    "titleDe": "Datenschutzerklärung | Presence",
+    "descriptionDe": "Wie Presence personenbezogene Daten erhebt, nutzt und schützt – einschließlich Ihrer Rechte nach der DSGVO."
+  },
+  {
+    "path": "/terms",
+    "title": "Terms of Service | Presence",
+    "description": "The terms that govern the use of the Presence website monitoring service.",
+    "priority": "0.3",
+    "changefreq": "yearly",
+    "titleDe": "Allgemeine Geschäftsbedingungen | Presence",
+    "descriptionDe": "Die Bedingungen für die Nutzung des Website-Monitoring-Dienstes von Presence."
+  },
+  {
+    "path": "/impressum",
+    "title": "Imprint | Presence",
+    "description": "Provider information according to § 5 DDG for Presence, the digital presence monitoring service.",
+    "priority": "0.3",
+    "changefreq": "yearly",
+    "titleDe": "Impressum | Presence",
+    "descriptionDe": "Anbieterinformationen nach § 5 DDG für Presence, den Dienst zur Überwachung der digitalen Präsenz."
+  },
+  {
+    "path": "/cookies",
+    "title": "Cookies and storage | Presence",
+    "description": "Presence stores a session token in your browser so that you stay signed in, plus your theme and language preferences on this device. There is no advertising or third-party tracking script on the public site.",
+    "priority": "0.3",
+    "changefreq": "yearly",
+    "titleDe": "Cookies und Speicherung | Presence",
+    "descriptionDe": "Presence speichert im Browser ein Sitzungstoken, damit Sie angemeldet bleiben, sowie Ihre Theme- und Spracheinstellung auf diesem Gerät. Auf den öffentlichen Seiten gibt es kein Werbe- oder Drittanbieter-Tracking."
+  },
+  {
+    "path": "/widerruf",
+    "title": "Right of withdrawal | Presence",
+    "description": "Information about the statutory right of withdrawal for consumers.",
+    "priority": "0.2",
+    "changefreq": "yearly",
+    "titleDe": "Widerrufsrecht | Presence",
+    "descriptionDe": "Informationen zum gesetzlichen Widerrufsrecht für Verbraucherinnen und Verbraucher."
+  },
+  {
+    "path": "/solutions/small-business",
+    "title": "Website Monitoring for Small Businesses | Presence",
+    "description": "Keep your small business website online, secure and fast with automated monitoring and plain-language alerts.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für kleine Unternehmen | Presence",
+    "descriptionDe": "Halten Sie die Website Ihres kleinen Unternehmens online, sicher und schnell – mit automatischer Überwachung und verständlichen Warnungen."
+  },
+  {
+    "path": "/solutions/freelancers",
+    "title": "Website Monitoring for Freelancers | Presence",
+    "description": "Monitor every client website from one dashboard, catch SSL and DNS problems before clients do.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für Selbstständige | Presence",
+    "descriptionDe": "Überwachen Sie alle Kundenwebsites in einem Dashboard und erkennen Sie SSL- und DNS-Probleme, bevor es Ihre Kunden tun."
+  },
+  {
+    "path": "/solutions/agencies",
+    "title": "Website Monitoring for Agencies | Presence",
+    "description": "White-label reports, multi-site dashboards and client-ready alerts for agencies.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für Agenturen | Presence",
+    "descriptionDe": "White-Label-Berichte, Multi-Site-Dashboards und kundenfertige Warnungen für Agenturen."
+  },
+  {
+    "path": "/solutions/restaurants",
+    "title": "Website Monitoring for Restaurants | Presence",
+    "description": "Make sure your menu, booking page and Google presence stay online when customers are looking for you.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für Restaurants | Presence",
+    "descriptionDe": "Stellen Sie sicher, dass Speisekarte, Buchungsseite und Google-Profil online sind, wenn Gäste nach Ihnen suchen."
+  },
+  {
+    "path": "/solutions/ecommerce",
+    "title": "Website Monitoring for E-commerce | Presence",
+    "description": "Detect downtime, expired certificates and slow pages before they cost you sales.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für E-Commerce | Presence",
+    "descriptionDe": "Erkennen Sie Ausfälle, abgelaufene Zertifikate und langsame Seiten, bevor Ihnen Umsatz entgeht."
+  },
+  {
+    "path": "/solutions/local-business",
+    "title": "Website Monitoring for Local Businesses | Presence",
+    "description": "Protect the website that brings local customers to your door with continuous monitoring.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Monitoring für lokale Unternehmen | Presence",
+    "descriptionDe": "Schützen Sie die Website, die lokale Kunden zu Ihnen bringt – mit fortlaufender Überwachung."
+  },
+  {
+    "path": "/features/website-monitoring",
+    "title": "Website Monitoring | Presence",
+    "description": "Continuous website health checks with a single score covering uptime, speed, security and configuration.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Website-Überwachung | Presence",
+    "descriptionDe": "Fortlaufende Prüfungen der Website mit einer Kennzahl für Erreichbarkeit, Geschwindigkeit, Sicherheit und Konfiguration."
+  },
+  {
+    "path": "/features/ssl-monitoring",
+    "title": "SSL Certificate Monitoring | Presence",
+    "description": "Get alerted before your SSL certificate expires or becomes invalid.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "SSL-Zertifikatsüberwachung | Presence",
+    "descriptionDe": "Werden Sie gewarnt, bevor Ihr SSL-Zertifikat abläuft oder ungültig wird."
+  },
+  {
+    "path": "/features/dns-monitoring",
+    "title": "DNS Monitoring | Presence",
+    "description": "Verify A, MX, CNAME and SPF records continuously and detect DNS misconfigurations.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "DNS-Überwachung | Presence",
+    "descriptionDe": "A-, MX-, CNAME- und SPF-Einträge fortlaufend prüfen und DNS-Fehlkonfigurationen erkennen."
+  },
+  {
+    "path": "/features/email-security",
+    "title": "Email Security Monitoring (SPF, DKIM, DMARC) | Presence",
+    "description": "Check SPF, DKIM and DMARC configuration to stop spoofing and improve deliverability.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "E-Mail-Sicherheit überwachen (SPF, DKIM, DMARC) | Presence",
+    "descriptionDe": "SPF-, DKIM- und DMARC-Konfiguration prüfen, um Spoofing zu verhindern und die Zustellbarkeit zu verbessern."
+  },
+  {
+    "path": "/features/uptime-monitoring",
+    "title": "Uptime Monitoring | Presence",
+    "description": "Know the moment your website goes down, with alerts by email, push, Slack or webhook.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Uptime-Überwachung | Presence",
+    "descriptionDe": "Erfahren Sie sofort, wenn Ihre Website ausfällt – mit Benachrichtigungen per E-Mail, Push, Slack oder Webhook."
+  },
+  {
+    "path": "/features/website-performance",
+    "title": "Website Performance Monitoring | Presence",
+    "description": "Track response time and page weight to catch performance regressions early.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Performance-Überwachung | Presence",
+    "descriptionDe": "Antwortzeit und Seitengewicht verfolgen, um Leistungseinbrüche früh zu erkennen."
+  },
+  {
+    "path": "/features/security-headers",
+    "title": "Security Headers Monitoring | Presence",
+    "description": "Audit HSTS, CSP, X-Frame-Options and other HTTP security headers.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Sicherheitsheader überwachen | Presence",
+    "descriptionDe": "HSTS, CSP, X-Frame-Options und weitere HTTP-Sicherheitsheader prüfen."
+  },
+  {
+    "path": "/features/review-monitoring",
+    "title": "Review Monitoring | Presence",
+    "description": "Track new customer reviews and sentiment across the platforms that matter.",
+    "priority": "0.7",
+    "changefreq": "monthly",
+    "titleDe": "Bewertungsüberwachung | Presence",
+    "descriptionDe": "Neue Kundenbewertungen und Stimmungsverlauf auf den relevanten Plattformen verfolgen."
+  },
+  {
+    "path": "/tools/website-checker",
+    "title": "Free Website Health Checker | Presence",
+    "description": "Run a free website health check: uptime, SSL, DNS, email security and security headers in seconds.",
+    "priority": "0.8",
+    "changefreq": "monthly",
+    "titleDe": "Kostenloser Website-Gesundheitscheck | Presence",
+    "descriptionDe": "Kostenlos Website prüfen: Erreichbarkeit, SSL, DNS, E-Mail-Sicherheit und Sicherheitsheader in Sekunden."
+  },
+  {
+    "path": "/tools/ssl-checker",
+    "title": "Free SSL Certificate Checker | Presence",
+    "description": "Check your SSL certificate validity, issuer and expiry date for free.",
+    "priority": "0.8",
+    "changefreq": "monthly",
+    "titleDe": "Kostenloser SSL-Zertifikatscheck | Presence",
+    "descriptionDe": "Gültigkeit, Aussteller und Ablaufdatum Ihres SSL-Zertifikats kostenlos prüfen."
+  },
+  {
+    "path": "/tools/dns-checker",
+    "title": "Free DNS Checker | Presence",
+    "description": "Inspect your DNS records and detect common misconfigurations for free.",
+    "priority": "0.8",
+    "changefreq": "monthly",
+    "titleDe": "Kostenloser DNS-Check | Presence",
+    "descriptionDe": "DNS-Einträge einsehen und häufige Fehlkonfigurationen kostenlos erkennen."
+  },
+  {
+    "path": "/tools/email-security-checker",
+    "title": "Free SPF, DKIM and DMARC Checker | Presence",
+    "description": "Check SPF, DKIM and DMARC records for your domain and learn what to fix.",
+    "priority": "0.8",
+    "changefreq": "monthly",
+    "titleDe": "Kostenloser SPF-, DKIM- und DMARC-Check | Presence",
+    "descriptionDe": "SPF-, DKIM- und DMARC-Einträge Ihrer Domain prüfen und erfahren, was zu beheben ist."
+  },
+  {
+    "path": "/login",
+    "title": "Sign in | Presence",
+    "description": "Sign in to your Presence dashboard.",
+    "noindex": true,
+    "titleDe": "Anmelden | Presence",
+    "descriptionDe": "Melden Sie sich in Ihrem Presence-Dashboard an."
+  },
+  {
+    "path": "/register",
+    "title": "Create your free account | Presence",
+    "description": "Start monitoring your website for free. No credit card required.",
+    "noindex": true,
+    "titleDe": "Kostenloses Konto erstellen | Presence",
+    "descriptionDe": "Starten Sie die Überwachung Ihrer Website kostenlos. Keine Kreditkarte erforderlich."
+  },
+  {
+    "path": "/forgot-password",
+    "title": "Reset your password | Presence",
+    "description": "Request a password reset link for your Presence account.",
+    "noindex": true,
+    "titleDe": "Passwort zurücksetzen | Presence",
+    "descriptionDe": "Fordern Sie einen Link zum Zurücksetzen Ihres Presence-Passworts an."
+  },
+  {
+    "path": "/reset-password",
+    "title": "Choose a new password | Presence",
+    "description": "Set a new password for your Presence account.",
+    "noindex": true,
+    "titleDe": "Neues Passwort wählen | Presence",
+    "descriptionDe": "Legen Sie ein neues Passwort für Ihr Presence-Konto fest."
+  },
+  {
+    "path": "/onboarding",
+    "title": "Get started | Presence",
+    "description": "Add your first website to Presence.",
+    "noindex": true,
+    "titleDe": "Erste Schritte | Presence",
+    "descriptionDe": "Fügen Sie Ihre erste Website zu Presence hinzu."
+  }
+]

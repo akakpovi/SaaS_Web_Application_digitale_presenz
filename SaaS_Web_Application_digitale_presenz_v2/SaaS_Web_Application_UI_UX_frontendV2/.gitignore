@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dist-ssr/
+build/
+# Generated from src/seo/publicPaths.ts during the build (scripts/generate-nginx-locale-map.mjs).
+nginx.locale-map.conf
+.cache/
+.env*
+.vite/
+vite.config.*.timestamp-*
+*.tsbuildinfo
+*-debug.log*
+
+# Playwright E2E artifacts
+test-results/
+playwright-report/
+blob-report/
+
+logs/
+*.log
+.claude-replay.*
+.tmp-*
+
+# Platform-managed agentplat state, not project source. In the
+# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
+# repo root IS the workspace root, so these land inside this repo rather than
+# beside it.
+/.plugins/
+/.opencode-skills/

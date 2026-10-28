@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- German is the default locale (see src/i18n/index.tsx); the provider
+       corrects this attribute after hydration when `?lang=en` or an English
+       browser applies. -->
+<html lang="de">
+  <head>
+    <!-- figma:head-start -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Website-Monitoring für kleine Unternehmen | Presence</title>
+
+    <!-- Primary meta (per-page values set by react-helmet-async) -->
+    <meta name="description" content="Website, SSL, DNS, E-Mail-Sicherheit, Erreichbarkeit und Online-Ruf in einem Dashboard überwachen. Für kleine Unternehmen." />
+    <meta name="theme-color" content="#4f46e5" />
+
+    <!-- Open Graph fallback (react-helmet-async overrides these per page) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Presence" />
+    <meta property="og:title" content="Website-Monitoring für kleine Unternehmen | Presence" />
+    <meta property="og:description" content="Website, SSL, DNS, E-Mail-Sicherheit, Erreichbarkeit und Online-Ruf in einem Dashboard überwachen. Für kleine Unternehmen." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter/X Card fallback -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Website-Monitoring für kleine Unternehmen | Presence" />
+    <meta name="twitter:description" content="Website, SSL, DNS, E-Mail-Sicherheit, Erreichbarkeit und Online-Ruf in einem Dashboard überwachen." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Presence" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- figma:head-end -->
+  </head>
+  <body>
+    <!-- figma:body-start -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- figma:body-end -->
+  </body>
+</html>
