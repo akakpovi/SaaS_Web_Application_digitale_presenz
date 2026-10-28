@@ -25,6 +25,7 @@ from advisory.models import SecurityFinding
 
 from .aka_client import (
     AkaAIClient,
+    AkaAuthenticationError,
     AkaCircuitOpenError,
     AkaConfigurationError,
     AkaConnectionError,
@@ -34,7 +35,11 @@ from .aka_client import (
     AkaServerError,
     AkaTimeoutError,
 )
-from .factory import build_aka_client
+from .factory import (
+    aka_credentials_marked_invalid,
+    build_aka_client,
+    mark_aka_credentials_invalid,
+)
 
 logger = logging.getLogger("advisory.security_advisor")
 
@@ -100,6 +105,9 @@ _UNAVAILABLE_DETAILS = {
     "ai_unreachable": "The AI advisor is unreachable right now.",
     "ai_unavailable": "The AI advisor is temporarily unavailable.",
     "ai_invalid_response": "The AI advisor returned an unusable answer.",
+    "ai_invalid_credentials": (
+        "The AI provider did not accept the configured credentials."
+    ),
     "ai_rejected": "The AI provider rejected the request.",
     "ai_error": "The AI advisor is temporarily unavailable.",
 }
@@ -388,6 +396,9 @@ def answer_security_question(
         raise ValueError("The question is too long.")
 
     if client is None:
+        if aka_credentials_marked_invalid():
+            logger.error("security_chat_credentials_invalid source=cache")
+            raise AdvisorUnavailable("ai_invalid_credentials")
         try:
             client = build_aka_client()
         except (ImproperlyConfigured, ValueError) as exc:
@@ -409,6 +420,17 @@ def answer_security_question(
     for model in _models_for(client):
         try:
             completion = client.chat(messages, model=model or None)
+        except AkaAuthenticationError:
+            # One key serves every model; trying the next one only burns the
+            # anonymous guest quota.
+            mark_aka_credentials_invalid("invalid_api_key")
+            logger.error(
+                "security_chat_credentials_invalid org=%s model=%s",
+                getattr(organization, "id", None),
+                model or "-",
+            )
+            last_unavailable = AdvisorUnavailable("ai_invalid_credentials")
+            break
         except AkaError as exc:
             last_unavailable = _unavailable_from(exc)
             logger.warning(

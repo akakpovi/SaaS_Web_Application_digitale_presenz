@@ -23,8 +23,17 @@ from advisory.models import AIRecommendation, AIRecommendationRun
 from scans.models import CheckResult, Finding, Scan
 from scans.services.recommendation_engine import Recommendation, RecommendationEngine
 
-from .aka_client import AkaAIClient, AkaError, AkaRateLimitError
-from .factory import build_aka_client
+from .aka_client import (
+    AkaAIClient,
+    AkaAuthenticationError,
+    AkaError,
+    AkaRateLimitError,
+)
+from .factory import (
+    aka_credentials_marked_invalid,
+    build_aka_client,
+    mark_aka_credentials_invalid,
+)
 from .schema import (
     RecommendationValidationError,
     ResolvedRecommendation,
@@ -44,7 +53,23 @@ MAX_CHECK_RESULTS = 10
 MAX_EVIDENCE_TEXT_CHARS = 3_000
 MAX_EVIDENCE_JSON_CHARS = 3_000
 DEFAULT_MAX_PROMPT_CHARS = 60_000
+#: A run is considered abandoned when its row was not touched for this long.
+#: The value is the fallback for ``AI_ADVISOR_STALE_RUN_SECONDS``.
 RUN_STALE_AFTER = timedelta(minutes=10)
+
+
+def stale_run_cutoff(now: Any | None = None) -> Any:
+    """Return the oldest ``updated_at`` a live run may still have.
+
+    Both the reaper and the retry claim use this helper so the two can never
+    disagree about what "stale" means.
+    """
+    seconds = getattr(settings, "AI_ADVISOR_STALE_RUN_SECONDS", None)
+    try:
+        window = timedelta(seconds=max(60, int(seconds)))
+    except (TypeError, ValueError):
+        window = RUN_STALE_AFTER
+    return (now or timezone.now()) - window
 
 _DETERMINISTIC_PRIORITY = {
     1: "critical",
@@ -408,6 +433,17 @@ def generate_recommendations_for_scan(
         return _result_from_existing_run(run, scan)
 
     if client is None:
+        cached = aka_credentials_marked_invalid()
+        if cached:
+            logger.error(
+                "ai_advisor_credentials_invalid_cached scan=%s reason=%s",
+                scan_id,
+                cached.get("reason") or "invalid_api_key",
+            )
+            _mark_failed(run, error_code="invalid_api_key")
+            return _fallback_result(
+                run, scan, error_code="invalid_api_key"
+            )
         try:
             client = build_aka_client()
         except (ImproperlyConfigured, ValueError) as exc:
@@ -429,6 +465,18 @@ def generate_recommendations_for_scan(
         try:
             completion = client.chat(messages, model=model)
             resolved = parse_and_validate(completion.content, scan)
+        except AkaAuthenticationError as exc:
+            # One key serves every model: retrying the next model would only
+            # burn another guest request and cannot succeed.
+            last_error_code = "invalid_api_key"
+            mark_aka_credentials_invalid("invalid_api_key")
+            logger.error(
+                "ai_advisor_credentials_invalid scan=%s model=%s status=%s",
+                scan_id,
+                model,
+                exc.status_code,
+            )
+            break
         except AkaError as exc:
             # Log only the model and the error class/code.  Never log prompt,
             # evidence, raw output or provider error bodies.
@@ -524,7 +572,7 @@ def _claim_run(
 
         stale = (
             run.status == AIRecommendationRun.Status.RUNNING
-            and run.updated_at < timezone.now() - RUN_STALE_AFTER
+            and run.updated_at < stale_run_cutoff()
         )
         reclaimable = run.status in {
             AIRecommendationRun.Status.PENDING,

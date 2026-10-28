@@ -7,12 +7,62 @@ workers) can inject a session, sleep callable or circuit breaker.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 
 from .aka_client import AkaAIClient, AkaConfig
+
+logger = logging.getLogger(__name__)
+
+#: Shared marker so every worker stops calling a gateway that rejected the
+#: key.  Without it each new scan would consume one guest request, and the
+#: pipeline would only notice at the 429.
+CREDENTIALS_INVALID_CACHE_KEY = "advisory:aka_credentials_invalid"
+
+
+def _credentials_cooldown_seconds() -> int:
+    try:
+        return max(
+            60, int(getattr(settings, "AKA_AI_AUTH_FAILURE_COOLDOWN", 900))
+        )
+    except (TypeError, ValueError):
+        return 900
+
+
+def mark_aka_credentials_invalid(reason: str = "invalid_api_key") -> None:
+    """Remember that the gateway rejected the configured key.
+
+    Cache failures must never break the advisor: they are logged and the
+    call proceeds, because a cold cache only costs one extra probe.
+    """
+    try:
+        cache.set(
+            CREDENTIALS_INVALID_CACHE_KEY,
+            {"reason": (reason or "invalid_api_key")[:200]},
+            timeout=_credentials_cooldown_seconds(),
+        )
+    except Exception:
+        logger.warning("aka_ai_credentials_cache_unavailable")
+
+
+def aka_credentials_marked_invalid() -> dict | None:
+    try:
+        value = cache.get(CREDENTIALS_INVALID_CACHE_KEY)
+    except Exception:
+        logger.warning("aka_ai_credentials_cache_unavailable")
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def clear_aka_credentials_invalid() -> None:
+    try:
+        cache.delete(CREDENTIALS_INVALID_CACHE_KEY)
+    except Exception:
+        logger.warning("aka_ai_credentials_cache_unavailable")
 
 
 def build_aka_client(**client_kwargs: Any) -> AkaAIClient:

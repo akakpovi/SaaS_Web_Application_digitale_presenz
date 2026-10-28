@@ -439,8 +439,8 @@ class AkaClientErrorTests(unittest.TestCase):
                 429,
                 payload={
                     "error": {
-                        "message": "guest quota exceeded",
-                        "code": "guest_quota_exceeded",
+                        "message": "slow down",
+                        "code": "rate_limit_exceeded",
                     }
                 },
                 headers={"Retry-After": "86400"},

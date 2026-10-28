@@ -25,6 +25,7 @@ from accounts.models import User
 from advisory.models import SecurityFinding
 from advisory.services import security_advisor
 from advisory.services.aka_client import (
+    AkaAuthenticationError,
     AkaCircuitOpenError,
     AkaCompletion,
     AkaConnectionError,
@@ -331,6 +332,29 @@ class AdvisorChatApiTests(APITestCase):
         self.assertEqual(second.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         # The throttled request never reached the provider.
         self.assertEqual(len(client.calls), 1)
+        cache.clear()
+
+    def test_guest_mode_key_is_reported_and_stops_model_failover(self):
+        from django.core.cache import cache
+
+        from advisory.services.factory import aka_credentials_marked_invalid
+
+        cache.clear()
+        client = RecordingClient(
+            errors=[
+                AkaAuthenticationError(
+                    "guest mode", status_code=200, code="invalid_api_key"
+                )
+            ],
+            models=(FAKE_MODEL, "second/model"),
+        )
+
+        response = self.answer(client)
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.data["error"], "ai_invalid_credentials")
+        self.assertEqual(len(client.calls), 1, "a bad key must not retry models")
+        self.assertIsNotNone(aka_credentials_marked_invalid())
         cache.clear()
 
     def test_prompt_contains_only_this_organization_findings(self):

@@ -11,10 +11,25 @@ import logging
 
 from celery import shared_task
 from django.conf import settings
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_RETRY_COUNTDOWN = 120
+
+#: Terminal labels returned by the Celery task.  ``failed_quota_exhausted``
+#: used to be returned for every exhausted retry, including a persistent 500;
+#: the label now reflects the actual cause.
+_QUOTA_ERROR_CODES = frozenset({"rate_limit_exceeded", "guest_quota_exceeded"})
+_CONFIGURATION_ERROR_CODES = frozenset({"invalid_api_key", "client_unavailable"})
+
+
+def _terminal_status(error_code: str) -> str:
+    if error_code in _QUOTA_ERROR_CODES:
+        return "failed_quota_exhausted"
+    if error_code in _CONFIGURATION_ERROR_CODES:
+        return "failed_configuration"
+    return "failed_upstream_error"
 
 
 @shared_task(
@@ -104,7 +119,7 @@ def generate_scan_recommendations_task(self, scan_id: int) -> dict:
                 self.max_retries,
             )
             raise self.retry(countdown=countdown)
-        payload["status"] = "failed_quota_exhausted"
+        payload["status"] = _terminal_status(result.error_code)
 
     logger.info(
         "AI advisor finished scan=%s status=%s fallback=%s model=%s",
@@ -114,3 +129,116 @@ def generate_scan_recommendations_task(self, scan_id: int) -> dict:
         result.run.model_used or "-",
     )
     return payload
+
+
+@shared_task(name="advisory.tasks.reap_stale_ai_runs")
+def reap_stale_ai_runs() -> dict:
+    """Fail AI runs abandoned by a crashed or killed worker.
+
+    A run is claimed as ``running`` before the provider call.  If the worker
+    dies (OOM, ``time_limit`` kill, container restart), nothing ever updates
+    the row and the scan keeps showing an analysis in progress forever.  This
+    periodic sweep makes the failure explicit and visible.
+    """
+    from advisory.models import AIRecommendationRun
+    from advisory.services.advisor import stale_run_cutoff
+
+    cutoff = stale_run_cutoff()
+    now = timezone.now()
+    candidates = AIRecommendationRun.objects.filter(
+        status__in=[
+            AIRecommendationRun.Status.RUNNING,
+            AIRecommendationRun.Status.PENDING,
+        ],
+        updated_at__lt=cutoff,
+    ).values_list("id", "scan_id", "attempts", "updated_at")
+
+    reaped: list[str] = []
+    for run_id, scan_id, attempts, updated_at in candidates.iterator():
+        claimed = AIRecommendationRun.objects.filter(
+            pk=run_id,
+            status__in=[
+                AIRecommendationRun.Status.RUNNING,
+                AIRecommendationRun.Status.PENDING,
+            ],
+            updated_at__lt=cutoff,
+        ).update(
+            status=AIRecommendationRun.Status.FAILED,
+            error_code="stale_run_reaped",
+            completed_at=now,
+            updated_at=now,
+        )
+        if not claimed:
+            # A worker finished or reclaimed the run between the query and
+            # the update; leave it alone.
+            continue
+        age_seconds = max(0, int((now - updated_at).total_seconds()))
+        logger.error(
+            "ai_advisor_run_reaped run_id=%s scan_id=%s attempts=%s "
+            "idle_s=%d error_code=stale_run_reaped",
+            run_id,
+            scan_id,
+            attempts,
+            age_seconds,
+        )
+        reaped.append(str(run_id))
+
+    logger.info(
+        "ai_advisor_reaper cutoff=%s reaped=%d",
+        cutoff.isoformat(),
+        len(reaped),
+    )
+    return {
+        "cutoff": cutoff.isoformat(),
+        "reaped": len(reaped),
+        "run_ids": reaped[:50],
+    }
+
+
+@shared_task(
+    name="advisory.tasks.verify_aka_credentials",
+    time_limit=60,
+    soft_time_limit=50,
+)
+def verify_aka_credentials() -> dict:
+    """Probe the gateway with the configured key and alert on guest mode.
+
+    This is the standing early-warning signal: without it an invalid key is
+    only discovered when a customer scan produces no recommendations.
+    """
+    from advisory.services.aka_client import AkaAuthenticationError, AkaError
+    from advisory.services.factory import (
+        build_aka_client,
+        clear_aka_credentials_invalid,
+        mark_aka_credentials_invalid,
+    )
+
+    try:
+        client = build_aka_client()
+    except Exception as exc:
+        mark_aka_credentials_invalid(exc.__class__.__name__)
+        logger.error(
+            "aka_ai_credentials_invalid source=probe reason=%s",
+            exc.__class__.__name__,
+        )
+        return {"status": "invalid", "reason": exc.__class__.__name__}
+
+    messages = [{"role": "user", "content": "Reply with the single word: pong"}]
+    try:
+        with client:
+            completion = client.chat(messages, max_tokens=1, temperature=0)
+    except AkaAuthenticationError:
+        mark_aka_credentials_invalid("invalid_api_key")
+        logger.error("aka_ai_credentials_invalid source=probe status=guest_mode")
+        return {"status": "invalid", "reason": "invalid_api_key"}
+    except AkaError as exc:
+        # Unreachable provider is not an invalid key: do not poison the cache.
+        logger.warning(
+            "aka_ai_credentials_probe_unreachable error=%s",
+            exc.__class__.__name__,
+        )
+        return {"status": "unreachable", "reason": exc.__class__.__name__}
+
+    clear_aka_credentials_invalid()
+    logger.info("aka_ai_credentials_ok model=%s", completion.model or "-")
+    return {"status": "ok", "model": completion.model}

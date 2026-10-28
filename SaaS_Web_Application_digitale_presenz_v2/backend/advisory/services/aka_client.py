@@ -64,6 +64,11 @@ class AkaConfig:
     max_tokens: int = 900
     max_response_bytes: int = 1_000_000
     user_agent: str = "Presence-AI-Advisor/1.0"
+    # The gateway serves anonymous callers through a small daily guest quota
+    # and advertises that policy with this header.  Authenticated responses
+    # carry no ``x-ratelimit-*`` header at all (measured 2026-10-28).  A
+    # present header therefore means the supplied key was not honoured.
+    guest_mode_header: str = "x-ratelimit-limit"
     circuit_failure_threshold: int = 5
     circuit_recovery_seconds: float = 300.0
     circuit_half_open_max_calls: int = 1
@@ -117,6 +122,8 @@ class AkaConfig:
             raise ValueError("max_response_bytes must be >= 1")
         if not (self.user_agent or "").strip():
             raise ValueError("user_agent is required")
+        if not (self.guest_mode_header or "").strip():
+            raise ValueError("guest_mode_header is required")
         if self.circuit_failure_threshold < 1:
             raise ValueError("circuit_failure_threshold must be >= 1")
         if self.circuit_recovery_seconds <= 0:
@@ -164,6 +171,16 @@ class AkaError(Exception):
 
 class AkaConfigurationError(AkaError):
     """The request or the integration is misconfigured; never retry."""
+
+
+class AkaAuthenticationError(AkaConfigurationError):
+    """The gateway answered as an anonymous guest, not as our account.
+
+    This is a configuration failure, not a provider outage: the configured
+    ``AKA_AI_API_KEY`` was absent, expired or rejected.  It must never be
+    retried and must never be reported as a quota problem, otherwise the
+    pipeline silently burns the 3-request guest quota and then sees a 429.
+    """
 
 
 class AkaRateLimitError(AkaError):
@@ -417,12 +434,26 @@ class AkaAIClient:
                 except AkaInvalidResponseError:
                     self._circuit.record_failure()
                     raise
+                # A 200 served in guest mode is not an authenticated success.
+                if self._guest_limit(response_headers) is not None:
+                    self._reject_guest_response(
+                        status_code,
+                        response_headers,
+                        request_id=completion.request_id,
+                    )
                 self._circuit.record_success()
                 return completion
 
             error = self._error_from_response(
                 status_code, response_headers, body
             )
+            if self._is_guest_response(response_headers, error):
+                self._reject_guest_response(
+                    status_code,
+                    response_headers,
+                    request_id=error.request_id,
+                    detail=error.code,
+                )
             if not error.retryable or not self._can_retry(attempt):
                 self._circuit.record_failure()
                 raise error
@@ -437,6 +468,53 @@ class AkaAIClient:
 
         # The loop always raises on the last attempt; this is defensive.
         raise AkaError("AKA AI request failed")
+
+    # ------------------------------------------------------------------
+    # Credential validation
+    # ------------------------------------------------------------------
+
+    def _guest_limit(self, headers: Mapping[str, Any]) -> str | None:
+        raw = self._get_header(headers, self.config.guest_mode_header)
+        if raw is None:
+            return None
+        if isinstance(raw, bytes):
+            raw = raw.decode("ascii", "ignore")
+        return str(raw).strip() or "unknown"
+
+    def _is_guest_response(
+        self, headers: Mapping[str, Any], error: AkaError
+    ) -> bool:
+        if self._guest_limit(headers) is not None:
+            return True
+        return (error.code or "").lower() == "guest_quota_exceeded"
+
+    def _reject_guest_response(
+        self,
+        status_code: int,
+        headers: Mapping[str, Any],
+        *,
+        request_id: str | None = None,
+        detail: str = "",
+    ) -> None:
+        """Fail loudly instead of consuming the anonymous quota.
+
+        Never include the API key or the response body in the log line: the
+        guest limit and HTTP status are enough to diagnose the deployment.
+        """
+        limit = self._guest_limit(headers)
+        logger.error(
+            "aka_ai_invalid_credentials status=%s guest_limit=%s detail=%s",
+            status_code,
+            limit or "missing-header",
+            detail or "-",
+        )
+        raise AkaAuthenticationError(
+            "AKA AI served the request in guest mode: the configured "
+            "AKA_AI_API_KEY is missing, expired or rejected by the gateway",
+            status_code=status_code,
+            code="invalid_api_key",
+            request_id=request_id,
+        )
 
     # ------------------------------------------------------------------
     # Retry helpers

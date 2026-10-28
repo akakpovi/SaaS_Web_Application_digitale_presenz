@@ -12,6 +12,8 @@ from datetime import timedelta
 
 from celery import shared_task
 from django.conf import settings
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -300,6 +302,101 @@ def run_health_scan(self, scan_id: int) -> dict:
 def run_security_scan(self, scan_id: int) -> dict:
     """Convenience alias: run a SECURITY-type scan (external tools)."""
     return run_authenticated_scan.apply(args=[scan_id]).get()
+
+
+def _reap_after_seconds(name: str, default: int) -> int:
+    """Read a positive reaper threshold from settings, with a safe floor.
+
+    The floor is five minutes: a scan is never reaped before Celery's own
+    ``time_limit`` (600 s) has had a chance to kill it.
+    """
+    raw = getattr(settings, name, default)
+    try:
+        return max(300, int(raw))
+    except (TypeError, ValueError):
+        return default
+
+
+@shared_task(name="scans.tasks.reap_stale_scans")
+def reap_stale_scans() -> dict:
+    """Fail scans abandoned by a crashed worker or a lost queue message.
+
+    ``TriggerImmediateScanView`` refuses a new scan while another one is
+    pending/queued/running (HTTP 409).  A scan whose worker died would
+    therefore block its website forever.  The sweep re-checks each candidate
+    under a row lock so it can never overwrite a scan that just progressed.
+    """
+    from scans.models import Scan
+
+    now = timezone.now()
+    running_cutoff = now - timedelta(
+        seconds=_reap_after_seconds("SCAN_REAP_RUNNING_AFTER_SECONDS", 900)
+    )
+    queued_cutoff = now - timedelta(
+        seconds=_reap_after_seconds("SCAN_REAP_QUEUED_AFTER_SECONDS", 900)
+    )
+    candidates = list(
+        Scan.objects.filter(
+            Q(status=Scan.Status.RUNNING, updated_at__lt=running_cutoff)
+            | Q(
+                status__in=[Scan.Status.QUEUED, Scan.Status.PENDING],
+                updated_at__lt=queued_cutoff,
+            )
+        )
+        .order_by("updated_at")
+        .values_list("id", flat=True)[:200]
+    )
+
+    reaped: list[int] = []
+    for scan_id in candidates:
+        previous_status = ""
+        idle_seconds = 0
+        with transaction.atomic():
+            scan = Scan.objects.select_for_update().get(pk=scan_id)
+            cutoff = (
+                running_cutoff
+                if scan.status == Scan.Status.RUNNING
+                else queued_cutoff
+            )
+            if (
+                scan.status
+                not in {Scan.Status.PENDING, Scan.Status.QUEUED, Scan.Status.RUNNING}
+                or scan.updated_at >= cutoff
+            ):
+                continue
+            previous_status = scan.status
+            idle_seconds = max(0, int((now - scan.updated_at).total_seconds()))
+            scan.transition_to(
+                Scan.Status.FAILED,
+                failure_message=(
+                    "Scan abandoned: no progress since "
+                    f"{scan.updated_at.isoformat()}; reaped automatically"
+                ),
+            )
+            reaped.append(scan_id)
+
+        logger.error(
+            "scan_reaped scan_id=%d previous_status=%s idle_s=%d "
+            "error_code=stale_scan_reaped",
+            scan_id,
+            previous_status,
+            idle_seconds,
+        )
+        _record_monitoring_outcome(scan)
+        _dispatch_scan_issue_alert(scan_id)
+
+    logger.info(
+        "scan_reaper running_cutoff=%s queued_cutoff=%s reaped=%d",
+        running_cutoff.isoformat(),
+        queued_cutoff.isoformat(),
+        len(reaped),
+    )
+    return {
+        "running_cutoff": running_cutoff.isoformat(),
+        "queued_cutoff": queued_cutoff.isoformat(),
+        "reaped": len(reaped),
+        "scan_ids": reaped[:50],
+    }
 
 
 @shared_task(name="scans.tasks.cancel_scan")

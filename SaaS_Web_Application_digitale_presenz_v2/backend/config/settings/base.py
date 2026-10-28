@@ -367,6 +367,22 @@ LOGGING = {
 
 # ---- Extended Celery Beat Schedule ----
 CELERY_BEAT_SCHEDULE.update({
+    # Crash recovery: both jobs are idempotent and bounded, so a five-minute
+    # cadence is cheap.  Their thresholds are configured above.
+    "reap-stale-ai-runs": {
+        "task": "advisory.tasks.reap_stale_ai_runs",
+        "schedule": 300.0,
+    },
+    "reap-stale-scans": {
+        "task": "scans.tasks.reap_stale_scans",
+        "schedule": 300.0,
+    },
+    # Standing credential check: catches a revoked/expired key before a
+    # customer scan silently falls back to deterministic recommendations.
+    "verify-aka-credentials": {
+        "task": "advisory.tasks.verify_aka_credentials",
+        "schedule": crontab(hour="*/6", minute=45),
+    },
     "sync-reviews-hourly": {
         "task": "reviews.tasks.sync_all_review_sources",
         "schedule": 3600.0,
@@ -434,6 +450,21 @@ AKA_AI_CIRCUIT_RECOVERY_SECONDS = _env_float(
 AI_ADVISOR_ENABLED = env_bool("AI_ADVISOR_ENABLED", False)
 AKA_AI_MAX_PROMPT_CHARS = _env_int("AKA_AI_MAX_PROMPT_CHARS", 60_000)
 AI_ADVISOR_RETRY_MAX_SECONDS = _env_int("AI_ADVISOR_RETRY_MAX_SECONDS", 900)
+# A run whose row has not been touched for this long is considered abandoned
+# by a dead worker.  Kept above the 600 s Celery hard limit.
+AI_ADVISOR_STALE_RUN_SECONDS = _env_int("AI_ADVISOR_STALE_RUN_SECONDS", 600)
+# After the gateway rejects our key, every worker stops calling it for this
+# long instead of each scan silently consuming a guest request.
+AKA_AI_AUTH_FAILURE_COOLDOWN = _env_int("AKA_AI_AUTH_FAILURE_COOLDOWN", 900)
+# Scans have no heartbeat beyond their progress updates; the default is the
+# Celery hard limit (600 s) plus a 5-minute margin.  Lower values are floored
+# to 300 s in the reaper itself.
+SCAN_REAP_RUNNING_AFTER_SECONDS = _env_int(
+    "SCAN_REAP_RUNNING_AFTER_SECONDS", 900
+)
+SCAN_REAP_QUEUED_AFTER_SECONDS = _env_int(
+    "SCAN_REAP_QUEUED_AFTER_SECONDS", 900
+)
 
 
 # ---- Advanced security tier (ZAP / Nuclei) --------------------------------
