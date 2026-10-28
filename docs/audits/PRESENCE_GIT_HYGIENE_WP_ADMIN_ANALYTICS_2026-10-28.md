@@ -97,6 +97,25 @@ $ git ls-remote origin refs/heads/main
 
 Remote unique `origin`, branche `main`, aucune ambiguïté.
 
+### 1.7 Cinquième commit (correctif WP_HOME + scaffolding analytics)
+
+Après un nouveau scan anti-secrets des sept fichiers concernés (0 occurrence, triage manuel des diffs : seules les valeurs de développement déjà acceptées subsistent) :
+
+```
+d0bd1eeb5978bc340e48fbc411c4876ce09bce70
+chore(wp,analytics): fix WP_HOME and add inert analytics scaffolding
+7 files changed, 555 insertions(+), 4 deletions(-)
+```
+
+Push : `94377bc..d0bd1ee  main -> main`, exit 0. Vérification indépendante :
+
+```
+$ git ls-remote origin refs/heads/main
+d0bd1eeb5978bc340e48fbc411c4876ce09bce70	refs/heads/main
+$ git rev-parse HEAD
+d0bd1eeb5978bc340e48fbc411c4876ce09bce70
+```
+
 ---
 
 ## Partie 2 — WordPress admin en local
@@ -225,8 +244,8 @@ L'activation réelle est conditionnée à six points, détaillés dans le plan :
 |---|---|
 | Secrets hors du dépôt, `.gitignore` en place | **VALIDÉ TECHNIQUEMENT** |
 | Six fichiers absents de l'arbre suivi et de l'historique | **VALIDÉ TECHNIQUEMENT** |
-| Quatre commits par lot | **VALIDÉ TECHNIQUEMENT** |
-| Push `main` → `origin` | **VALIDÉ TECHNQUEMENT** (`3b2206f..94377bc`) |
+| Quatre commits par lot + cinquième commit de correctif | **VALIDÉ TECHNIQUEMENT** |
+| Push `main` → `origin` | **VALIDÉ TECHNIQUEMENT** (`3b2206f..94377bc`, puis `94377bc..d0bd1ee`) |
 | Admin WordPress accessible en local | **VALIDÉ TECHNIQUEMENT** (login réel, Dashboard 200) |
 | Isolation des autres services | **VALIDÉ TECHNIQUEMENT** (`StartedAt` inchangés) |
 | Scaffolding analytics inerte | **VALIDÉ TECHNIQUEMENT** |
@@ -235,4 +254,6 @@ L'activation réelle est conditionnée à six points, détaillés dans le plan :
 
 ### Reste non committé (à la décision de l'utilisateur)
 
-`docker-compose.yml` (WP_HOME), `index.html` (marqueur), `src/lib/analytics.ts`, `.env.example`, `.gitignore` frontend, ce rapport et le plan analytics — plus les 16 artefacts volontairement exclus.
+Le dossier de préparation Umami ([UMAMI_ACTIVATION_DRAFT_2026-10-28.md](../analytics/UMAMI_ACTIVATION_DRAFT_2026-10-28.md)), volontairement non versionné tant qu'il n'est pas appliqué, plus les 16 artefacts exclus (ZIP, doublon, `.figma/`, `*.bak`, `logs/`).
+
+Tout le reste (correctif `WP_HOME`, `index.html`, `analytics.ts`, `.env.example`, `.gitignore` frontend, ce rapport, le plan analytics) est dans `d0bd1ee` et poussé sur `origin/main`. Seule la présente mise à jour de la section 1.7 est postérieure à ce commit et reste locale.
