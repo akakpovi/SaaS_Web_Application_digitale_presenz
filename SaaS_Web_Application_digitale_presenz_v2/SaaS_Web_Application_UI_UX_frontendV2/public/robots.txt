@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /features/
+Allow: /tools/
+Allow: /pricing
+Allow: /faq
+Allow: /about
+Allow: /contact
+Allow: /blog/
+
+# Private application routes — do not index
+Disallow: /app/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /onboarding
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /account
+Disallow: /billing
+
+# Sitemap
+# Generated at build time by scripts/prerender.mjs (absolute URL).
+Sitemap: https://localhost/sitemap.xml
