@@ -14,6 +14,7 @@ import { OAuthReturnHandler } from "./components/OAuthReturnHandler"
 import { PlanProvider } from "./contexts/PlanContext"
 import { UpgradeProvider } from "./components/UpgradePrompt"
 import RouteLocaleSync from "./components/RouteLocaleSync"
+import AnalyticsPageviews from "./components/AnalyticsPageviews"
 import { localizedPath } from "./i18n"
 import { PUBLIC_PATHS, type PublicPath } from "./seo/publicPaths"
 
@@ -268,6 +269,7 @@ export default function App() {
       <BrowserRouter>
         <OAuthReturnHandler />
         <RouteLocaleSync />
+        <AnalyticsPageviews />
         <AppRoutes />
       </BrowserRouter>
     </ThemeProvider>

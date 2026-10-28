@@ -77,6 +77,52 @@ if (template.includes('data-ssg="true"')) {
   process.exit(1)
 }
 
+/* ── Analytics: build-time injection, off unless explicitly enabled ───────── */
+
+/**
+ * The tracker is injected only when the build opts in, and never on a noindex
+ * screen or the 404 page. `VITE_ANALYTICS_*` comes from `.env.local` (Vite's
+ * own local file, untracked) or from the process environment, exactly like the
+ * other build settings. A half-configured build is a hard error: shipping the
+ * script without a website id would make Umami reject every page view.
+ */
+const ANALYTICS_ENABLED = ENV.VITE_ANALYTICS_ENABLED === "true"
+const ANALYTICS_WEBSITE_ID = String(ENV.VITE_ANALYTICS_WEBSITE_ID || "").trim()
+const ANALYTICS_SCRIPT_URL = String(
+  ENV.VITE_ANALYTICS_SCRIPT_URL || "/stats/script.js",
+).trim()
+const ANALYTICS_MARKER = "<!-- presence:analytics -->"
+
+if (ANALYTICS_ENABLED) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ANALYTICS_WEBSITE_ID)) {
+    console.error(
+      "[prerender] VITE_ANALYTICS_ENABLED=true but VITE_ANALYTICS_WEBSITE_ID is not a UUID.",
+    )
+    process.exit(1)
+  }
+  // Same-origin path only: an absolute URL would load a third-party script and
+  // bypass the nginx proxy this build is designed around.
+  if (!ANALYTICS_SCRIPT_URL.startsWith("/") || ANALYTICS_SCRIPT_URL.startsWith("//")) {
+    console.error(
+      `[prerender] VITE_ANALYTICS_SCRIPT_URL must be a same-origin path, got ${ANALYTICS_SCRIPT_URL}`,
+    )
+    process.exit(1)
+  }
+  if (!template.includes(ANALYTICS_MARKER)) {
+    console.error(
+      `[prerender] VITE_ANALYTICS_ENABLED=true but dist/index.html has no ${ANALYTICS_MARKER} marker.`,
+    )
+    process.exit(1)
+  }
+  console.warn(
+    `[prerender] analytics enabled for this build: ${ANALYTICS_SCRIPT_URL} (${ANALYTICS_WEBSITE_ID}) — local/development verification only until the legal pages are final.`,
+  )
+}
+
+function analyticsTag() {
+  return `<script defer src="${escapeHtml(ANALYTICS_SCRIPT_URL)}" data-website-id="${escapeHtml(ANALYTICS_WEBSITE_ID)}"></script>`
+}
+
 /**
  * Server bundle produced by `vite build --ssr src/entry-server.tsx`.
  * The build must not silently fall back to a generic shell: a missing entry
@@ -362,6 +408,12 @@ function writePage(
     : `<div id="root">${renderFallback({ locale, ...fallbackOptions })}</div>`
 
   html = html.replace('<div id="root"></div>', root)
+
+  // The marker is always consumed: an enabled build replaces it with the
+  // tracker, a disabled one leaves nothing (not even a dead comment).
+  const trackable =
+    ANALYTICS_ENABLED && route !== "/404" && !headOptions.noindex
+  html = html.replace(ANALYTICS_MARKER, trackable ? analyticsTag() : "")
 
   const target = variantFile(route, inVariantFolder)
   fs.mkdirSync(path.dirname(target), { recursive: true })

@@ -305,7 +305,8 @@ Conclusion : Umami utilisera l'instance du conteneur `...-db-1`, isolée du Post
     }
 ```
 
-- Le préfixe exact `/stats/api/` correspond à l'endpoint déduit par le script Umami depuis son propre `src` (`/stats/script.js` → base `/stats`) ; à confirmer au premier test.
+- **Implémentation finale (2026-10-28)** : les deux `proxy_pass` passent par une upstream en variable (`set $umami_upstream`) + `rewrite`, et non par un hôte littéral — voir §9, écart 2. Aucun `expires`/`Cache-Control` n'est ajouté : Umami envoie déjà `public, max-age=86400, must-revalidate`, et deux valeurs concurrentes rendraient le cache indéterminé.
+- Le préfixe exact `/stats/api/` correspond à l'endpoint déduit par le script Umami depuis son propre `src` (`/stats/script.js` → base `/stats`) ; confirmé le 2026-10-28 (`/stats/api/heartbeat` → 200 JSON).
 - Le `location /stats/` final reproduit le comportement actuel de `/cms/` : tout le reste reste fermé.
 - Aucune des règles `?lang=` ni des blocs `/cms/wp-json/` et `/cms/wp-content/` n'est touchée.
 
@@ -327,11 +328,114 @@ L'activation du script reste une étape distincte, conditionnée à la levée de
 
 ---
 
-## 8. Ce qui n'a pas été fait
+## 8. État au moment de la rédaction (historique, avant exécution)
 
-- Aucune base, aucun rôle créé.
-- Aucun conteneur Umami créé ou démarré.
-- Aucune ligne ajoutée au `docker-compose.yml`.
-- Aucun bloc nginx ajouté.
-- Aucun mot de passe généré.
-- `VITE_ANALYTICS_ENABLED` reste `false`.
+Au 2026-10-28, avant le feu vert : aucune base ni rôle créé, aucun conteneur
+Umami, aucune ligne dans `docker-compose.yml`, aucun bloc nginx, aucun mot de
+passe généré. **Ces six points ne sont plus vrais après l'exécution : voir §9.**
+
+---
+
+## 9. Journal d'exécution — 2026-10-28
+
+Exécution des étapes 1 à 8 du §7, dans l'ordre, sans activation du tracking.
+
+| Étape | Résultat |
+|---|---|
+| 1. `.gitignore` | `secrets/` ajouté ; `git check-ignore -v secrets/umami.env` → `.gitignore:44:secrets/` |
+| 2. Secrets | `secrets/umami.env` créé en 600 (279 octets, 4 clés). Valeurs jamais affichées ni versionnées. |
+| 3. SQL | Rôle `umami_app` (LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, `CONNECTION LIMIT 10`) + base `umami` ; exit 0. Aucun redémarrage de `db`. |
+| 4. Contrôles | Base `umami` présente, rôle conforme, **0** connexion sur `umami` avant démarrage. |
+| 5. Service | Conteneur `umami` démarré, `healthy`, port 3000 **non publié** (`3000/tcp` seul). Seul conteneur créé. |
+| 6. Site admin | `data-website-id` = `cc640a0b-5955-4d5e-83b9-1b09db4a934f`. Mot de passe par défaut révoqué : `umami` → 401, mot de passe généré → 200. |
+| 7. Nginx `/stats/` | `/stats/` et `/stats/<page>` → 404 ; `/stats/script.js` → 200 `application/javascript` (4 773 octets) ; `/stats/api/heartbeat` → 200 JSON. `verify-nginx.sh` exit 0. |
+| 8. Sauvegarde | `backup.sh` exit 0 : `umami-20261028T125920Z.dump` (65 K) présent dans `SHA256SUMS-20261028T125920Z`, `sha256sum -c` → OK. `restore.sh` refuse une cible erronée (exit 1). |
+| 9. Activation | **Non faite.** `VITE_ANALYTICS_ENABLED` absent de `.env` ; 0 occurrence de `stats/script.js` dans `/`, `/pricing`, `/en/pricing`, `/faq`, `/en/faq`. |
+
+### Écarts par rapport au texte du brouillon
+
+1. **Mot de passe admin.** L'endpoint supposé `POST /api/users/{id}/password` répond 404 (page HTML) sur cette version : le changement passe par `POST /api/me/password` avec `{currentPassword, newPassword}` et le jeton de session. L'ancien mot de passe est ensuite refusé (401).
+2. **Bloc nginx.** Les deux `proxy_pass` utilisent une upstream en variable (`set $umami_upstream`) + `rewrite`, comme les blocs `/cms/`, au lieu d'un hôte littéral. Motif : un `proxy_pass http://umami:3000` littéral empêche nginx de démarrer si Umami est arrêté, et la résolution Docker ne serait pas rafraîchie. Les en-têtes de sécurité sont répétés dans le bloc `script.js` (un `add_header` local coupe l'héritage du bloc `server`). Aucun `Cache-Control` local n'est ajouté : celui d'Umami (`public, max-age=86400, must-revalidate`) reste seul, vérifié par `curl -I`.
+3. **`restore.sh`.** La confirmation interactive affiche désormais la base cible déduite du nom de fichier et exige `RESTORE umami` / `RESTORE presence` / `RESTORE redis` : une faute de frappe sur le chemin ne peut plus écraser la mauvaise base. `--yes` reste disponible pour l'automatisation et affiche la cible.
+4. **`backup.sh`.** Le récapitulatif final utilise un `if` plutôt qu'un `[ -f ] &&` : en dernière commande, un test faux faisait sortir le script en statut 1 alors que la sauvegarde avait réussi.
+
+### Ce qui reste explicitement hors périmètre
+
+- `VITE_ANALYTICS_ENABLED`, `src/lib/analytics.ts`, les pages juridiques et l'injection du script dans `prerender.mjs` : **inchangés**.
+- `verify_backup_restore.sh` ne sait toujours pas vérifier un dump Umami (voir §4.1) : la restauration réelle d'un `umami-*.dump` n'a pas été exercée, seulement sa porte de confirmation.
+- Aucun commit, aucun déploiement.
+
+---
+
+## 10. Activation locale de vérification — 2026-10-28 13:45–14:00 UTC
+
+**Portée : local/développement uniquement.** Aucune configuration de production
+n'a été modifiée. Les pages Datenschutz/Cookies restent des brouillons : le
+blocage juridique est entier et doit être levé par un juriste avant toute mise
+en ligne publique collectant des données.
+
+### Ce qui a changé
+
+| Fichier | Changement |
+|---|---|
+| `scripts/prerender.mjs` | Remplace `<!-- presence:analytics -->` par la balise Umami quand `VITE_ANALYTICS_ENABLED=true` ; refuse un id non-UUID ou une URL non same-origin ; n'injecte jamais sur les 5 écrans noindex ni sur `404.html`. |
+| `scripts/check-seo-build.mjs` | Exige exactement 1 balise par page indexable (articles compris), 0 sur les pages noindex, et l'absence du marqueur brut dans tout le `dist/`. |
+| `src/components/AnalyticsPageviews.tsx` | Hook `trackPageview(pathname + search)` sur les changements de route SPA ; le premier rendu est ignoré (le script compte déjà le chargement initial). |
+| `src/App.tsx` | Monte le hook dans le `BrowserRouter` (jamais dans le rendu statique). |
+| `docker-compose.yml` | Publie Umami sur `127.0.0.1:3000` seulement, pour le tableau de bord local. |
+| `scripts/verify-nginx.sh` | Remplace l'assertion « aucun tracker » par « exactement une balise bien formée, jamais dupliquée, jamais le marqueur brut ». |
+
+`VITE_ANALYTICS_ENABLED=true`, `VITE_ANALYTICS_WEBSITE_ID` et
+`VITE_ANALYTICS_SCRIPT_URL` sont définis dans
+`SaaS_Web_Application_UI_UX_frontendV2/.env.local` (non versionné,
+`.gitignore:8`). Le gabarit `.env.example` reste à `false`.
+
+### Preuves brutes
+
+```text
+dist/index.html                            1
+dist/pricing/index.html                    1
+dist/en/pricing/index.html                 1
+dist/faq/index.html                        1
+dist/login/index.html                      0
+dist/_i18n/login/index.html                0
+dist/404.html                              0
+dist/blog/<slug>/index.html                1
+marqueur brut restant dans dist/           0
+sitemap <loc>                              66
+```
+
+```html
+<script defer src="/stats/script.js" data-website-id="cc640a0b-…"></script>
+```
+
+```text
+GET /stats/script.js → 200 application/javascript 4773 octets (via nginx)
+TLS au build → [prerender] analytics enabled for this build: /stats/script.js
+pnpm exec tsc --noEmit          → 0
+pnpm run build                  → 0 (58 pages + 8 articles, sitemap 66)
+pnpm check:seo                  → 0
+pnpm exec playwright test       → 0 (50 passed, 6.6 min)
+bash scripts/verify-nginx.sh    → 0 (exactly one well-formed tracker tag)
+scripts/build-frontend.sh       → 0 (image reconstruite, frontend seul recréé)
+```
+
+Visite réelle (Chromium, UA desktop, certificat local ignoré) :
+
+```text
+/pricing?utm_source=local_check&utm_medium=verification → pageview enregistré
+clic interne /pricing?utm_source=spa_hook_check → /   → pageview enregistré
+documentLoads = 1 (aucun rechargement complet : c'est le hook SPA)
+website_event : 4 lignes (dont les deux du parcours E2E)
+```
+
+Sauvegarde après activation : `backup.sh` exit 0, `umami-20261028T135634Z.dump`
+(65 K) présent dans `SHA256SUMS-20261028T135634Z` à côté des dumps PostgreSQL et
+Redis.
+
+### Avertissement
+
+`VITE_ANALYTICS_ENABLED=true` ne doit **jamais** être présent dans une
+configuration de production tant que Datenschutz/Cookies ne sont pas finalisées
+et validées par un juriste. Ce réglage vit uniquement dans un `.env.local`
+ignoré par Git, sur ce poste.

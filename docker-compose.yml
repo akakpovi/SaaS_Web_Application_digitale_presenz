@@ -389,6 +389,43 @@ services:
     entrypoint: ["/bin/sh", "/seed.sh"]
     restart: "no"
 
+  # ── Umami (mesure d'audience, désactivé tant que le juridique n'est pas prêt)
+  # Le port n'est publié que sur la loopback, pour ouvrir le tableau de bord
+  # depuis le navigateur local. `127.0.0.1:` interdit tout accès LAN ; une
+  # configuration de production ne doit pas publier ce port du tout.
+  umami:
+    # Tag `postgresql-latest` résolu le 2026-10-28 en digest d'index multi-arch
+    # (linux/amd64 + linux/arm64). Pour mettre à jour, relancer
+    #   docker buildx imagetools inspect ghcr.io/umami-software/umami:postgresql-latest
+    # et remplacer le digest ci-dessous — jamais le tag mouvant.
+    image: ghcr.io/umami-software/umami@sha256:e69d1a7932e9dab0fc523edc7be1f3a53f3c261f57856fc2167ae74a8fc022e8
+    env_file:
+      - ./secrets/umami.env        # non versionné, 600, voir §3
+    environment:
+      DATABASE_TYPE: postgresql
+      DISABLE_TELEMETRY: "1"
+      TRACKER_SCRIPT_NAME: script.js
+    ports:
+      - "127.0.0.1:3000:3000"
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/heartbeat >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   mailpit:
     image: axllent/mailpit:v1.21
     restart: unless-stopped

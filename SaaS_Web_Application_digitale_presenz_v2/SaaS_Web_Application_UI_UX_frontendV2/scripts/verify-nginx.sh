@@ -287,6 +287,45 @@ request "/sitemap.xml" 200 "<loc>$BUILD_ORIGIN/en/pricing</loc>" "sitemap lists 
 request "/robots.txt" 200 "Disallow: /app/" "robots.txt"
 request "/app/dashboard?lang=en" 200 '<html lang="de"' "SPA shell for /app/ (unchanged)"
 
+echo "— The analytics prefix stays closed except tracker + collect API"
+request "/stats/" 404 "Seite nicht gefunden" "/stats/ stays closed"
+request "/stats/dashboard" 404 "Seite nicht gefunden" "/stats/<anything> stays closed"
+# Dans ce conteneur jetable, l'hôte `umami` n'existe pas : nginx répond 502
+# dès que le bloc proxy est atteint. Un 404 signifierait que /stats/ est
+# retombé sur le fourre-tout fermé, donc que le bloc proxy ne matche pas.
+# Le 200 réel est vérifié contre la pile vivante (étape 7 du brouillon).
+STATS_CODE="$(http_code "/stats/script.js")"
+if [ "$STATS_CODE" = "404" ]; then
+  echo "  FAIL  /stats/script.js answered 404 — the proxy block is not reachable"
+  FAILURES=$((FAILURES + 1))
+elif [ "$STATS_CODE" = "502" ]; then
+  echo "  ok    /stats/script.js reaches the proxy (502: no umami host in this container)"
+else
+  echo "  ok    /stats/script.js reaches the proxy ($STATS_CODE)"
+fi
+
+# L'injection décidée au build est vérifiée par check-seo-build (qui lit la
+# même variable). Ici, le vrai nginx sert le dist tel quel : on contrôle la
+# forme et l'unicité, pas la décision elle-même — un build activé doit livrer
+# exactement une balise bien formée, un build désactivé aucune.
+echo "— Tracker injection is well-formed and never duplicated"
+curl -sk "https://127.0.0.1:$PORT/" -o "$WORK/home-analytics.html"
+TRACKER_COUNT="$( { grep -oF '/stats/script.js' "$WORK/home-analytics.html" || true; } | wc -l | tr -d ' ')"
+if [ "$TRACKER_COUNT" -gt 1 ]; then
+  echo "  FAIL  the home page references the tracker $TRACKER_COUNT times"
+  FAILURES=$((FAILURES + 1))
+elif [ "$TRACKER_COUNT" -eq 1 ] && ! grep -qE '<script defer src="/stats/script\.js" data-website-id="[0-9a-f-]{36}"></script>' "$WORK/home-analytics.html"; then
+  echo "  FAIL  the tracker tag is malformed"
+  FAILURES=$((FAILURES + 1))
+elif grep -qF '<!-- presence:analytics -->' "$WORK/home-analytics.html"; then
+  echo "  FAIL  the raw analytics marker was served"
+  FAILURES=$((FAILURES + 1))
+elif [ "$TRACKER_COUNT" -eq 1 ]; then
+  echo "  ok    exactly one well-formed tracker tag (enabled build)"
+else
+  echo "  ok    no tracker tag (analytics disabled in this build)"
+fi
+
 echo "— Security headers still applied by the real config"
 HEADERS="$(curl -skI "https://127.0.0.1:$PORT/pricing")"
 for header in "Strict-Transport-Security" "X-Frame-Options: DENY" "X-Content-Type-Options: nosniff"; do

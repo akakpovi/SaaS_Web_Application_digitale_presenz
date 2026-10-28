@@ -37,9 +37,47 @@
  */
 import fs from "node:fs"
 import path from "node:path"
+import { loadEnv } from "vite"
 
 const ROOT = path.resolve(import.meta.dirname, "..")
 const DIST = path.join(ROOT, "dist")
+
+/**
+ * Same source as scripts/prerender.mjs: Vite's env files (including the
+ * untracked `.env.local`) then real environment variables. The gate must read
+ * the switch the build used, not guess it from the output it is checking.
+ */
+const BUILD_ENV = { ...loadEnv("production", ROOT, ""), ...process.env }
+const ANALYTICS_ENABLED = BUILD_ENV.VITE_ANALYTICS_ENABLED === "true"
+const ANALYTICS_SCRIPT_URL = String(
+  BUILD_ENV.VITE_ANALYTICS_SCRIPT_URL || "/stats/script.js",
+)
+
+/**
+ * The tracker is injected once per indexable page, never on a noindex screen
+ * and never as the raw marker. Counting the script URL (not just `<script>`)
+ * catches a duplicated tag as well as a tag left in a page that opted out.
+ */
+function checkAnalytics(html, where, { indexable }) {
+  const occurrences = html.split(ANALYTICS_SCRIPT_URL).length - 1
+  const expected = ANALYTICS_ENABLED && indexable ? 1 : 0
+  check(
+    occurrences === expected,
+    `${where}: expected ${expected} analytics tag(s), found ${occurrences}`,
+  )
+  check(
+    !html.includes("<!-- presence:analytics -->"),
+    `${where}: the raw presence:analytics marker was left in the output`,
+  )
+  if (expected === 1) {
+    check(
+      /<script defer src="[^"]+" data-website-id="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"><\/script>/.test(
+        html,
+      ),
+      `${where}: the analytics tag is not a deferred script with a data-website-id`,
+    )
+  }
+}
 const argFlag = (name) => process.argv.includes(name)
 const argValue = (name) => {
   const prefix = `${name}=`
@@ -361,6 +399,8 @@ for (const route of routes) {
     const html = read(file)
     const where = `dist${distPath}`
     const expected = routeCopy(route, locale)
+
+    checkAnalytics(html, where, { indexable: !route.noindex })
 
     check(
       first(html, /<html lang="([^"]*)"/) === locale,
@@ -920,6 +960,7 @@ if (fs.existsSync(blogDir)) {
     if (!entry.isDirectory() || !fs.existsSync(file)) continue
     const html = read(file)
     const where = `dist/blog/${entry.name}/index.html`
+    checkAnalytics(html, where, { indexable: true })
     const queryAlternates = all(
       html,
       /<link rel="alternate" hreflang="([^"]+)" href="([^"]*\?lang=[^"]*)"/g,

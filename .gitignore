@@ -40,6 +40,9 @@ htmlcov/
 .idea/
 .DS_Store
 
+# Secrets d'exécution (mots de passe générés, clés d'instance) — jamais versionnés
+secrets/
+
 # Secrets et données locales — jamais versionnés (déplacés en quarantaine le 2026-10-28)
 omniroute_key.txt
 presence_before_migration_repair_*.sql

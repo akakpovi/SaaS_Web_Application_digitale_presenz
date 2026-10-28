@@ -1,10 +1,11 @@
 /**
- * Analytics scaffolding — deliberately inert.
+ * Analytics client — inert unless the build opts in.
  *
- * No tracker is loaded by this module. It exists so that activation, once the
- * legal pages are finalised, is a configuration change and not a refactor:
- * the call sites can be written today and stay no-ops until the build enables
- * them.
+ * The module itself never loads a tracker: `scripts/prerender.mjs` injects the
+ * `<script>` only when `VITE_ANALYTICS_ENABLED` is exactly "true" at build time.
+ * That switch is currently used for local/development verification; the
+ * Datenschutz/Cookies pages are still drafts, so no public deployment may turn
+ * it on until a lawyer has validated them.
  *
  * Two independent gates must both be open for anything to be sent:
  *
