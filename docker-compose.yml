@@ -313,6 +313,11 @@ services:
   # Instance réelle de test : elle expose une API REST WordPress standard et
   # n'est jamais publiée directement. nginx ne proxifie que /cms/wp-json/ et
   # /cms/wp-content/. L'admin reste sur la loopback 127.0.0.1:8081.
+  #
+  # WORDPRESS_URL pointe donc sur cette loopback, pas sur /cms : avec
+  # http://localhost/cms, wp-admin répondait 302 vers `/cms/wp-login.php`,
+  # qu'nginx refuse en 404 (l'admin n'est délibérément pas proxifié).
+  # L'admin est donc http://localhost:8081/wp-admin/ (loopback uniquement).
   # En production, pointez VITE_WP_API_URL vers le CMS réel et retirez ces
   # trois services du serveur public.
   wordpress-db:
@@ -338,10 +343,10 @@ services:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_local_dev}
-      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost/cms}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost:8081}
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_HOME', '${WORDPRESS_URL:-http://localhost/cms}');
-        define('WP_SITEURL', '${WORDPRESS_URL:-http://localhost/cms}');
+        define('WP_HOME', '${WORDPRESS_URL:-http://localhost:8081}');
+        define('WP_SITEURL', '${WORDPRESS_URL:-http://localhost:8081}');
         define('DISALLOW_FILE_EDIT', true);
     volumes:
       - wordpress_data:/var/www/html
@@ -372,7 +377,7 @@ services:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_local_dev}
-      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost/cms}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost:8081}
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-presence-admin}
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@presence.local}
       WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-local-admin-only}

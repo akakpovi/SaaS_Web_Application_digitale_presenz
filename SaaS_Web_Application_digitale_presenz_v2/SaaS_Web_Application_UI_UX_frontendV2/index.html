@@ -40,6 +40,12 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
 
+    <!-- Analytics : emplacement d'injection au build. Le pré-rendu remplace ce
+         marqueur par la balise du tracker UNIQUEMENT si VITE_ANALYTICS_ENABLED
+         vaut "true" ; en l'état aucun script n'est chargé. Voir
+         docs/audits/PRESENCE_ANALYTICS_PLAN_2026-10-28.md. -->
+    <!-- presence:analytics -->
+
     <!-- figma:head-end -->
   </head>
   <body>

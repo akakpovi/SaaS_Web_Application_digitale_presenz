@@ -27,3 +27,6 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# Le gabarit de variables est versionné (aucune valeur réelle).
+!.env.example
