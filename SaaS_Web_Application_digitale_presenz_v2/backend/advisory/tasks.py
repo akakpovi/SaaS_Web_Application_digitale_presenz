@@ -131,6 +131,22 @@ def generate_scan_recommendations_task(self, scan_id: int) -> dict:
     return payload
 
 
+def _dispatch_ai_reaped_alert(run_id: str) -> bool:
+    """Queue the operator alert for one reaped run, never failing the sweep."""
+    try:
+        from alerts.tasks import report_ai_run_reaped
+
+        report_ai_run_reaped.delay(run_id)
+        return True
+    except Exception:
+        logger.exception(
+            "ai_advisor_reaped_alert_dispatch_failed run_id=%s — the run is "
+            "still failed, but the operator will not see the incident",
+            run_id,
+        )
+        return False
+
+
 @shared_task(name="advisory.tasks.reap_stale_ai_runs")
 def reap_stale_ai_runs() -> dict:
     """Fail AI runs abandoned by a crashed or killed worker.
@@ -154,6 +170,7 @@ def reap_stale_ai_runs() -> dict:
     ).values_list("id", "scan_id", "attempts", "updated_at")
 
     reaped: list[str] = []
+    alerts_queued = 0
     for run_id, scan_id, attempts, updated_at in candidates.iterator():
         claimed = AIRecommendationRun.objects.filter(
             pk=run_id,
@@ -182,15 +199,21 @@ def reap_stale_ai_runs() -> dict:
             age_seconds,
         )
         reaped.append(str(run_id))
+        alerts_queued += _dispatch_ai_reaped_alert(str(run_id))
 
     logger.info(
-        "ai_advisor_reaper cutoff=%s reaped=%d",
+        "ai_advisor_reaper cutoff=%s reaped=%d alerts_queued=%d",
         cutoff.isoformat(),
         len(reaped),
+        alerts_queued,
     )
+    from core.reaper_metrics import record_reaper_tick
+
+    record_reaper_tick(kind="ai", reaped=len(reaped))
     return {
         "cutoff": cutoff.isoformat(),
         "reaped": len(reaped),
+        "alerts_queued": alerts_queued,
         "run_ids": reaped[:50],
     }
 

@@ -125,6 +125,7 @@ class Alert(models.Model):
         PERFORMANCE         = "performance",         "Performance"
         SCORE_DROP          = "score_drop",          "Score Drop"
         SCAN_FAILED         = "scan_failed",         "Scan Failed"
+        AI_RUN_REAPED       = "ai_run_reaped",       "AI Run Reaped"
         MONITORING_DISABLED = "monitoring_disabled", "Monitoring Disabled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

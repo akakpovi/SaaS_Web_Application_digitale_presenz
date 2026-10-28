@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.conf import settings
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -97,3 +99,56 @@ class StaleAIRunReaperTests(TestCase):
         self.assertEqual(_terminal_status("invalid_api_key"), "failed_configuration")
         self.assertEqual(_terminal_status("client_unavailable"), "failed_configuration")
         self.assertEqual(_terminal_status("AkaServerError"), "failed_upstream_error")
+
+    @override_settings(AI_ADVISOR_STALE_RUN_SECONDS=600)
+    @patch("alerts.tasks.report_ai_run_reaped.delay")
+    def test_reaped_run_queues_the_operator_alert(self, delay) -> None:
+        run = self._run(AIRecommendationRun.Status.RUNNING, minutes_old=11)
+
+        result = reap_stale_ai_runs.apply().get()
+
+        delay.assert_called_once_with(str(run.pk))
+        self.assertEqual(result["alerts_queued"], 1)
+
+    @override_settings(AI_ADVISOR_STALE_RUN_SECONDS=600)
+    @patch("alerts.tasks.report_ai_run_reaped.delay")
+    def test_fresh_run_does_not_queue_an_alert(self, delay) -> None:
+        self._run(AIRecommendationRun.Status.RUNNING, minutes_old=2)
+
+        result = reap_stale_ai_runs.apply().get()
+
+        delay.assert_not_called()
+        self.assertEqual(result["alerts_queued"], 0)
+
+    @override_settings(AI_ADVISOR_STALE_RUN_SECONDS=600)
+    def test_reaped_run_is_visible_as_an_ai_run_reaped_alert(self) -> None:
+        from alerts.models import Alert
+        from alerts.tasks import report_ai_run_reaped
+
+        run = self._run(AIRecommendationRun.Status.RUNNING, minutes_old=11)
+        reap_stale_ai_runs.apply().get()
+
+        # The reaper only queues the task; running it here proves the queued
+        # alert actually materialises in the same table operators watch.
+        result = report_ai_run_reaped.apply(args=[str(run.pk)]).get()
+
+        self.assertEqual(result["created"], 1)
+        alert = Alert.objects.get(pk=result["alert_id"])
+        self.assertEqual(alert.alert_type, Alert.AlertType.AI_RUN_REAPED)
+        self.assertEqual(alert.status, Alert.Status.FIRING)
+        self.assertEqual(alert.website_id, self.website.pk)
+        self.assertEqual(alert.metadata["run_id"], str(run.pk))
+
+    @override_settings(AI_ADVISOR_STALE_RUN_SECONDS=600)
+    def test_metrics_count_reaped_runs_and_stamp_the_tick(self) -> None:
+        from core.reaper_metrics import read_reaper_metrics
+
+        cache.clear()
+        self._run(AIRecommendationRun.Status.RUNNING, minutes_old=11)
+
+        reap_stale_ai_runs.apply().get()
+
+        metrics = read_reaper_metrics()
+        self.assertEqual(metrics["ai_runs_total"], 1)
+        self.assertIsNotNone(metrics["ai_last_tick"])
+        self.assertEqual(metrics["last_tick"], metrics["ai_last_tick"])

@@ -18,8 +18,12 @@ cover the wordlist and proves nothing about the paths it never tested.
 from __future__ import annotations
 
 import logging
+import re
+import secrets
+from dataclasses import dataclass
 from typing import Any
 
+import requests
 from django.conf import settings
 
 from scanners.base import (
@@ -56,6 +60,76 @@ _SENSITIVE_PATHS = frozenset({
     "/admin", "/.env", "/backup", "/config", "/.git", "/wp-admin",
 })
 
+#: Gobuster clears its progress line with ANSI escapes even under
+#: ``--no-color`` when stdout is not a terminal (observed with 3.6 in the
+#: sandbox image: ``\r\x1b[2K/admin (Status: 200)``).  Left in place, the
+#: escape prefix makes a real result look like a banner line and the path is
+#: silently dropped.
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+#: Prefix of the random path used to detect a catch-all (soft-404) response.
+_SOFT_404_PREFIX = "/.presence-soft404-"
+
+#: The probe is a single request; it must never consume the gobuster budget.
+_SOFT_404_PROBE_TIMEOUT_S = 10.0
+
+
+@dataclass(frozen=True)
+class Soft404Probe:
+    """Result of the random-path probe used before directory enumeration."""
+
+    sampled_path: str
+    status_code: int | None = None
+    excluded_length: int | None = None
+    error: str = ""
+
+
+def probe_soft_404(
+    target: str,
+    *,
+    timeout: float = _SOFT_404_PROBE_TIMEOUT_S,
+) -> Soft404Probe:
+    """Detect a catch-all 200 response before Gobuster runs.
+
+    A SPA (or an over-permissive rewrite rule) answers 200 for a path that
+    cannot exist.  Gobuster then refuses to continue because every directory
+    looks real.  The response body length of one random path is enough to tell
+    Gobuster to ignore that length with ``--exclude-length``.  A real 404 (or
+    any non-200/empty response) returns no exclusion.
+
+    This probe never raises: a failed probe must leave the scanner in its
+    previous, conservative behaviour (no exclusion, run reported incomplete
+    if Gobuster exits 1).
+    """
+    sampled_path = f"{_SOFT_404_PREFIX}{secrets.token_hex(8)}"
+    url = f"{target.rstrip('/')}{sampled_path}"
+    try:
+        response = requests.get(
+            url,
+            timeout=timeout,
+            allow_redirects=False,
+            headers={"User-Agent": "Presence-Scanner/1.0"},
+        )
+    except requests.RequestException as exc:
+        logger.warning(
+            "gobuster soft-404 probe failed target=%s error=%s",
+            target,
+            exc.__class__.__name__,
+        )
+        return Soft404Probe(sampled_path=sampled_path, error=exc.__class__.__name__)
+
+    body_length = len(response.content or b"")
+    if response.status_code == 200 and body_length > 0:
+        return Soft404Probe(
+            sampled_path=sampled_path,
+            status_code=response.status_code,
+            excluded_length=body_length,
+        )
+    return Soft404Probe(
+        sampled_path=sampled_path,
+        status_code=response.status_code,
+    )
+
 
 def _parse_gobuster_output(output: str) -> list[dict[str, Any]]:
     """Parse Gobuster plain-text output.
@@ -69,7 +143,7 @@ def _parse_gobuster_output(output: str) -> list[dict[str, Any]]:
     """
     findings: list[dict[str, Any]] = []
     for raw_line in output.splitlines():
-        line = raw_line.strip()
+        line = _ANSI_ESCAPE_RE.sub("", raw_line).strip()
         if not line:
             continue
         # Errors and banner lines start with a tag/level prefix.
@@ -150,10 +224,25 @@ class GobusterScanner(BaseScanner):
         except TargetValidationError as exc:
             return target_validation_outcome(self, error=str(exc))
 
+        cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
+        probe: Soft404Probe | None = None
+        if cfg.get("soft_404_detection", True):
+            probe_timeout = _SOFT_404_PROBE_TIMEOUT_S
+            if context is not None:
+                probe_timeout = max(
+                    1.0, min(probe_timeout, context.remaining_seconds())
+                )
+            probe = probe_soft_404(target_info.url, timeout=probe_timeout)
+
         try:
             run = run_tool(
                 self,
-                self.build_command(target_info.url),
+                self.build_command(
+                    target_info.url,
+                    soft404_length=(
+                        probe.excluded_length if probe is not None else None
+                    ),
+                ),
                 context=context,
             )
         except SandboxError as exc:
@@ -188,6 +277,19 @@ class GobusterScanner(BaseScanner):
                 "paths_found": len(parsed),
                 "wordlist": self.wordlist,
             },
+            soft_404_probe=(
+                {
+                    "sampled_path": probe.sampled_path,
+                    "status_code": probe.status_code,
+                    "excluded_length": probe.excluded_length,
+                    "error": probe.error,
+                }
+                if probe is not None
+                else None
+            ),
+            soft_404_excluded_length=(
+                probe.excluded_length if probe is not None else None
+            ),
         )
 
     @property
@@ -207,11 +309,17 @@ class GobusterScanner(BaseScanner):
         """Legacy entry point; the tool runs once via :meth:`execute`."""
         return self.execute(domain).findings
 
-    def build_command(self, target: str, options: dict | None = None) -> list[str]:
+    def build_command(
+        self,
+        target: str,
+        options: dict | None = None,
+        *,
+        soft404_length: int | None = None,
+    ) -> list[str]:
         cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
         threads = int(cfg.get("threads", 10) or 10)
         request_timeout = str(cfg.get("request_timeout", "10s"))
-        return [
+        command = [
             "gobuster", "dir",
             "-u", target,
             "-w", self.wordlist,
@@ -220,6 +328,12 @@ class GobusterScanner(BaseScanner):
             "--timeout", request_timeout,
             "--no-color",
         ]
+        if soft404_length is not None:
+            # The probe saw a 200 with this body length for a random path:
+            # every hit with the same length is the catch-all page, not a
+            # directory.  Other lengths remain real results.
+            command.extend(["--exclude-length", str(soft404_length)])
+        return command
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return _parse_gobuster_output(output)

@@ -101,6 +101,96 @@ def report_scan_issue(self, scan_id: int) -> dict:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def report_ai_run_reaped(self, run_id: str) -> dict:
+    """Create an operator alert when the AI reaper abandons a run.
+
+    The scan reaper already produces a visible ``scan_failed`` alert.  An AI
+    run abandoned by a dead worker used to leave only an ERROR log, so the
+    operator could see a stale analysis in the UI without any incident.  This
+    task uses the same Alert table, preferences, mute windows and dispatcher
+    as the scan alerts, with its own ``ai_run_reaped`` type so the two
+    incidents remain distinguishable.
+    """
+    from advisory.models import AIRecommendationRun
+    from alerts.models import Alert, AlertPreference, MuteWindow
+    from core.escalation import should_create_alert
+    from notifications.dispatcher import dispatch_alert
+
+    try:
+        run = AIRecommendationRun.objects.select_related(
+            "scan", "scan__website", "scan__website__owner"
+        ).get(pk=run_id)
+    except (AIRecommendationRun.DoesNotExist, ValueError):
+        logger.error("report_ai_run_reaped: run %s not found", run_id)
+        return {"error": "run_not_found"}
+
+    if (
+        run.status != AIRecommendationRun.Status.FAILED
+        or run.error_code != "stale_run_reaped"
+    ):
+        return {"skipped": "not_a_reaped_run"}
+
+    scan = run.scan
+    website = scan.website if scan is not None else None
+    user = getattr(website, "owner", None)
+    if website is None or user is None:
+        return {"skipped": "no_website_owner"}
+
+    preferences, _ = AlertPreference.objects.get_or_create(user=user)
+    # Stale AI analysis is an operational incident of the same family as a
+    # failed scan; it reuses that preference instead of adding a parallel
+    # notification switch.
+    if not should_create_alert("scan_failed", preferences):
+        return {"skipped": "preference_disabled"}
+
+    now = timezone.now()
+    active_mutes = MuteWindow.objects.filter(
+        user=user, is_active=True, start_at__lte=now, end_at__gte=now
+    )
+    if (
+        active_mutes.filter(websites__isnull=True).exists()
+        or active_mutes.filter(websites=website).exists()
+    ):
+        return {"skipped": "mute_window"}
+
+    existing = Alert.objects.filter(
+        website=website,
+        alert_type=Alert.AlertType.AI_RUN_REAPED,
+        status=Alert.Status.FIRING,
+        metadata__run_id=str(run.pk),
+    ).first()
+    if existing is not None:
+        return {"created": 0, "alert_id": str(existing.id), "existing": True}
+
+    alert = Alert.objects.create(
+        user=user,
+        website=website,
+        scan=scan,
+        alert_type=Alert.AlertType.AI_RUN_REAPED,
+        severity=Alert.Severity.WARNING,
+        title=f"AI analysis abandoned for {website.domain}",
+        message=(
+            "The AI recommendation run did not finish before its worker "
+            "disappeared. It was marked failed automatically; no "
+            "recommendations were produced for this scan."
+        ),
+        metadata={
+            "run_id": str(run.pk),
+            "scan_id": scan.pk,
+            "error_code": run.error_code,
+        },
+    )
+    dispatch_alert(alert)
+    logger.info(
+        "report_ai_run_reaped: alert %s created for run %s (scan %s)",
+        alert.id,
+        run.pk,
+        scan.pk,
+    )
+    return {"created": 1, "alert_id": str(alert.id)}
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def detect_alerts(self, scan_id: int) -> dict:
     """Analyse a completed scan and create alerts as needed."""
     from alerts.models import Alert, AlertPreference, MuteWindow

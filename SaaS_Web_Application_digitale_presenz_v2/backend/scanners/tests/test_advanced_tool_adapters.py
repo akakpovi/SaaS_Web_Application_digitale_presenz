@@ -182,7 +182,13 @@ def _fake_executor(run: ToolRun, recorder: _Recorder, error: Exception | None):
     return _Executor()
 
 
-def _execute(scanner, run: ToolRun, *, error: Exception | None = None):
+def _execute(
+    scanner,
+    run: ToolRun,
+    *,
+    error: Exception | None = None,
+    probe=None,
+):
     """Run *scanner* once with the sandbox call replaced by *run*.
 
     Returns ``(outcome, recorder)`` where ``recorder.calls`` proves how many
@@ -208,9 +214,23 @@ def _execute(scanner, run: ToolRun, *, error: Exception | None = None):
 
         runner_patch = patch.object(module, "run_tool", _runner)
 
+    if scanner.name == "gobuster":
+        probe_patch = patch.object(
+            module,
+            "probe_soft_404",
+            return_value=probe
+            or module.Soft404Probe(
+                sampled_path="/.presence-soft404-test", status_code=404
+            ),
+        )
+    else:
+        from contextlib import nullcontext
+
+        probe_patch = nullcontext()
+
     with patch.object(
         type(scanner), "is_available", return_value=True
-    ), runner_patch:
+    ), runner_patch, probe_patch:
         outcome = scanner.execute("example.com")
     return outcome, recorder
 
@@ -581,6 +601,66 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         outcome, _ = _execute(gobuster_scanner, _run(stdout=output))
         self.assertEqual(len(outcome.findings), 1)
         self.assertEqual(outcome.findings[0].check_code, "gobuster.path.real")
+
+    def test_gobuster_ansi_progress_prefix_does_not_hide_a_result(self):
+        # Observed with Gobuster 3.6 in the sandbox image, even with
+        # --no-color and no TTY: the result line is prefixed by ESC[2K.
+        output = "\r\x1b[2K/admin                (Status: 200) [Size: 27]\n"
+        outcome, _ = _execute(gobuster_scanner, _run(stdout=output))
+        self.assertEqual(len(outcome.findings), 1)
+        self.assertEqual(outcome.findings[0].check_code, "gobuster.path.admin")
+
+
+class GobusterSoft404Tests(SimpleTestCase):
+    """A catch-all 200 page must not make Gobuster refuse the whole run."""
+
+    @patch.object(
+        gobuster_module,
+        "probe_soft_404",
+        return_value=gobuster_module.Soft404Probe(
+            sampled_path="/.presence-soft404-test",
+            status_code=200,
+            excluded_length=1234,
+        ),
+    )
+    def test_detected_soft_404_is_passed_to_gobuster(self, probe):
+        command = gobuster_scanner.build_command(
+            "https://example.com", soft404_length=1234
+        )
+
+        self.assertIn("--exclude-length", command)
+        self.assertEqual(command[command.index("--exclude-length") + 1], "1234")
+
+    @patch.object(
+        gobuster_module,
+        "probe_soft_404",
+        return_value=gobuster_module.Soft404Probe(
+            sampled_path="/.presence-soft404-test", status_code=404
+        ),
+    )
+    def test_real_404_does_not_exclude_any_length(self, probe):
+        command = gobuster_scanner.build_command("https://example.com")
+
+        self.assertNotIn("--exclude-length", command)
+
+    def test_soft_404_probe_is_recorded_in_the_outcome(self):
+        outcome, recorder = _execute(
+            gobuster_scanner,
+            _run(stdout=""),
+            probe=gobuster_module.Soft404Probe(
+                sampled_path="/.presence-soft404-test",
+                status_code=200,
+                excluded_length=1234,
+            ),
+        )
+
+        self.assertEqual(recorder.calls, 1)
+        self.assertEqual(outcome.result.details["soft_404_excluded_length"], 1234)
+        self.assertEqual(
+            outcome.result.details["soft_404_probe"]["sampled_path"],
+            "/.presence-soft404-test",
+        )
+        self.assertTrue(outcome.result.details["scan_complete"])
 
 
 class AdvancedScannerGracefulDegradationTests(SimpleTestCase):

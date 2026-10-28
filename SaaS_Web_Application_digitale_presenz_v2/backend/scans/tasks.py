@@ -391,6 +391,9 @@ def reap_stale_scans() -> dict:
         queued_cutoff.isoformat(),
         len(reaped),
     )
+    from core.reaper_metrics import record_reaper_tick
+
+    record_reaper_tick(kind="scans", reaped=len(reaped))
     return {
         "running_cutoff": running_cutoff.isoformat(),
         "queued_cutoff": queued_cutoff.isoformat(),

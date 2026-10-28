@@ -525,6 +525,13 @@ SCANNER_CONFIG: dict = {
         },
     },
     "nikto":       {
+        # Measured on the reference Cloudflare-fronted target (2026-10-28):
+        # the default run reaches its own ``-maxtime`` after 88 s; raising
+        # ``-maxtime`` to 150 s still ends at 154 s with
+        # "Host maximum execution time ... reached".  The complete Nikto
+        # catalogue therefore does not fit in the 540 s whole-scan budget.
+        # Keeping 100 s (85 s maxtime) makes the partial status explicit
+        # instead of spending another minute to reach the same partial result.
         "timeout": _env_int("SCANNER_TIMEOUT_NIKTO", 100),
         "sandbox": {
             "memory_mb": _env_int("SCANNER_NIKTO_MEMORY_MB", 384),
@@ -696,15 +703,21 @@ SCANNER_CONFIG: dict = {
         },
     },
     "testssl":     {
-        # Measured on a real Cloudflare-fronted target with testssl 3.0.8:
-        # the bounded standard set (``--std``: protocols, standard cipher
-        # categories, server defaults/certificate, HSTS/security headers)
-        # completes in ~50 s.  A full run, and even ``--fast``, still exceeds
-        # 200 s there and can never finish inside a per-step budget, so the
-        # step deliberately runs the standard set instead of inflating the
-        # timeout.  Vulnerability probes (``-U``) and per-cipher enumeration
-        # are therefore not part of this step.
-        "timeout": _env_int("SCANNER_TIMEOUT_TESTSSL", 90),
+        # Measured on the reference Cloudflare-fronted target with testssl
+        # 3.0.8 and the bounded standard set (``--std``: protocols, standard
+        # cipher categories, server defaults/certificate, HSTS/security
+        # headers): 36 s alone and 94 s with four CPU burners saturating the
+        # host.  The old 90 s budget killed the run at 90.5 s under load (scan
+        # 58), although the same command completes in 36 s at rest.  A real
+        # full scan on 2026-10-28 (scan 59) still reached 120.7 s and was
+        # killed even at 120 s, so this value removes the easy timeout but
+        # does not guarantee completion on this target.  Raising it to 180 s
+        # would push the 537 s whole scan past its 540 s budget and drop the
+        # remaining steps; the limitation is therefore explicit rather than
+        # hidden behind a larger timeout.  A full run and even ``--fast``
+        # still exceed 200 s, so the step keeps the standard set; vulnerability
+        # probes (``-U``) and per-cipher enumeration are out of scope.
+        "timeout": _env_int("SCANNER_TIMEOUT_TESTSSL", 120),
         # Debian's testssl.sh package installs /usr/bin/testssl.
         "binary": os.environ.get("SCANNER_TESTSSL_BINARY", "testssl"),
         # Verified in the pinned upstream script: a completed run exits
@@ -713,7 +726,7 @@ SCANNER_CONFIG: dict = {
         "ok_exit_codes": [0],
         "sandbox": {
             "memory_mb": _env_int("SCANNER_TESTSSL_MEMORY_MB", 384),
-            "cpu_seconds": _env_int("SCANNER_TESTSSL_CPU_SECONDS", 120),
+            "cpu_seconds": _env_int("SCANNER_TESTSSL_CPU_SECONDS", 150),
         },
     },
     # Lighthouse runs Chromium: it needs more RSS than the default tool and
@@ -767,6 +780,11 @@ SCANNER_CONFIG: dict = {
         "request_timeout": os.environ.get(
             "SCANNER_GOBUSTER_REQUEST_TIMEOUT", "10s"
         ),
+        # A SPA answers 200 for random paths; probe one before the run and
+        # pass its body length to gobuster --exclude-length.  This turns the
+        # previous exit-1 into an enumeration that can actually find paths,
+        # without marking an unresolved probe as complete.
+        "soft_404_detection": env_bool("SCANNER_GOBUSTER_SOFT_404", True),
         "sandbox": {
             "memory_mb": _env_int("SCANNER_GOBUSTER_MEMORY_MB", 256),
             "cpu_seconds": _env_int("SCANNER_GOBUSTER_CPU_SECONDS", 70),
