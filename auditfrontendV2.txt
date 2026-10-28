@@ -1,0 +1,475 @@
+Maintenant je dispose de toutes les informations nécessaires. Voici le rapport d'audit complet.
+
+---
+
+# AUDIT FRONTEND V2 — RESULT
+
+## 1. Repository
+
+```text
+root: /home/elom/Schreibtisch/SaaS_Web_Application_digitale_presenz
+branch: main
+remote: origin (https://github.com/akakpovi/SaaS_Web_Application_digitale_presenz.git)
+last commit: 3b2206f feat(scans): finalize scoring pipeline validation
+```
+
+---
+
+## 2. Frontend V2
+
+### Architecture
+| Élément | Détail |
+|---------|--------|
+| Framework | React 19 + TypeScript 5.7 |
+| Bundler | Vite 8 |
+| Routing | react-router-dom v7 (hash routes pour l'app, routes plates pour public) |
+| State | React hooks locaux (useState, useEffect) — pas de Redux/Zustand |
+| i18n | Pas encore intégré (préparé dans `src/imports/...md` mais absent du code) |
+| Auth | JWT (access + refresh) — routes `/api/v1/auth/` |
+| API client | **ABSENT** — pas de service HTTP centralisé, pas de types partagés backend |
+| UI Library | Composants custom (`ui.tsx`) + `lucide-react` icons |
+| Styling | Tailwind CSS v4 (via `@tailwindcss/vite`) |
+| Charts | Recharts v3 |
+| Forms | Composants `Input` custom — pas de React Hook Form / Zod |
+| Validation | Côté frontend seulement (Input helper) |
+| PWA | Pas configuré (vite.config.ts sans PWA plugin) |
+| Error boundaries | Pas visibles |
+
+### Pages existantes (33 routes)
+
+| Route | Composant | Type | Data source | Mock? | Backend API | Status |
+|-------|-----------|------|-------------|-------|-------------|--------|
+| `/` | Landing | Public | Constantes locales | Oui | — | Design complet |
+| `/login` | Auth/Login | Public | — | Non | `POST /api/v1/auth/login/` | Structure prête |
+| `/register` | Auth/Register | Public | — | Non | `POST /api/v1/auth/register/` | Structure prête |
+| `/forgot-password` | Auth/ForgotPassword | Public | — | Non | `POST /api/v1/auth/password/reset/` | Structure prête |
+| `/onboarding` | Onboarding | Private | Constantes + état local | **OUI (7 checks)** | `POST /api/v1/public/scan/` + status | Flow complet mock |
+| `/app/dashboard` | Dashboard | Private | `websites[]` / `kpis[]` / `criticalIssues[]` | **OUI (tout)** | `GET /api/v1/websites/` + scans | Design complet |
+| `/app/websites` | Websites | Private | `websites[]` | **OUI (3 sites)** | `GET /api/v1/websites/` | Design complet |
+| `/app/websites/:id` | WebsiteDetails | Private | `siteData[id]` / `sections[]` | **OUI (8 sections)** | `GET /api/v1/websites/:id/` + check_results | Design complet |
+| `/app/scans` | Scans | Private | `DEMO_SCANS[]` | **OUI (7 scans)** | `GET /api/v1/scans/` | Design complet |
+| `/app/monitoring` | Monitoring | Private | `periods{}` / `timeline[]` | **OUI (tout)** | `GET /api/v1/monitoring/` | Design complet |
+| `/app/alerts` | Alerts | Private | `allAlerts[]` | **OUI (6 alerts)** | `GET /api/v1/alerts/` | Design complet |
+| `/app/reports` | Reports | Private | `history[]` | **OUI (6 mois)** | `GET /api/v1/reports/` | Design complet |
+| `/app/reviews` | Reviews | Private | — | Partiel | `GET /api/v1/reviews/` | Structure seulement |
+| `/app/settings` | Settings | Private | — | Non | `GET /api/v1/...` | Structure seulement |
+| `/app/billing` | Billing | Private | — | Non | `GET /api/v1/subscriptions/` | Structure seulement |
+| `/report/:publicId` | PublicReport | Public | `DEMO_REPORT` | **OUI (tout)** | `GET /api/v1/reports/pdf/:scan_id/` | Design complet |
+| `/tools/*` | ToolPage | Public | — | Non | `POST /api/v1/public/scan/` | Structure prête |
+
+### Composants UI (ui.tsx) — 20 composants exportés
+- Badge, StatusDot, StatusBadge, SeverityBadge, Sparkline
+- Button (5 variants, 3 sizes), Card, Input
+- ScoreRing, ProgressBar, Tabs, EmptyState, Toggle
+
+---
+
+## 3. Backend
+
+### Apps Django (18)
+```
+accounts, advanced_security, alerts, analytics, config, core,
+monitoring, notifications, public_checker, reports, reviews,
+scans, scanners, seo, social, subscriptions, websites
+```
+
+### Modèles principaux (scans app)
+| Modèle | Champs clés | Relations |
+|--------|-------------|-----------|
+| Scan | health_score, health_status, status, trigger, scan_type, progress, steps[], website FK, is_guest, session_key | Scan.website → Website |
+| CheckResult | category (7), status (HealthStatus), score (0-20), summary, recommendation, technical_details | CheckResult.scan → Scan |
+| ScannerRun | scanner, status, started_at, finished_at, duration_ms, metadata (JSON), error_message | ScannerRun.scan → Scan |
+| Finding | category, check_code, severity (5), status (5), title, evidence, recommendation | Finding.scanner_run → ScannerRun |
+
+### Modèles Website / Auth
+- Website: owner FK, domain, display_name, is_active, is_guest
+- User: email, full_name, is_active, is_email_verified + JWT auth (djoser-like custom)
+
+### Scanner Engine (7 scanners internes + 10 externes)
+| Scanner | Catégorie | Poids | Exclus du score |
+|---------|-----------|-------|-----------------|
+| website | WEBSITE | 20 | Non |
+| ssl | SSL | 20 | Non |
+| dns | DNS | 15 | Non |
+| email_security | EMAIL_SECURITY | 15 | Non |
+| security_headers | SECURITY_HEADERS | 15 | Non |
+| performance | PERFORMANCE | 15 | Non |
+| uptime | UPTIME | — | **OUI** |
+
+**Poids réels confirmés** : `CHECK_WEIGHTS = {website:20, ssl:20, dns:15, email_security:15, security_headers:15, performance:15}` — total 100.
+
+---
+
+## 4. API
+
+### Endpoints existants (table complète)
+
+| Fonction | HTTP | Endpoint | Auth | Serializer | Frontend V2 |
+|----------|------|----------|------|------------|-------------|
+| **Auth** | | | | | |
+| Login | POST | `/api/v1/auth/login/` | Non | LoginSerializer | ✅ Login page |
+| Register | POST | `/api/v1/auth/register/` | Non | RegistrationSerializer | ✅ Register page |
+| Refresh | POST | `/api/v1/auth/refresh/` | Non | TokenRefreshSerializer | ❌ Pas de client HTTP |
+| Logout | POST | `/api/v1/auth/logout/` | Oui | — | ❌ |
+| Me | GET | `/api/v1/auth/me/` | Oui | CurrentUserSerializer | ❌ Dashboard user |
+| Password reset | POST | `/api/v1/auth/password/reset/` | Non | — | ✅ ForgotPassword |
+| Google OAuth | POST | `/api/v1/auth/oauth/google/` | Non | — | ❌ |
+| **Websites** | | | | | |
+| List | GET | `/api/v1/websites/` | Oui | WebsiteSerializer | ❌ Mock `websites[]` |
+| Create | POST | `/api/v1/websites/` | Oui | WebsiteSerializer | ❌ Onboarding step 1 |
+| Detail | GET | `/api/v1/websites/:id/` | Oui | WebsiteDetailSerializer | ❌ WebsiteDetails |
+| Trigger scan | POST | `/api/v1/websites/:id/scan/` | Oui | ScanSerializer | ✅ Onboarding step 2 / Websites CTA |
+| Active scan | GET | `/api/v1/websites/:id/active_scan/` | Oui | ScanSerializer | ❌ |
+| **Scans** | | | | | |
+| List | GET | `/api/v1/scans/` | Oui | ScanListSerializer | ❌ Mock `DEMO_SCANS` |
+| Detail | GET | `/api/v1/scans/:id/` | Oui | ScanSerializer | ❌ |
+| Scanner runs | GET | `/api/v1/scans/:id/scanner-runs/` | Oui | ScannerRunSerializer | ❌ |
+| Findings | GET | `/api/v1/scans/:id/findings/` | Oui | FindingSerializer | ❌ |
+| Recommendations | GET | `/api/v1/scans/:id/recommendations/` | Oui | — | ❌ |
+| CheckResults | GET | `/api/v1/scans/:id/results/` | Oui | CheckResultSerializer | ❌ |
+| **Public checker** | | | | | |
+| Start scan | POST | `/api/v1/public/scan/` | Non | PublicScanRequestSerializer | ✅ Onboarding / ToolPage / Landing |
+| Status | GET | `/api/v1/public/scan/:id/status/` | Non | `_serialize_scan_with_rich_data` | ✅ Onboarding progress |
+| Email report | POST | `/api/v1/public/scan/:id/email/` | Non | — | ✅ PublicReport CTA |
+| Convert | POST | `/api/v1/public/scan/:id/convert/` | Oui | — | ❌ |
+| **Monitoring** | | | | | |
+| List config | GET | `/api/v1/monitoring/` | Oui | — | ❌ |
+| Detail | GET | `/api/v1/monitoring/websites/:id/` | Oui | — | ❌ |
+| Trigger scan | POST | `/api/v1/monitoring/websites/:id/scan/` | Oui | — | ❌ |
+| **Alerts** | | | | | |
+| List | GET | `/api/v1/alerts/` | Oui | — | ❌ Mock `allAlerts[]` |
+| Preferences | GET/PUT | `/api/v1/alerts/preferences/` | Oui | — | ❌ Settings |
+| Rules CRUD | GET/POST/PUT | `/api/v1/alerts/rules/` | Oui | — | ❌ Settings |
+| Mute windows | GET/POST | `/api/v1/alerts/mute-windows/` | Oui | — | ❌ |
+| Acknowledge/Resolve | POST | `/api/v1/alerts/:pk/acknowledge\|resolve/` | Oui | — | ❌ Alerts page buttons |
+| **Reports** | | | | | |
+| List | GET | `/api/v1/reports/` | Oui | ReportListSerializer | ❌ Mock `history[]` |
+| Generate | POST | `/api/v1/reports/generate/` | Oui | — | ❌ |
+| Detail | GET | `/api/v1/reports/:id/` | Oui | — | ❌ |
+| White-label PDF | GET | `/api/v1/reports/pdf/:scan_id/` | Oui | — | ✅ PublicReport download |
+
+### Status global
+- **EXISTS** : 100% des endpoints nécessaires identifiés
+- **PARTIAL** : Settings/Billing/Reviews/SEO/Social (endpoints existent, frontend structure seulement)
+- **MISSING** : API client + types TypeScript + hooks de données
+
+---
+
+## 5. Authentication
+
+| Aspect | Backend | Frontend V2 | Gap |
+|--------|---------|-------------|-----|
+| Login | `POST /api/v1/auth/login/` → `{access, refresh, user}` | Page Login prête | Pas de client HTTP, pas de stockage token |
+| Refresh | `POST /api/v1/auth/refresh/` | ❌ | Pas d'intercepteur 401 → refresh |
+| Me | `GET /api/v1/auth/me/` | ❌ | Pas de contexte utilisateur global |
+| Logout | `POST /api/v1/auth/logout/` | ❌ | Pas de nettoyage token |
+| Register | `POST /api/v1/auth/register/` | Page Register prête | ✅ |
+| Password reset | `POST /api/v1/auth/password/reset/` | Page ForgotPassword prête | ✅ |
+| Google OAuth | `POST /api/v1/auth/oauth/google/` | ❌ | Non implémenté |
+| Token storage | HttpOnly cookie ou localStorage | localStorage prévu | À définir |
+| 401 handling | Standard DRF | ❌ | Pas d'intercepteur global |
+
+**Conclusion** : Backend prêt, frontend a les pages mais **pas de couche d'auth centralisée** (pas de `AuthProvider`, pas de `useAuth`, pas d'`apiClient` avec intercepteurs).
+
+---
+
+## 6. Scanner Engine
+
+| Élément | Backend | Frontend V2 | Alignment |
+|---------|---------|-------------|-----------|
+| Pipeline | Scan → ScannerRun → CheckResult + Finding → Health Score | Mock seulement | **Non connecté** |
+| Categories | 7 (website, ssl, dns, email, headers, perf, uptime) | 7 dans `sections[]` + uptime séparé | ✅ Correspond |
+| Statuses | healthy/warning/critical/neutral | healthy/warning/critical/neutral | ✅ Identiques |
+| Severity | info/low/medium/high/critical | critical/high/medium/low/info | ✅ Identiques (ordre inversé) |
+| Progress | `Scan.progress` + `Scan.steps[]` | Pas connecté | ❌ |
+| Metadata | `ScannerRun.metadata{score, findings_count, scanner_status}` | Pas utilisé | ❌ |
+| Findings | `Finding.severity` + `Finding.status` | `SeverityBadge` + `StatusBadge` | ✅ Composants prêts |
+
+---
+
+## 7. Health Score — Source of Truth
+
+### Backend (VÉRITÉ)
+```python
+CHECK_WEIGHTS = {website:20, ssl:20, dns:15, email_security:15, security_headers:15, performance:15}
+# Uptime EXCLU
+score = sum(result.score for result in weighted_results)
+status: CRITICAL si (un CRITICAL) OU (score < 40)
+       WARNING si (un WARNING) OU (score < 80)
+       HEALTHY sinon
+```
+
+### Frontend V2 — Mismatches détectés
+
+| Page | Calcul frontend | Backend | Problème |
+|------|-----------------|---------|----------|
+| **Dashboard.tsx:233-251** | Score breakdown hardcodé : `Website 20/20, SSL 20/20, DNS 15/15, Email 10/15, Security 9/15, Perf 8/15 = 82` | Devrait venir de `CheckResultSerializer` | **Logique dupliquée + hardcodée** |
+| **WebsiteDetails.tsx:12-101** | `sections[]` avec scores `score/max` hardcodés | Devrait venir de `CheckResult` | **Données figées** |
+| **WebsiteDetails.tsx:204-219** | Sidebar breakdown identique au Dashboard | Même source | **Duplication** |
+| **Reports.tsx:59-78** | Breakdown hardcodé identique | Même | **Triplication** |
+| **Onboarding.tsx:186-202** | Résultats step 3 hardcodés | Devrait venir de `/public/scan/:id/status/` | **Mock final** |
+| **PublicReport.tsx:19-26** | `DEMO_REPORT.checks[]` hardcodés | Devrait venir API publique | **Mock complet** |
+| **Scans.tsx** | `DEMO_SCANS` scores | Devrait venir `/api/v1/scans/` | **Mock history** |
+
+**Règle `critical` status** : Frontend utilise `status` (healthy/warning/critical) pour coloration, backend force `CRITICAL` si un CheckResult est `CRITICAL` **même si score ≥ 80**. Dashboard.tsx:246 utilise `score === max ? emerald : score >= max*0.7 ? amber : red` — **ne prend pas en compte la règle `CRITICAL` prioritaire**.
+
+---
+
+## 8. Figma
+
+| Élément | État |
+|---------|------|
+| MCP Figma | Disponible via `.figma/make/` (site.json minimal, pas de fileKey exploitable) |
+| Master Prompt | `src/imports/Presence___Master_Prompt_Frontend_Premium_V2.md` (50k lignes, source de design complète) |
+| Fichier Figma réel | Non accessible via MCP (fileKey `vQlzq9lj3dJreES3egKsNv` mentionné mais pas connecté) |
+| Design System | Défini dans le Master Prompt (couleurs, typo, spacing, radius, shadows, breakpoints, z-index, containers) |
+| Pages Figma définies | 9 pages : Foundations, Components, Patterns, Public Desktop/Mobile, App Desktop/Mobile, Admin, Prototype |
+
+**Action** : Le fichier Figma réel n'est pas accessible via MCP. Le Master Prompt V2 sert de source de vérité design.
+
+---
+
+## 9. Figma ↔ Frontend V2
+
+| Élément Figma (selon Master Prompt) | Frontend V2 | Status | Action |
+|-------------------------------------|-------------|--------|--------|
+| Design System (couleurs, typo, spacing, radius, shadows) | Tailwind config + `ui.tsx` | **PARTIAL** | Tailwind v4 utilise CSS variables, design tokens à mapper |
+| Dashboard (KPI cards, website table, health score ring, critical issues, alerts) | Dashboard.tsx | **MATCH** (visuel) | Connecter API |
+| Sidebar/Navigation (AppShell) | AppShell.tsx | **MATCH** | Connecter auth/user |
+| Website List (cards avec ScoreRing, uptime, SSL) | Websites.tsx | **MATCH** | Connecter API |
+| Website Details (sections accordéon, breakdown sidebar) | WebsiteDetails.tsx | **MATCH** | Connecter API + corriger calculs |
+| Scan History (table + filtres + score delta) | Scans.tsx | **MATCH** | Connecter API + temps réel |
+| Monitoring (uptime chart Recharts, timeline) | Monitoring.tsx | **MATCH** | Connecter API |
+| Alerts (filtres, dismiss, resolve) | Alerts.tsx | **MATCH** | Connecter API + WebSocket ? |
+| Reports (historique + bar chart + breakdown) | Reports.tsx | **MATCH** | Connecter API |
+| Onboarding (4 steps, scan progress animé) | Onboarding.tsx | **MATCH** | Connecter scan réel |
+| Public Report (shareable, SEO, checks + findings) | PublicReport.tsx | **MATCH** | Connecter API |
+| Landing / Pricing / Feature / Tool pages | Landing.tsx / Pricing.tsx / FeaturePage.tsx / ToolPage.tsx | **MATCH** | Connecter public scan |
+| Mobile navigation (bottom nav, responsive) | AppShell.tsx responsive | **PARTIAL** | Tester breakpoints |
+| Admin Dashboard | AdminDashboard.tsx | **PARTIAL** | Connecter admin API |
+
+---
+
+## 10. Frontend ↔ Backend Integration Matrix
+
+| Frontend Feature | Frontend Component | Backend Endpoint | Data Model | Status |
+|------------------|-------------------|------------------|------------|--------|
+| Login | Auth/Login | `POST /api/v1/auth/login/` | User | ❌ Pas de client |
+| Register | Auth/Register | `POST /api/v1/auth/register/` | User | ❌ Pas de client |
+| Me / Current User | AppShell header | `GET /api/v1/auth/me/` | User | ❌ Pas de contexte |
+| Dashboard KPIs | Dashboard.tsx | `GET /api/v1/websites/` + last scans | Website + Scan | ❌ Mock complet |
+| Website List | Websites.tsx | `GET /api/v1/websites/` | Website | ❌ Mock |
+| Website Detail + Health | WebsiteDetails.tsx | `GET /api/v1/websites/:id/` + check_results | Website + CheckResult | ❌ Mock |
+| Run Scan | Onboarding / Websites / ToolPage | `POST /api/v1/websites/:id/scan/` ou `/api/v1/public/scan/` | Scan | ⚠️ Partiel (public scan OK) |
+| Scan Progress | Onboarding step 2 | `GET /api/v1/public/scan/:id/status/` | Scan + steps | ⚠️ Mock animé |
+| Scan History | Scans.tsx | `GET /api/v1/scans/` | Scan | ❌ Mock |
+| Scan Detail + Findings | (manquant) | `GET /api/v1/scans/:id/` + findings | Scan + Finding | ❌ Page manquante |
+| Health Score Breakdown | Dashboard / WebsiteDetails / Reports | `Scan.health_score` + `CheckResult` | Scan + CheckResult | ❌ Calculs dupliqués frontend |
+| Monitoring Uptime | Monitoring.tsx | `GET /api/v1/monitoring/websites/:id/` | MonitoringConfig | ❌ Mock chart |
+| Alerts List + Actions | Alerts.tsx | `GET/POST /api/v1/alerts/` | Alert | ❌ Mock + boutons non branchés |
+| Reports History | Reports.tsx | `GET /api/v1/reports/` | Report | ❌ Mock |
+| PDF Download | PublicReport | `GET /api/v1/reports/pdf/:scan_id/` | — | ⚠️ CTA seulement |
+
+---
+
+## 11. Mock / Demo Data
+
+| Fichier | Variable | Utilisation | Remplacement backend | Endpoint nécessaire |
+|---------|----------|-------------|---------------------|---------------------|
+| Dashboard.tsx | `websites[]` | 3 sites avec score/uptime/SSL | `GET /api/v1/websites/` + last scan health | `/api/v1/websites/` |
+| Dashboard.tsx | `kpis[]` | 4 KPIs (health, sites, uptime, issues) | Agrégats depuis websites + scans | `/api/v1/websites/` + `/api/v1/scans/` |
+| Dashboard.tsx | `criticalIssues[]` | 2 issues (SSL, DMARC) | `Finding` severity high/medium | `/api/v1/scans/:id/findings/` ou `/api/v1/alerts/` |
+| WebsiteDetails.tsx | `siteData{}` + `sections[]` | 8 sections avec scores hardcodés | `CheckResult` par catégorie | `/api/v1/websites/:id/` (nested check_results) |
+| Scans.tsx | `DEMO_SCANS[]` | 7 scans history | `Scan` list | `GET /api/v1/scans/` |
+| Monitoring.tsx | `periods{}`, `timeline[]` | Uptime chart + events | MonitoringConfig + incidents | `/api/v1/monitoring/websites/:id/` |
+| Alerts.tsx | `allAlerts[]` | 6 alerts avec types | `Alert` model | `GET /api/v1/alerts/` |
+| Reports.tsx | `history[]` | 6 mois scores | `Report` model | `GET /api/v1/reports/` |
+| PublicReport.tsx | `DEMO_REPORT` | Full report avec checks + findings | Scan public + CheckResult + Finding | `/api/v1/public/scan/:id/status/` |
+| Onboarding.tsx | Step 3 results | 6 checks scores | Scan public terminé | `/api/v1/public/scan/:id/status/` |
+| ToolPage.tsx | Sample results | Preview mode | Scan public | `/api/v1/public/scan/` |
+
+---
+
+## 12. P0 Blockers
+
+| ID | Problème | Impact |
+|----|----------|--------|
+| P0-1 | **Pas de client HTTP / API layer** — aucun `apiClient`, pas de types partagés, pas d'intercepteurs auth/401 | Impossible de connecter n'importe quelle page |
+| P0-2 | **Pas de contexte d'authentification** — pas de `AuthProvider`, `useAuth`, pas de stockage token sécurisé | Pages privées inaccessibles |
+| P0-3 | **Health Score calculé côté frontend** (Dashboard, WebsiteDetails, Reports, Onboarding, PublicReport) au lieu de consommer `Scan.health_score` + `CheckResult` | Données incohérentes, maintenance double |
+| P0-4 | **Toutes les pages privées utilisent des mocks constants** — zéro donnée réelle | Produit inutilisable sans backend |
+| P0-5 | **Scan progress non connecté** — Onboarding step 2 simule 7 checks avec `setInterval` | UX trompeuse |
+
+---
+
+## 13. P1 Issues
+
+| ID | Problème | Impact |
+|----|----------|--------|
+| P1-1 | Règle `CRITICAL` status non respectée frontend (Dashboard.tsx:246 utilise seuils 80/60 seulement) | Status visuel incorrect si un check critique |
+| P1-2 | `uptime` affiché comme score `/100` dans Dashboard/Websites alors qu'exclu du health score | Confusion utilisateur |
+| P1-3 | `max_score` dupliqué dans `CheckResultSerializer.get_max_score()` corrigé (maintenant dynamique) mais frontend n'en a pas connaissance | À propager via types |
+| P1-4 | Pas de types TypeScript pour modèles backend (Scan, CheckResult, Finding, ScannerRun, Alert, Report) | Risque runtime, DX pauvre |
+| P1-5 | Pas de gestion d'erreurs API centralisée (toasts, retry, offline) | UX dégradée |
+| P1-6 | Settings/Billing/Reviews pages sans données ni actions | Fonctionnalités manquantes |
+| P1-7 | Pas de WebSocket / polling pour scan progress temps réel | Onboarding simulate seulement |
+
+---
+
+## 14. P2 Improvements
+
+| ID | Problème |
+|----|----------|
+| P2-1 | i18n absent (Master Prompt prévoit EN/FR/DE/ES) |
+| P2-2 | PWA non configuré |
+| P2-3 | Tests E2E (Playwright/Cypress) absents |
+| P2-4 | Storybook / composants documentation absente |
+| P2-5 | Dark mode non implémenté (ThemeProvider présent mais vide) |
+| P2-6 | Accessibilité : pas de tests aXe, focus management partiel |
+| P2-7 | Analytics / tracking events non intégrés |
+| P2-8 | SEO meta tags par page (SEO.tsx présent mais basique) |
+
+---
+
+## 15. Recommended Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      FRONTEND V2                            │
+├─────────────────────────────────────────────────────────────┤
+│  src/                                                       │
+│  ├── api/                                                   │
+│  │   ├── client.ts          ← NOUVEAU: axios/fetch wrapper  │
+│  │   ├── endpoints.ts       ← NOUVEAU: constantes d'URLs    │
+│  │   ├── types.ts           ← ÉTENDRE: tous modèles backend │
+│  │   └── hooks/             ← NOUVEAU: useQuery/useMutation │
+│  │       ├── useAuth.ts                                             
+│  │       ├── useWebsites.ts                                        
+│  │       ├── useScans.ts                                           
+│  │       ├── useScanProgress.ts                                    
+│  │       ├── useAlerts.ts                                          
+│  │       └── useReports.ts                                         
+│  ├── contexts/              ← NOUVEAU                         
+│  │   └── AuthContext.tsx    ← JWT storage, refresh, me       
+│  ├── components/            ← EXISTANT (ui.tsx, AppShell)     
+│  ├── pages/                 ← EXISTANT (remplacer mocks)      
+│  └── main.tsx               ← Provider setup                  
+└─────────────────────────────────────────────────────────────┘
+                          │
+                    HTTP + JWT
+                          │
+┌─────────────────────────────────────────────────────────────┐
+│                      BACKEND (existant)                      │
+├─────────────────────────────────────────────────────────────┤
+│  /api/v1/auth/       → JWT login/refresh/me/logout          │
+│  /api/v1/websites/   → CRUD + trigger scan                  │
+│  /api/v1/scans/      → List/Detail/ScannerRuns/Findings     │
+│  /api/v1/public/scan/→ Public scan + status + email         │
+│  /api/v1/monitoring/ → Config + trigger                     │
+│  /api/v1/alerts/     → List/Prefs/Rules/Mute/Ack/Resolve    │
+│  /api/v1/reports/    → List/Generate/Detail/PDF             │
+│  Health Score        → Scan.health_score (source unique)    │
+│  CHECK_WEIGHTS       → Source unique côté serveur           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Principe cardinal** : **Le backend est la source unique de vérité pour le Health Score**. Le frontend ne fait qu'afficher `Scan.health_score` et `CheckResult[]` (avec `max_score` dynamique depuis `CHECK_WEIGHTS` via serializer).
+
+---
+
+## 16. Integration Roadmap
+
+| Phase | Livrables | Durée estimée |
+|-------|-----------|---------------|
+| **Phase 1 — Foundations** | `api/client.ts` + `api/types.ts` (tous modèles), `api/endpoints.ts`, intercepteurs JWT + 401→refresh, `AuthContext` + `useAuth`, login/logout/me branchés | 2-3 jours |
+| **Phase 2 — Auth Pages** | Login/Register/ForgotPassword connectés, redirection post-login, protected routes wrapper | 1 jour |
+| **Phase 3 — Websites** | `useWebsites` hook, Websites.tsx connecté, WebsiteDetails.tsx connecté (remplace `siteData` + `sections[]` par `check_results`), Add website modal → `POST /websites/` | 2-3 jours |
+| **Phase 4 — Scans & Onboarding** | `useScans`, `useScanProgress` (polling `/public/scan/:id/status/`), Onboarding step 2 réel, Scans.tsx history, Scan detail page (nouvelle) | 3-4 jours |
+| **Phase 5 — Dashboard** | `useDashboard` (agrège websites + last scans), Dashboard.tsx connecté, KPIs réels, criticalIssues depuis findings/alerts | 2 jours |
+| **Phase 6 — Monitoring & Alerts** | `useMonitoring`, `useAlerts`, Monitoring.tsx chart + timeline, Alerts.tsx list + ack/resolve/dismiss | 2-3 jours |
+| **Phase 7 — Reports** | `useReports`, Reports.tsx history + breakdown, PublicReport connecté, PDF download | 2 jours |
+| **Phase 8 — Settings / Billing / Reviews** | Settings connecté (prefs, rules, mute), Billing (Stripe portal), Reviews list | 2 jours |
+| **Phase 9 — Polish** | i18n, PWA, error boundaries, toasts, loading skeletons, empty states, responsive tests | 2-3 jours |
+| **Phase 10 — Tests E2E** | Playwright: auth flow, onboarding scan, dashboard, scan history, alerts | 2-3 jours |
+
+**Total estimé** : ~20-25 jours de développement.
+
+---
+
+## 17. Files that should be modified in Phase 2
+
+```
+NOUVEAUX:
+  src/api/client.ts
+  src/api/endpoints.ts
+  src/api/types.ts              (extension complète)
+  src/api/hooks/useAuth.ts
+  src/api/hooks/useWebsites.ts
+  src/api/hooks/useScans.ts
+  src/api/hooks/useScanProgress.ts
+  src/api/hooks/useAlerts.ts
+  src/api/hooks/useReports.ts
+  src/api/hooks/useMonitoring.ts
+  src/contexts/AuthContext.tsx
+  src/components/ErrorBoundary.tsx (nouveau)
+  src/components/Toast.tsx (nouveau)
+  src/components/LoadingSkeleton.tsx (nouveau)
+
+EXISTANTS À MODIFIER:
+  src/main.tsx                  (AuthProvider wrapper)
+  src/App.tsx                   (protected routes, AppShell auth)
+  src/components/AppShell.tsx   (user menu, logout, notifications)
+  src/pages/Auth.tsx            (Login/Register/ForgotPassword → apiClient)
+  src/pages/Onboarding.tsx      (step 1: POST /websites/, step 2: real scan polling)
+  src/pages/Dashboard.tsx       (remplacer TOUS les mocks par useDashboard)
+  src/pages/Websites.tsx        (remplacer websites[] par useWebsites)
+  src/pages/WebsiteDetails.tsx  (remplacer siteData/sections par API)
+  src/pages/Scans.tsx           (remplacer DEMO_SCANS par useScans)
+  src/pages/Monitoring.tsx      (remplacer periods/timeline par useMonitoring)
+  src/pages/Alerts.tsx          (remplacer allAlerts par useAlerts, brancher actions)
+  src/pages/Reports.tsx         (remplacer history par useReports)
+  src/pages/PublicReport.tsx    (remplacer DEMO_REPORT par API)
+  src/pages/ToolPage.tsx        (connecter scan public réel)
+  src/components/ui.tsx         (ajouter max_score dans types si nécessaire)
+```
+
+---
+
+## 18. Files that must NOT be modified
+
+```
+BACKEND (déjà validé, ne pas toucher):
+  SaaS_Web_Application_digitale_presenz_v2/backend/scans/services/scoring.py
+  SaaS_Web_Application_digitale_presenz_v2/backend/scans/models.py
+  SaaS_Web_Application_digitale_presenz_v2/backend/scans/serializers.py
+  SaaS_Web_Application_digitale_presenz_v2/backend/scans/views.py
+  SaaS_Web_Application_digitale_presenz_v2/backend/accounts/ (auth complet)
+  SaaS_Web_Application_digitale_presenz_v2/backend/public_checker/
+  SaaS_Web_Application_digitale_presenz_v2/backend/websites/
+  SaaS_Web_Application_digitale_presenz_v2/backend/scanners/
+
+FRONTEND DESIGN (source de vérité Figma/Master Prompt):
+  src/imports/Presence___Master_Prompt_Frontend_Premium_V2.md
+  .figma/
+  package.json (dépendances actuelles OK)
+
+FICHIERS SENSIBLES (jamais en git):
+  omniroute_key.txt
+  *.sql
+  *.bak, *.bak2
+  *.zip
+  .env
+  frontend/src/*.bak*
+```
+
+---
+
+## Conclusion
+
+```
+READY FOR PHASE 2: YES
+```
+
+**Raison** : Le backend est complet, testé (176 tests OK), et expose tous les endpoints nécessaires. Le Frontend V2 a une architecture de composants solide, un design system cohérent (Tailwind + `ui.tsx`), et toutes les pages nécessaires — mais **100% des données sont mockées** et **il n'existe aucune couche de communication API**. La Phase 1 (API client + Auth context) est le prérequis absolu pour débloquer toutes les phases suivantes.
+
+**Prochaine étape recommandée** : Implémenter `src/api/client.ts` + `src/api/types.ts` (générés depuis les serializers DRF ou écrits manuellement) + `AuthContext` + brancher Login/Register/Me.

@@ -1,4 +1,7 @@
 # Development override — bind mount for hot reload.
+# Depends on the deprecated stack `docker-compose.yml` of this same directory:
+# see the banner in that file. The canonical development stack is
+# ../../docker-compose.yml (add a bind mount if you need hot reload).
 # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 services:
   web:

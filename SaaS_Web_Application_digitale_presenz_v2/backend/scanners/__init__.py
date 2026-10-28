@@ -27,6 +27,7 @@ from .implementations.dnsrecon import dnsrecon_scanner
 from .implementations.gobuster import gobuster_scanner
 from .implementations.feroxbuster import feroxbuster_scanner
 from .implementations.zap import zap_scanner
+from .implementations.lighthouse import lighthouse_scanner
 
 # --- Registry ---
 from .registry import ScannerRegistry
@@ -56,6 +57,7 @@ for _scanner in [
     gobuster_scanner,
     feroxbuster_scanner,
     zap_scanner,
+    lighthouse_scanner,
 ]:
     ScannerRegistry.register(_scanner)
 
@@ -80,6 +82,7 @@ __all__ = [
     "gobuster_scanner",
     "feroxbuster_scanner",
     "zap_scanner",
+    "lighthouse_scanner",
     # Registry
     "ScannerRegistry",
 ]

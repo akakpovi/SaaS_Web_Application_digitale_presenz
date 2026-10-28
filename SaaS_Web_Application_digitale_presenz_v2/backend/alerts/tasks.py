@@ -7,6 +7,100 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def report_scan_issue(self, scan_id: int) -> dict:
+    """Alert the owner when a scan failed or only partially covered the site.
+
+    A failed or incomplete scan is an incident of its own: the absence of a
+    finding does **not** prove the site is healthy, and the owner must be told
+    that coverage is missing.  This task never resolves another alert — only a
+    later completed scan can do that.
+    """
+    from alerts.models import Alert, AlertPreference, MuteWindow
+    from core.escalation import should_create_alert
+    from notifications.dispatcher import dispatch_alert
+    from scans.models import Scan
+
+    try:
+        scan = Scan.objects.select_related("website", "website__owner").get(id=scan_id)
+    except Scan.DoesNotExist:
+        logger.error("report_scan_issue: Scan %s not found", scan_id)
+        return {"error": "scan_not_found"}
+
+    if scan.status not in (Scan.Status.FAILED, Scan.Status.PARTIAL):
+        return {"skipped": "not_an_issue"}
+
+    website = scan.website
+    user = website.owner
+    preferences, _ = AlertPreference.objects.get_or_create(user=user)
+    if not should_create_alert("scan_failed", preferences):
+        return {"skipped": "preference_disabled"}
+
+    now = timezone.now()
+    active_mutes = MuteWindow.objects.filter(
+        user=user, is_active=True, start_at__lte=now, end_at__gte=now
+    )
+    if (
+        active_mutes.filter(websites__isnull=True).exists()
+        or active_mutes.filter(websites=website).exists()
+    ):
+        return {"skipped": "mute_window"}
+
+    already_firing = Alert.objects.filter(
+        website=website,
+        alert_type=Alert.AlertType.SCAN_FAILED,
+        status=Alert.Status.FIRING,
+    ).exists()
+    if already_firing:
+        # Keep the existing alert but attach the latest scan so the UI links to
+        # the run that just failed instead of an older one.
+        Alert.objects.filter(
+            website=website,
+            alert_type=Alert.AlertType.SCAN_FAILED,
+            status=Alert.Status.FIRING,
+        ).update(scan=scan, updated_at=now)
+        return {"created": 0, "updated": 1}
+
+    partial = scan.status == Scan.Status.PARTIAL
+    config = getattr(website, "monitoring_config", None)
+    consecutive_failures = config.consecutive_failures if config else 0
+    # A single incomplete run is a warning; repeated incomplete runs mean the
+    # coverage has been broken for several cycles and deserve a critical alert.
+    severity = (
+        Alert.Severity.CRITICAL
+        if not partial or consecutive_failures >= 2
+        else Alert.Severity.WARNING
+    )
+    title = (
+        f"Scan coverage incomplete for {website.domain}"
+        if partial
+        else f"Scan failed for {website.domain}"
+    )
+    message = scan.failure_message or (
+        "The last scan did not cover every required check. "
+        "Missing results are not proof that the site is healthy."
+    )
+
+    alert = Alert.objects.create(
+        user=user,
+        website=website,
+        scan=scan,
+        alert_type=Alert.AlertType.SCAN_FAILED,
+        severity=severity,
+        title=title,
+        message=message,
+        metadata={"scan_id": scan.id, "coverage": scan.status},
+    )
+    dispatch_alert(alert)
+    logger.info(
+        "report_scan_issue: alert %s created for scan %s (%s)",
+        alert.id,
+        scan_id,
+        scan.status,
+    )
+    return {"created": 1, "alert_id": str(alert.id)}
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def detect_alerts(self, scan_id: int) -> dict:
     """Analyse a completed scan and create alerts as needed."""
     from alerts.models import Alert, AlertPreference, MuteWindow
@@ -16,6 +110,14 @@ def detect_alerts(self, scan_id: int) -> dict:
 
     try:
         scan = Scan.objects.select_related("website", "website__owner").get(id=scan_id)
+        if scan.status != Scan.Status.COMPLETED:
+            # Only a completed scan can create findings-based alerts or prove
+            # that a previous incident is over.  A stale/duplicated message
+            # for an incomplete run must be a no-op.
+            logger.info(
+                "detect_alerts skipped: scan %s status=%s", scan_id, scan.status
+            )
+            return {"skipped": "not_completed"}
         website = scan.website
         user = website.owner
         now = timezone.now()
@@ -92,7 +194,23 @@ def detect_alerts(self, scan_id: int) -> dict:
                 dns_result.summary,
             ))
 
-        # 4. Security headers
+        # 4. E-mail authentication (SPF/DKIM/DMARC)
+        email_result = CheckResult.objects.filter(scan=scan, category="email_security").first()
+        if (
+            email_result
+            and email_result.status == "critical"
+            and should_create_alert("email_security", preferences)
+        ):
+            sev = compute_severity("warning", consecutive_failures, preferences)
+            alerts_to_fire.append(_build_alert(
+                user, website, scan,
+                Alert.AlertType.EMAIL_SECURITY, sev,
+                f"E-mail authentication issues for {website.domain}",
+                email_result.summary,
+                email_result.technical_details,
+            ))
+
+        # 5. Security headers
         hdr_result = CheckResult.objects.filter(scan=scan, category="security_headers").first()
         if hdr_result and hdr_result.status == "critical" and should_create_alert("security_headers", preferences):
             sev = compute_severity("warning", consecutive_failures, preferences)
@@ -171,7 +289,13 @@ def _build_alert(user, website, scan, alert_type, severity, title, message, meta
 
 def _auto_resolve(scan, website) -> int:
     from alerts.models import Alert
-    from scans.models import CheckResult
+    from scans.models import CheckResult, Scan
+
+    # Recovery can only be proven by a *completed* scan.  A partial or failed
+    # run is never allowed to resolve anything, even if this helper is invoked
+    # directly by a caller.
+    if scan.status != Scan.Status.COMPLETED:
+        return 0
 
     resolved = 0
     check_results = {cr.category: cr for cr in CheckResult.objects.filter(scan=scan)}
@@ -191,6 +315,32 @@ def _auto_resolve(scan, website) -> int:
             cr = check_results.get("dns")
             if cr and cr.status != "critical":
                 should_resolve = True
+        elif alert.alert_type == Alert.AlertType.EMAIL_SECURITY:
+            cr = check_results.get("email_security")
+            if cr and cr.status != "critical":
+                should_resolve = True
+        elif alert.alert_type == Alert.AlertType.SECURITY_HEADERS:
+            cr = check_results.get("security_headers")
+            if cr and cr.status != "critical":
+                should_resolve = True
+        elif alert.alert_type == Alert.AlertType.PERFORMANCE:
+            cr = check_results.get("performance")
+            if cr and cr.status != "critical":
+                should_resolve = True
+        elif alert.alert_type == Alert.AlertType.SCORE_DROP:
+            # A drop is recovered once the score is back at (or above) the
+            # value it had when the alert fired.
+            baseline = alert.metadata.get("current_score")
+            if (
+                isinstance(baseline, (int, float))
+                and scan.health_score is not None
+                and scan.health_score >= baseline
+            ):
+                should_resolve = True
+        elif alert.alert_type == Alert.AlertType.SCAN_FAILED:
+            # Only reached from a completed scan (this task is not queued for
+            # failed/partial runs): the coverage incident is over.
+            should_resolve = True
 
         if should_resolve:
             alert.resolve()

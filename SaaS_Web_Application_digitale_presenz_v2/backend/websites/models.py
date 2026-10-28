@@ -20,6 +20,13 @@ class Website(models.Model):
         null=True,
         blank=True,
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="websites",
+        null=True,
+        blank=True,
+    )
     domain = models.CharField(max_length=253, validators=[domain_validator])
     display_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(
@@ -41,16 +48,26 @@ class Website(models.Model):
                 fields=["owner", "domain"],
                 condition=Q(owner__isnull=False),
                 name="unique_website_domain_per_owner",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["organization", "domain"],
+                condition=Q(organization__isnull=False),
+                name="unique_website_domain_per_organization",
+            ),
         ]
         indexes = [
             models.Index(fields=["owner", "domain"]),
             models.Index(fields=["owner", "created_at"]),
+            models.Index(fields=["organization", "created_at"]),
             models.Index(fields=["is_guest", "created_at"]),
         ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.domain = self.domain.strip().lower().rstrip(".")
+        if self.owner_id and self.organization_id is None:
+            from organizations.services import ensure_personal_organization
+
+            self.organization = ensure_personal_organization(self.owner)
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:

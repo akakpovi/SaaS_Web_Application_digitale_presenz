@@ -1,17 +1,52 @@
+# =============================================================================
+# PILE CANONIQUE UNIQUE — SaaS Web Application "digitale presenz"
+#
+# C'est LA seule pile à démarrer : elle contient le backend Django, Celery,
+# PostgreSQL, Redis ET le frontend V2 servi par nginx sur le port 80.
+#
+# Le projet Compose est dérivé du nom du répertoire courant :
+#   saas_web_application_digitale_presenz
+# Les volumes `postgres_data` / `redis_data` / `static_data` qui en découlent
+# contiennent les données de production. N'ajoutez PAS de clé `name:` (elle
+# renommerait le projet et créerait de nouveaux volumes vides, rendant les
+# données existantes invisibles).
+#
+# NE PAS utiliser `SaaS_Web_Application_digitale_presenz_v2/backend/
+# docker-compose.yml` : c'est une pile dupliquée obsolète (voir son en-tête).
+#
+# Démarrage / mise à jour depuis le dépôt :
+#   docker compose build && docker compose up -d
+# =============================================================================
+
 services:
 
   web:
     build:
-      context: ./backend
-    env_file: ./backend/.env
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+    env_file: ./SaaS_Web_Application_digitale_presenz_v2/backend/.env
     command: >-
       sh -c "python manage.py migrate --noinput &&
       gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
-      --access-logfile - --error-logfile -"
+      --access-logfile - --error-logfile -
+      --access-logformat '%(h)s %(l)s %(u)s %(t)s \"%(m)s %(U)s %(H)s\" %(s)s %(b)s'"
     expose:
       - "8000"
+    environment:
+      # Local mail catcher (Mailpit). Overrides .env so the local stack always
+      # exercises a real SMTP transaction — see mailpit service below.
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: "1025"
+      EMAIL_USE_TLS: "false"
+      EMAIL_USE_SSL: "false"
+      EMAIL_HOST_USER: ""
+      EMAIL_HOST_PASSWORD: ""
     volumes:
       - static_data:/app/staticfiles
+      # Review imports: the uploaded file is written by gunicorn, then read by
+      # a Celery worker in another container. Without a shared volume the
+      # worker gets FileNotFoundError and every import fails.
+      - media_data:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -19,8 +54,15 @@ services:
         condition: service_healthy
       staticfiles:
         condition: service_completed_successfully
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/', timeout=5)"]
+      # SECURE_SSL_REDIRECT=True : le healthcheck interne doit se déclarer
+      # comme provenant du proxy TLS (comme le fait nginx en production).
+      test: ["CMD", "python", "-c", "import urllib.request; req = urllib.request.Request('http://127.0.0.1:8000/api/v1/health/', headers={'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(req, timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -29,49 +71,223 @@ services:
 
   staticfiles:
     build:
-      context: ./backend
-    env_file: ./backend/.env
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+    env_file: ./SaaS_Web_Application_digitale_presenz_v2/backend/.env
     user: "0:0"
-    command: python manage.py collectstatic --noinput
+    # `media_data` is mounted here as well: on a fresh volume Docker creates the
+    # mount point as root, and gunicorn / Celery run as the unprivileged `app`
+    # user. Without the chown every CSV review import fails with
+    # PermissionError on /app/media/review_imports. This service already runs
+    # as root and completes before `web` starts.
+    command: >-
+      sh -c "python manage.py collectstatic --noinput &&
+      mkdir -p /app/media/review_imports /app/scanner-archives &&
+      chown -R app:app /app/media /app/scanner-archives &&
+      chmod 700 /app/scanner-archives"
     volumes:
       - static_data:/app/staticfiles
+      - media_data:/app/media
+      # Docker creates a fresh named volume root-owned, while the worker that
+      # writes scanner archives runs as the unprivileged `app` user.  Without
+      # this root init, every archive fails with PermissionError even though
+      # the image directory itself is correctly owned.  This service already
+      # runs as root and completes before the worker starts.
+      - scanner_archive_data:/app/scanner-archives
     restart: "no"
 
   celery-worker:
     build:
-      context: ./backend
-    env_file: ./backend/.env
-    command: celery -A config worker --loglevel=INFO
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+      args:
+        # Lighthouse + Chromium are only needed by the scan worker.  Keeping
+        # the flag here (and not on web/beat) avoids shipping a ~400 MB
+        # browser in images that never run a scan.
+        INSTALL_LIGHTHOUSE: "true"
+        # Docker CLI used to launch ZAP/Nuclei one-shot sandbox containers.
+        # The daemon runs on the host; only this worker gets the socket.
+        INSTALL_DOCKER_CLI: "true"
+    env_file: ./SaaS_Web_Application_digitale_presenz_v2/backend/.env
+    command: celery -A config worker --loglevel=INFO --concurrency=2
+    environment:
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: "1025"
+      EMAIL_USE_TLS: "false"
+      EMAIL_USE_SSL: "false"
+      EMAIL_HOST_USER: ""
+      EMAIL_HOST_PASSWORD: ""
+      # Dedicated egress-filtered bridge used by scanner containers when
+      # SCANNER_SANDBOX_MODE=docker.  Keep in sync with the network below.
+      SCANNER_SANDBOX_DOCKER_NETWORK: presence_scanner_sandbox
+      # Same absolute path on host and in the worker: Docker resolves bind
+      # mounts on the host, so ZAP's temporary report directory must live in
+      # a shared path.  Create it with: install -d -m 1777 /tmp/presence-scanner
+      TMPDIR: /tmp/presence-scanner
+      # Explicit setting beats TEMP/TMPDIR, which silently falls back to
+      # /tmp when this directory is not writable and then breaks the ZAP
+      # bind mount.  Keep it in sync with the volume below.
+      SCANNER_SANDBOX_SHARED_WORK_DIR: /tmp/presence-scanner
+    # Allow the unprivileged `app` user to open the host Docker socket.
+    # Default 984 matches this host; override DOCKER_GID with
+    # `stat -c '%g' /var/run/docker.sock` on another machine.
+    group_add:
+      - "${DOCKER_GID:-984}"
+    volumes:
+      - media_data:/app/media
+      # Private, redacted raw reports (Nuclei JSONL, including partial output
+      # from a timeout).  Deliberately not under media_data, which is a shared
+      # upload area; this volume is only mounted on the scan worker.
+      - scanner_archive_data:/app/scanner-archives
+      # Docker sandbox mode only (SCANNER_SANDBOX_MODE=docker).  Mounting the
+      # socket gives the worker root-equivalent power on the host: only enable
+      # it on the dedicated scan worker, never on the public web container.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/presence-scanner:/tmp/presence-scanner
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Prepares the archive volume ownership before the first scan.  Docker
+      # creates named volumes as root; the worker cannot chown them itself.
+      staticfiles:
+        condition: service_completed_successfully
+      # Materialise the scanner bridge before the worker can launch a
+      # sandbox container on it.
+      scanner-sandbox-anchor:
+        condition: service_started
+      # Fail closed: the worker must not start if the anti-SSRF rules could
+      # not be installed.
+      scanner-egress-guard:
+        condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Materialises `presence_scanner_sandbox` even before the first scan.
+  # Compose only creates networks referenced by a service, and the guard uses
+  # host networking; without this anchor the sandbox executor's
+  # `docker run --network presence_scanner_sandbox` would fail.  The container
+  # does nothing and cannot be reached by scanners (ICC is disabled below).
+  scanner-sandbox-anchor:
+    image: alpine:3.20
+    command: ["sleep", "infinity"]
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - scanner_sandbox
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Scanner egress guard ────────────────────────────────────────────────
+  # Installs DOCKER-USER rules for `presence_scanner_sandbox` in the host
+  # network namespace.  Public internet traffic is allowed; every RFC 1918 /
+  # link-local / loopback / metadata destination is dropped, including private
+  # IPs reached through an HTTP redirect by a headless browser.  This is the
+  # network half of the SSRF protection; the application gate remains the
+  # first line of defence.
+  scanner-egress-guard:
+    build:
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend/docker/egress-guard
+    # Host netns is required to program the Docker bridge firewall.  The
+    # container can only drop traffic sourced from the scanner subnet; it has
+    # no other host capability.
+    network_mode: host
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+    read_only: true
+    tmpfs:
+      - /run
+    environment:
+      SCANNER_SUBNET: 172.31.240.0/24
+      SCANNER_EGRESS_LOG: "0"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/egress-guard-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Advanced scanner tools (sandbox image) ──────────────────────────────
+  # Holds the six external tools the scan worker delegates to the hardened
+  # Docker sandbox: nmap, nikto, whatweb, testssl.sh, dnsrecon, gobuster.
+  # `docker compose up -d --build` builds the image and runs its version
+  # check once; `Exited (0)` is the healthy outcome.  Scans then launch
+  # one-shot containers from the same image, so the tools are never installed
+  # in the web image and never run unconfined.
+  scanner-tools:
+    build:
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend/docker/scanner-tools
+    image: presence-scanner-tools:2026-10-27
+    # Same hardening the sandbox applies to a scan (minus the scanner
+    # network): the probe only reads the filesystem.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   celery-beat:
     build:
-      context: ./backend
-    env_file: ./backend/.env
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+    env_file: ./SaaS_Web_Application_digitale_presenz_v2/backend/.env
     command: celery -A config beat --loglevel=INFO
+    volumes:
+      - media_data:/app/media
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: postgres:16-alpine
-    env_file: ./backend/.env
+    env_file: ./SaaS_Web_Application_digitale_presenz_v2/backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U presence -d presence"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -84,24 +300,180 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Captureur SMTP local : tout e-mail transactionnel est réellement remis
+  # (pas de placeholder) et consultable sur http://localhost:8025.
+  # En production, remplacer par Mailtrap/SES/Postmark via le .env.
+  # ── WordPress headless (CMS du blog) ────────────────────────────────────
+  # Instance réelle de test : elle expose une API REST WordPress standard et
+  # n'est jamais publiée directement. nginx ne proxifie que /cms/wp-json/ et
+  # /cms/wp-content/. L'admin reste sur la loopback 127.0.0.1:8081.
+  # En production, pointez VITE_WP_API_URL vers le CMS réel et retirez ces
+  # trois services du serveur public.
+  wordpress-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_local_dev}
+      MARIADB_ROOT_PASSWORD: ${WORDPRESS_DB_ROOT_PASSWORD:-root_local_dev}
+    volumes:
+      - wordpress_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  wordpress:
+    image: wordpress:6.7-php8.3-apache
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_local_dev}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost/cms}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', '${WORDPRESS_URL:-http://localhost/cms}');
+        define('WP_SITEURL', '${WORDPRESS_URL:-http://localhost/cms}');
+        define('DISALLOW_FILE_EDIT', true);
+    volumes:
+      - wordpress_data:/var/www/html
+      # Versioned language layer (DE/EN) and admin helpers, read-only.
+      - ./wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+    ports:
+      # Admin/CMS local uniquement — jamais exposé sur l'interface publique.
+      - "127.0.0.1:8081:80"
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/wp-login.php >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  wordpress-init:
+    image: wordpress:cli-php8.3
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress_local_dev}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost/cms}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-presence-admin}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@presence.local}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-local-admin-only}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ./wordpress/seed:/seed:ro
+      - ./wordpress/seed.sh:/seed.sh:ro
+    entrypoint: ["/bin/sh", "/seed.sh"]
+    restart: "no"
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: "500"
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
-      context: ./frontend
+      context: ./SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+      # The builder needs the loopback-published WordPress to pre-render the
+      # articles. BuildKit cannot join a Compose user network here; host
+      # networking is build-only and does not alter the running service.
+      network: host
+      # BuildKit only grants this when its own allow-list permits it, and
+      # `docker compose build` has no `--allow`. On the default builder that
+      # command therefore fails with "additional privileges requested: pass
+      # \"--allow=network.host\"" (even without this block). Rebuild through
+      # `bash scripts/build-frontend.sh`, which runs `docker buildx bake` on
+      # this same file with `--allow network.host`.
+      entitlements:
+        - network.host
+      args:
+        # Absolute canonical / sitemap / robots origin baked at build time.
+        VITE_BASE_URL: ${VITE_BASE_URL:-https://localhost}
+        # Same-origin headless CMS: nginx proxies /cms/wp-json to WordPress.
+        # In production set this to the public CMS origin (or keep /cms and
+        # proxy it to the production WordPress instance).
+        VITE_WP_API_URL: ${VITE_WP_API_URL:-/cms}
+        # Build-only CMS endpoint: the host-published WordPress on 127.0.0.1:8081.
+        # It is used by prerender.mjs, never by the browser bundle.
+        PRERENDER_WP_API_URL: ${PRERENDER_WP_API_URL:-http://127.0.0.1:8081}
     depends_on:
       web:
         condition: service_healthy
+      wordpress:
+        condition: service_healthy
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # Certificats TLS locaux, montés en lecture seule (générés par
+      # scripts/setup_local_tls.sh).
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Webroot ACME (scripts/enable_letsencrypt.sh) — inoffensif en local.
+      - ./nginx/certbot:/var/www/certbot:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://127.0.0.1/ >/dev/null 2>&1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  # Scanner-only bridge.  Containers started by the sandbox executor join this
+  # network; the egress guard filters its traffic in DOCKER-USER.
+  scanner_sandbox:
+    name: presence_scanner_sandbox
+    driver: bridge
+    enable_ipv6: false
+    driver_opts:
+      # No container-to-container traffic on the scanner bridge.  Two
+      # concurrent scans must not be able to attack each other, and the
+      # anchor must stay unreachable.
+      com.docker.network.bridge.enable_icc: "false"
+    ipam:
+      config:
+        - subnet: 172.31.240.0/24
 
 volumes:
   postgres_data:
   redis_data:
   static_data:
+  media_data:
+  scanner_archive_data:
+  wordpress_data:
+  wordpress_db_data:

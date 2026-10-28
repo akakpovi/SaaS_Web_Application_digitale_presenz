@@ -20,12 +20,35 @@ class UserSerializer(serializers.ModelSerializer[User]):
         read_only_fields = fields
 
 
-class RegistrationSerializer(serializers.ModelSerializer[User]):
-    password = serializers.CharField(write_only=True, min_length=12)
+class ProfileSerializer(serializers.ModelSerializer[User]):
+    """User-editable preferences exposed at ``/api/v1/users/profile/``.
+
+    The account identity (email, name) stays read-only here: it is managed by
+    the authentication flow, not by a settings form.
+    """
 
     class Meta:
         model = User
-        fields = ("email", "full_name", "password")
+        fields = (
+            "language",
+            "business_name",
+            "business_industry",
+            "business_country",
+            "timezone",
+        )
+
+
+class RegistrationSerializer(serializers.ModelSerializer[User]):
+    password = serializers.CharField(write_only=True, min_length=12)
+    # Language of the sign-up experience.  The verification e-mail is sent in
+    # this language; omitting it keeps the model default (English).
+    language = serializers.ChoiceField(
+        choices=User.Language.choices, required=False
+    )
+
+    class Meta:
+        model = User
+        fields = ("email", "full_name", "password", "language")
         extra_kwargs = {"full_name": {"required": False}}
 
     def validate_password(self, value: str) -> str:
@@ -52,6 +75,26 @@ class PresenceTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+class AccountDeletionSerializer(serializers.Serializer):
+    """Password confirmation required to erase an account (GDPR Art. 17).
+
+    A valid access token alone must not be enough to destroy an account: the
+    bearer may belong to a compromised session or a leaked token.  Any API
+    consumer calling ``DELETE /api/v1/auth/me/`` therefore re-proves knowledge
+    of the password.
+    """
+
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_password(self, value: str) -> str:
+        user = self.context.get("user")
+        if user is None or not user.check_password(value):
+            raise serializers.ValidationError(
+                "Incorrect password. Account deletion cancelled."
+            )
+        return value
 
 
 class GoogleOAuthSerializer(serializers.Serializer):

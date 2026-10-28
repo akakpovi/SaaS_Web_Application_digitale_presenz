@@ -26,6 +26,7 @@ New scanners must use ``safe_request`` rather than raw HTTP clients.
 from __future__ import annotations
 
 import ipaddress
+import json
 import logging
 import re
 import socket
@@ -383,6 +384,24 @@ def _resolve_and_validate(
     return addresses
 
 
+def resolve_public_ip(hostname: str) -> str:
+    """Validate a public hostname and return one validated, public IP.
+
+    This is the safe replacement for ``socket.gethostbyname``: it rejects raw
+    IP literals and internal hostnames, resolves the name, and refuses any
+    result that is not globally routable (loopback, private, link-local,
+    metadata, ...).
+
+    Raises:
+        DomainValidationError: if the hostname is invalid, internal, or
+            resolves to a prohibited address.
+    """
+
+    validated_hostname = validate_domain_for_scan(hostname)
+    addresses = _resolve_and_validate(validated_hostname)
+    return addresses[0]
+
+
 # ---------------------------------------------------------------------------
 # Response object
 # ---------------------------------------------------------------------------
@@ -551,6 +570,109 @@ def safe_request(
     )
 
 
+def safe_webhook_request(
+    url: str,
+    *,
+    json_payload: Any | None = None,
+    connect_timeout: float = DEFAULT_CONNECT_TIMEOUT,
+    read_timeout: float = DEFAULT_READ_TIMEOUT,
+    max_bytes: int = MAX_RESPONSE_BYTES,
+    headers: dict[str, str] | None = None,
+) -> SafeResponse:
+    """Perform an SSRF-resistant HTTP POST for outbound webhooks.
+
+    ``safe_request`` is intentionally restricted to GET/HEAD (see
+    ``ALLOWED_METHODS``). User-configured webhooks must POST a JSON payload, so
+    this variant reuses the exact same validation and DNS-pinning pipeline
+    while allowing POST. Only HTTP/HTTPS on ports 80/443 are accepted, and the
+    connection is made to a pre-validated public IP.
+
+    Raises:
+        DomainValidationError: if the URL, hostname or resolved address is not
+            safe (internal, private, metadata, prohibited port, ...).
+    """
+
+    parsed = urlparse(url)
+
+    scheme = parsed.scheme.lower()
+
+    if scheme not in ALLOWED_SCHEMES:
+        raise DomainValidationError(
+            "Only HTTP and HTTPS are allowed."
+        )
+
+    hostname = parsed.hostname or ""
+
+    if not hostname:
+        raise DomainValidationError(
+            "URL hostname is required."
+        )
+
+    try:
+        explicit_port = parsed.port
+    except ValueError as exc:
+        raise DomainValidationError(
+            "Invalid URL port."
+        ) from exc
+
+    effective_port = (
+        explicit_port
+        or (443 if scheme == "https" else 80)
+    )
+
+    if effective_port not in ALLOWED_PORTS:
+        raise DomainValidationError(
+            "The requested port is not allowed."
+        )
+
+    if parsed.username or parsed.password:
+        raise DomainValidationError(
+            "Credentials in URLs are not allowed."
+        )
+
+    if parsed.fragment:
+        raise DomainValidationError(
+            "URL fragments are not allowed."
+        )
+
+    validated_hostname = validate_domain_for_scan(hostname)
+    safe_ips = _resolve_and_validate(validated_hostname)
+
+    path = parsed.path or "/"
+
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
+
+    request_headers = dict(headers or {})
+    body: bytes | None = None
+
+    if json_payload is not None:
+        body = json.dumps(json_payload).encode("utf-8")
+        request_headers.setdefault("Content-Type", "application/json")
+
+    request_headers.setdefault("Accept", "application/json")
+
+    started_at = time.monotonic()
+
+    return _do_request(
+        scheme=scheme,
+        hostname=validated_hostname,
+        target_ip=safe_ips[0],
+        port=effective_port,
+        path=path,
+        method="POST",
+        body=body,
+        connect_timeout=connect_timeout,
+        read_timeout=read_timeout,
+        max_bytes=max_bytes,
+        request_headers=request_headers,
+        redirect_chain=[],
+        redirects_remaining=MAX_REDIRECTS,
+        stream_body=True,
+        request_started=started_at,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Internal HTTP implementation
 # ---------------------------------------------------------------------------
@@ -564,6 +686,7 @@ def _do_request(
     port: int,
     path: str,
     method: str,
+    body: bytes | None = None,
     connect_timeout: float,
     read_timeout: float,
     max_bytes: int,
@@ -659,6 +782,7 @@ def _do_request(
         response = pool.request(
             method=method,
             url=path,
+            body=body,
             headers=merged_headers,
             preload_content=False,
             redirect=False,
@@ -814,6 +938,7 @@ def _do_request(
                 port=redirect_port,
                 path=redirect_path,
                 method=method,
+                body=body,
                 connect_timeout=connect_timeout,
                 read_timeout=read_timeout,
                 max_bytes=max_bytes,

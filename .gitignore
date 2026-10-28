@@ -22,6 +22,12 @@ media/
 celerybeat-schedule
 celerybeat-schedule.*
 
+# Sauvegardes locales (jamais versionnées)
+backups/
+
+# TLS local (certificat auto-signé — jamais versionné)
+nginx/ssl/
+
 # Tests / tooling
 .pytest_cache/
 .mypy_cache/
@@ -33,3 +39,12 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Secrets et données locales — jamais versionnés (déplacés en quarantaine le 2026-10-28)
+omniroute_key.txt
+presence_before_migration_repair_*.sql
+SaaS_Web_Application_digitale_presenz_v2/Comptes existants ID E.txt
+compte de teste.docx
+# Recette locale contenant un mot de passe de fixture en dur : à réintroduire
+# uniquement après passage à une variable d'environnement.
+scripts/integrated_acceptance_recipe.py

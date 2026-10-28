@@ -1,0 +1,29 @@
+<h2>Warum ein abgelaufenes Zertifikat teuer ist</h2>
+<p>Ein SSL-Zertifikat sorgt dafür, dass die Verbindung zu Ihrer Website verschlüsselt ist. Läuft es ab, zeigt der Browser eine ganzseitige Warnung. Besucher, die diese Warnung sehen, verlassen die Seite fast immer sofort – und manche rufen anschließend den Support an, weil sie glauben, Ihre Seite sei gehackt worden.</p>
+
+<h2>So prüfen Sie Ihr Zertifikat in 30 Sekunden</h2>
+<ol>
+  <li>Öffnen Sie Ihre Website im Browser und klicken Sie auf das Schloss-Symbol links in der Adressleiste.</li>
+  <li>Wählen Sie „Verbindung ist sicher“ und anschließend „Zertifikat ist gültig“.</li>
+  <li>Prüfen Sie das Feld <em>Gültig bis</em>. Weniger als 30 Tage? Dann wird es Zeit.</li>
+</ol>
+
+<h2>Auf drei Details kommt es an</h2>
+<ul>
+  <li><strong>Abdeckung:</strong> Das Zertifikat muss sowohl <code>ihre-domain.de</code> als auch <code>www.ihre-domain.de</code> abdecken. Ein Zertifikat nur für die eine Variante erzeugt beim Aufruf der anderen eine Warnung.</li>
+  <li><strong>Weiterleitungen:</strong> Alle HTTP-Adressen sollten dauerhaft (301) auf HTTPS umgeleitet werden, und Ihre Seite sollte <em>Strict-Transport-Security</em> (HSTS) senden.</li>
+  <li><strong>Sichere Protokolle:</strong> TLS 1.2 oder neuer. Veraltete Versionen sollten deaktiviert sein.</li>
+</ul>
+
+<h2>Erneuerung: nicht darauf verlassen, dass jemand daran denkt</h2>
+<p>Viele Zertifikate – etwa von Let's Encrypt – sind nur 90 Tage gültig und werden automatisch erneuert. Scheitert die automatische Erneuerung (geänderte DNS-Einträge, ein neuer Server, ein fehlender Webroot-Pfad), merkt das oft niemand, bis das Zertifikat abgelaufen ist.</p>
+<p>Deshalb ist eine Warnung sinnvoll, die deutlich vorher ausgelöst wird. Presence prüft das Zertifikat täglich und meldet sich 30 Tage vor Ablauf – genug Zeit, um in Ruhe nachzubessern.</p>
+
+<h2>Kurz-Checkliste</h2>
+<ul>
+  <li>Zertifikat gültig und vom Browser als vertrauenswürdig eingestuft</li>
+  <li>Beide Varianten (mit und ohne <code>www</code>) abgedeckt</li>
+  <li>HTTP dauerhaft auf HTTPS umgeleitet</li>
+  <li>HSTS aktiv</li>
+  <li>Erinnerung oder Warnung vor Ablauf eingerichtet</li>
+</ul>

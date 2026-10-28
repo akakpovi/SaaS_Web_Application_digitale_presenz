@@ -560,6 +560,32 @@ class WebsiteAPITests(APITestCase):
             scan.id,
         )
 
+    def test_health_score_survives_a_later_unscored_scan(self) -> None:
+        """Regression: a later security scan made the site look never scanned."""
+        website = Website.objects.create(
+            owner=self.user,
+            domain="scored.example",
+        )
+        Scan.objects.create(
+            website=website,
+            scan_type=Scan.ScanType.HEALTH,
+            status=Scan.Status.COMPLETED,
+            health_score=69,
+            health_status="warning",
+        )
+        latest = Scan.objects.create(
+            website=website,
+            scan_type=Scan.ScanType.SECURITY,
+            status=Scan.Status.PARTIAL,
+        )
+
+        response = self.client.get(f"/api/v1/websites/{website.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["health_score"], 69)
+        self.assertEqual(response.data["health_status"], "warning")
+        self.assertEqual(response.data["last_scan_id"], latest.id)
+
     def test_manual_scan_blocked_for_other_users_website(self) -> None:
         other_website = Website.objects.create(
             owner=self.other_user,
@@ -746,6 +772,7 @@ class WebsiteAPITests(APITestCase):
             "display_name",
             "is_active",
             "is_guest",
+            "organization_id",
             "created_at",
             "updated_at",
             "health_score",

@@ -35,7 +35,12 @@ def run_public_scan(self, scan_id: int) -> dict:
         logger.exception("Public scan task failed for scan_id=%d: %s", scan_id, exc)
         try:
             scan = Scan.objects.get(pk=scan_id)
-            if scan.status not in (Scan.Status.COMPLETED, Scan.Status.FAILED, Scan.Status.CANCELLED):
+            if scan.status not in (
+                Scan.Status.COMPLETED,
+                Scan.Status.PARTIAL,
+                Scan.Status.FAILED,
+                Scan.Status.CANCELLED,
+            ):
                 scan.transition_to(Scan.Status.FAILED, failure_message=str(exc)[:500])
         except Exception:
             pass

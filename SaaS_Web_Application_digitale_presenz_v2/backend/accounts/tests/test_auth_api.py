@@ -1,3 +1,4 @@
+import re
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.tokens import default_token_generator
@@ -79,6 +80,22 @@ class AuthenticationAPITests(APITestCase):
         self.assertIn("refresh", response.data)
         self.assertNotEqual(response.data["refresh"], payload["refresh"])
 
+    def test_refresh_token_of_deleted_account_is_rejected(self) -> None:
+        """A refresh JWT that outlives its account must not crash the API.
+
+        Deleting a user removes the ``OutstandingToken`` rows, but the signed
+        token already held by the browser stays cryptographically valid.  The
+        refresh endpoint used to raise ``User.DoesNotExist`` and answer 500;
+        it must answer 401 so the client clears its session.
+        """
+        self.register()
+        refresh = self.login()["refresh"]
+        User.objects.get(email="maria@example.com").delete()
+
+        response = self.client.post("/api/v1/auth/refresh/", {"refresh": refresh}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_logout_blacklists_refresh_token(self) -> None:
         self.register()
         payload = self.login()
@@ -98,7 +115,11 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(unknown.status_code, status.HTTP_202_ACCEPTED)
         self.assertEqual(known.data, unknown.data)
 
-        reset_url = mail.outbox[-1].body.split()[-1]
+        # Extract the reset link instead of assuming it is the last token of the
+        # body: the body is translated (DE/EN) and carries a signature.
+        match = re.search(r"https?://\S*?/reset-password\?\S+", mail.outbox[-1].body)
+        self.assertIsNotNone(match, mail.outbox[-1].body)
+        reset_url = match.group(0)
         params = parse_qs(urlparse(reset_url).query)
         response = self.client.post(
             "/api/v1/auth/password/reset/confirm/",

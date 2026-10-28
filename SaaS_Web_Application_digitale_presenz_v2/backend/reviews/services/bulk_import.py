@@ -3,7 +3,8 @@ import io
 import json
 import logging
 from django.utils import timezone
-from reviews.models import Review, ReviewImportJob
+from reviews.models import Review, ReviewImportJob, ReviewSentiment
+from reviews.services.sentiment import get_analyzer
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +50,13 @@ class BulkImporter:
         author = row.get("author") or row.get("author_name") or row.get("name", "")
         if not author:
             raise ValueError("author_name missing")
-        rating = float(row.get("rating", 5))
+
+        # An empty rating cell must mean "not rated", not a failed row.
+        raw_rating = str(row.get("rating") or "").strip()
+        rating = float(raw_rating) if raw_rating else 5
+
         text = row.get("text") or row.get("content") or ""
-        ext_id = str(row.get("external_id", ""))
+        ext_id = str(row.get("external_id") or "").strip()
 
         review_date = timezone.now()
         raw_date = row.get("review_date") or row.get("date")
@@ -63,12 +68,44 @@ class BulkImporter:
             except (ValueError, TypeError):
                 pass
 
-        Review.objects.create(
-            source=self.job.source,
-            author_name=author,
-            rating=rating,
-            text=text,
-            external_id=ext_id,
-            review_date=review_date,
-            is_approved=True
+        fields = {
+            "author_name": author,
+            "rating": rating,
+            "text": text,
+            "review_date": review_date,
+            "is_approved": True,
+        }
+        if ext_id:
+            # Re-importing the same export must update, not crash on the
+            # (source, external_id) unique constraint.
+            review, _ = Review.objects.update_or_create(
+                source=self.job.source, external_id=ext_id, defaults=fields
+            )
+        else:
+            review = Review.objects.create(source=self.job.source, **fields)
+
+        self._analyze(review)
+
+    def _analyze(self, review: Review) -> None:
+        """Attach the sentiment at import time.
+
+        The list view shows a sentiment badge for every review, so deferring
+        the analysis to Celery would leave freshly imported rows neutral until
+        a worker picked them up — and the import task never queued it.
+        """
+        if not review.text.strip():
+            return
+
+        result = get_analyzer().analyze(review.text)
+        review.sentiment = result.sentiment
+        review.language = result.language
+        review.save(update_fields=["sentiment", "language", "updated_at"])
+        ReviewSentiment.objects.update_or_create(
+            review=review,
+            defaults={
+                "confidence": result.confidence,
+                "emotions": result.emotions,
+                "keywords": result.keywords,
+                "language_detected": result.language,
+            },
         )

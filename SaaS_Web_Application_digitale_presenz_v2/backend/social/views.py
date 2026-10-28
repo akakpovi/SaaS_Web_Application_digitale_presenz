@@ -22,6 +22,9 @@ class TriggerSocialSyncView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, website_id: int):
+        from subscriptions.services.quotas import assert_paid_plan
+
+        assert_paid_plan(request.user)
         get_object_or_404(Website, id=website_id, owner=request.user)
         sync_social_profiles.delay(website_id)
         track_brand_mentions.delay(website_id)

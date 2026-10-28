@@ -39,3 +39,19 @@ class UpgradeSubscriptionSerializer(serializers.Serializer):
         choices=Subscription.BillingCycle.choices,
         default=Subscription.BillingCycle.MONTHLY,
     )
+
+
+class CheckoutSerializer(serializers.Serializer):
+    """Input of the checkout endpoint — never contains an amount."""
+
+    plan_tier = serializers.ChoiceField(
+        choices=[
+            (Plan.Tier.PRO, "Pro"),
+            (Plan.Tier.BUSINESS, "Business"),
+            (Plan.Tier.AGENCY, "Agency"),
+        ]
+    )
+    billing_cycle = serializers.ChoiceField(
+        choices=Subscription.BillingCycle.choices,
+        default=Subscription.BillingCycle.MONTHLY,
+    )

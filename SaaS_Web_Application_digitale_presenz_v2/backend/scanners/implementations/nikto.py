@@ -1,4 +1,14 @@
-"""Nikto web vulnerability scanner adapter."""
+"""Nikto web vulnerability scanner adapter.
+
+Completeness
+------------
+Nikto exits 0 even when it stops early because its own ``-maxtime`` expired, so
+the exit code alone cannot prove coverage.  The adapter therefore also scans the
+report for Nikto's "maximum execution time reached" diagnostic and reports the
+run as incomplete in that case.  A partial Nikto report is still stored and
+parsed (the operator sees what was found), but it never proves that the rest is
+absent.
+"""
 
 from __future__ import annotations
 
@@ -7,13 +17,36 @@ from typing import Any
 
 from django.conf import settings
 
-from scanners.base import BaseScanner, NormalizedFinding, Severity, FindingStatus, ScanResult, ScannerType
-from scanners.executors.command import default_executor
+from scanners.base import (
+    BaseScanner,
+    FindingStatus,
+    NormalizedFinding,
+    ScanContext,
+    ScanOutcome,
+    ScanResult,
+    ScannerType,
+    Severity,
+)
 from scanners.exceptions import TargetValidationError
+from scanners.implementations.tool_run import (
+    SandboxError,
+    ToolRun,
+    build_outcome,
+    evaluate_completeness,
+    resolve_target,
+    run_tool,
+    target_validation_outcome,
+    unavailable_outcome,
+)
 from scanners.parsers.nikto import parse_nikto_json, parse_nikto_text
-from scanners.security.target_validator import validate_target
 
 logger = logging.getLogger(__name__)
+
+#: Printed by Nikto when ``-maxtime`` cut the scan short (it still exits 0).
+_MAXTIME_MARKERS = (
+    "maximum execution time",
+    "maximum run time",
+)
 
 
 class NiktoScanner(BaseScanner):
@@ -26,87 +59,125 @@ class NiktoScanner(BaseScanner):
     @property
     def timeout(self) -> int:  # type: ignore[override]
         cfg = getattr(settings, "SCANNER_CONFIG", {})
-        return cfg.get("nikto", {}).get("timeout", 180)
+        return cfg.get("nikto", {}).get("timeout", 100)
 
-    def scan(self, domain: str) -> ScanResult:
+    def execute(
+        self,
+        domain: str,
+        context: ScanContext | None = None,
+    ) -> ScanOutcome:
+        """Run Nikto exactly once and return result + normalized findings."""
         if not self.is_available():
-            return self._create_result(
-                score=None,
-                status="neutral",
+            return build_outcome(
+                self,
+                run=ToolRun(exit_code=-1),
+                findings=[
+                    NormalizedFinding(
+                        check_code="nikto.unavailable",
+                        category="security",
+                        severity=Severity.INFO,
+                        status=FindingStatus.NOT_APPLICABLE,
+                        title="Nikto not available",
+                        recommendation="Install nikto to enable web vulnerability scanning.",
+                    )
+                ],
                 message="Nikto not available — skipped",
+                status="neutral",
                 recommendation="Install nikto to enable web vulnerability scanning.",
+                scan_complete=False,
+                partial_reason="unavailable",
             )
 
         try:
-            target_info = validate_target(f"https://{domain}")
+            target_info = resolve_target(domain, context)
         except TargetValidationError as exc:
-            return self._create_result(score=None, status="critical", message=str(exc))
-
-        result = default_executor.run(
-            command=self.build_command(target_info.hostname),
-            timeout=self.timeout,
-            scanner_name=self.name,
-        )
-
-        parsed = parse_nikto_json(result.stdout) or parse_nikto_text(result.stdout)
-        return self._create_result(
-            score=None,
-            status="neutral",
-            message=f"Nikto found {len(parsed)} issue(s)",
-            duration_ms=result.duration_ms,
-            findings_count=len(parsed),
-        )
-
-    def scan_findings(self, domain: str) -> list[NormalizedFinding]:
-        if not self.is_available():
-            return [NormalizedFinding(
-                check_code="nikto.unavailable",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.NOT_APPLICABLE,
-                title="Nikto not available",
-                recommendation="Install nikto to enable web vulnerability scanning.",
-            )]
+            return target_validation_outcome(self, error=str(exc))
 
         try:
-            target_info = validate_target(f"https://{domain}")
-        except TargetValidationError as exc:
-            return [NormalizedFinding(
-                check_code="nikto.target_validation",
-                category="security",
-                severity=Severity.HIGH,
-                status=FindingStatus.FAIL,
-                title="Target validation failed",
-                description=str(exc),
-            )]
+            run = run_tool(
+                self,
+                self.build_command(target_info.hostname),
+                context=context,
+            )
+        except SandboxError as exc:
+            logger.error("Nikto sandbox unavailable: %s", exc)
+            return unavailable_outcome(self, reason=str(exc))
 
-        result = default_executor.run(
-            command=self.build_command(target_info.hostname),
-            timeout=self.timeout,
-            scanner_name=self.name,
+        complete, reason = evaluate_completeness(run, ok_exit_codes=(0,))
+        if complete and self._maxtime_reached(run):
+            complete, reason = False, "maxtime_reached"
+        if complete and not self._looks_like_nikto_report(run.stdout):
+            complete, reason = False, "unparsable_report"
+
+        parsed = parse_nikto_json(run.stdout) or parse_nikto_text(run.stdout)
+        findings = self.normalize(parsed)
+
+        return build_outcome(
+            self,
+            run=run,
+            findings=findings,
+            message=(
+                f"Nikto found {len(parsed)} issue(s)"
+                if complete
+                else f"Nikto scan incomplete ({reason}): "
+                f"{len(parsed)} issue(s) seen so far"
+            ),
+            status="neutral" if complete else "warning",
+            scan_complete=complete,
+            partial_reason=reason,
+            findings_count=len(parsed),
+            raw_report=run.stdout or None,
+            raw_report_format="nikto-text",
+            raw_report_meta={"findings_count": len(parsed)},
         )
 
-        if result.timed_out:
-            return [NormalizedFinding(
-                check_code="nikto.timeout",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.UNKNOWN,
-                title=f"Nikto timed out after {self.timeout}s",
-                duration_ms=result.duration_ms,
-            )]
+    @staticmethod
+    def _maxtime_reached(run: ToolRun) -> bool:
+        text = f"{run.stdout}\n{run.stderr}"
+        return any(marker in text for marker in _MAXTIME_MARKERS)
 
-        parsed = parse_nikto_json(result.stdout) or parse_nikto_text(result.stdout)
-        return self.normalize(parsed)
+    @staticmethod
+    def _looks_like_nikto_report(output: str) -> bool:
+        """A complete Nikto run writes its JSON report or its text findings."""
+        import json as _json
+
+        text = output or ""
+        try:
+            data = _json.loads(text)
+        except (TypeError, ValueError):
+            data = None
+        if isinstance(data, dict) and "vulnerabilities" in data:
+            return True
+        # Text format: at least one finding or summary line.
+        return any(line.strip().startswith("+") for line in text.splitlines())
+
+    def scan(self, domain: str) -> ScanResult:
+        return self.execute(domain).result
+
+    def scan_findings(
+        self,
+        domain: str,
+        result: ScanResult | None = None,
+    ) -> list[NormalizedFinding]:
+        """Legacy entry point; the tool runs once via :meth:`execute`."""
+        return self.execute(domain).findings
 
     def build_command(self, target: str, options: dict | None = None) -> list[str]:
+        # Nikto must finish before the sandbox kills the container: -maxtime is
+        # its own per-host budget, kept below the sandbox timeout so the report
+        # is closed and the partial result is still usable.
+        #
+        # No -Format/-output: the sandbox root filesystem is read-only, so a
+        # report *file* would fail to be written.  Nikto's default screen report
+        # goes to stdout, which is collected by the runner.
+        maxtime = max(5, int(self.timeout * 0.85))
         return [
             "nikto",
             "-h", target,
-            "-Format", "json",
             "-nointeractive",
+            "-ask", "no",
             "-timeout", "10",
-            "-maxtime", str(self.timeout),
+            "-maxtime", f"{maxtime}s",
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
@@ -117,7 +188,6 @@ class NiktoScanner(BaseScanner):
         for item in parsed_results:
             msg = item.get("msg", "")
             osvdb = item.get("osvdb", "")
-            url = item.get("url", "")
             ref = item.get("references", "")
 
             findings.append(NormalizedFinding(

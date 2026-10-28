@@ -1,4 +1,6 @@
+from django.db.models import Avg, Count, Max, Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,8 +15,73 @@ from reviews.serializers import (
     ReviewSourceSerializer,
     ReviewImportJobSerializer,
 )
+from reviews.services.responses import generate_draft
 from reviews.tasks import analyze_review_sentiment, sync_review_source, process_review_import
 from reviews.services.real_discovery import RealReviewDiscoveryService
+
+
+class ReviewSummaryView(APIView):
+    """GET /api/v1/reviews/summary/ — real reputation KPIs."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request) -> Response:
+        reviews = Review.objects.filter(source__user=request.user)
+        aggregates = reviews.aggregate(
+            average=Avg("rating"),
+            last_created=Max("created_at"),
+        )
+        month_start = timezone.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        needs_response = reviews.filter(
+            Q(sentiment__in=[Review.Sentiment.NEGATIVE, Review.Sentiment.NEUTRAL])
+            | Q(rating__lte=3),
+            response_draft__isnull=True,
+        ).count()
+        by_platform = {
+            row["source__provider"]: row["count"]
+            for row in reviews.values("source__provider").annotate(count=Count("id"))
+        }
+        sources = ReviewSource.objects.filter(user=request.user)
+        latest_sync = sources.aggregate(last=Max("last_synced_at"))["last"]
+
+        return Response(
+            {
+                "total": reviews.count(),
+                "average_rating": (
+                    round(float(aggregates["average"]), 1)
+                    if aggregates["average"] is not None
+                    else None
+                ),
+                "new_this_month": reviews.filter(created_at__gte=month_start).count(),
+                "needs_response": needs_response,
+                "by_platform": by_platform,
+                "sources": sources.count(),
+                "enabled_sources": sources.filter(enabled=True).count(),
+                "last_synced_at": latest_sync.isoformat() if latest_sync else None,
+                "latest_review_at": (
+                    aggregates["last_created"].isoformat()
+                    if aggregates["last_created"]
+                    else None
+                ),
+            }
+        )
+
+
+class ReviewDraftResponseView(APIView):
+    """POST /api/v1/reviews/<uuid:pk>/draft-response/
+
+    Generates (or refreshes) the single editable draft for a review.  The
+    draft is stored, never sent: publishing remains a human action.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk) -> Response:
+        review = get_object_or_404(Review, pk=pk, source__user=request.user)
+        draft = generate_draft(review)
+        return Response(ResponseDraftSerializer(draft).data, status=status.HTTP_201_CREATED)
 
 
 class DiscoverRealReviewsView(APIView):

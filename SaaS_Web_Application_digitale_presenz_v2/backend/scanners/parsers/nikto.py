@@ -37,45 +37,87 @@ def parse_nikto_json(output: str) -> list[dict[str, Any]]:
     return findings
 
 
+#: ``+ Key: value`` lines Nikto prints about the run itself, not findings.
+_INFORMATIONAL_PREFIXES = (
+    "Target IP:",
+    "Target Hostname:",
+    "Target Port:",
+    "Platform:",
+    "Start Time:",
+    "End Time:",
+    "Server:",
+    "Multiple IPs found:",
+    "SSL Info:",
+    "Root page",
+    "Allowed HTTP Methods:",
+    "No CGI Directories found",
+    "host(s) tested",
+    "NOTE:",
+    "Nikto",
+    "Testing:",
+)
+
+_ID_RE = re.compile(r"^\[(\d+)\]\s*(.*)$")
+_OSVDB_RE = re.compile(r"^OSVDB-(\d+):\s*(.*)$")
+_URL_RE = re.compile(r"^(/[^\s:]*|https?://[^\s:]+):\s+(.*)$")
+
+
 def parse_nikto_text(output: str) -> list[dict[str, Any]]:
-    """Parse Nikto plain-text output.
+    """Parse Nikto plain-text output (the default screen report).
 
-    Nikto text output lines look like::
+    Nikto prints its findings on stdout when no report format/file is
+    configured.  Lines look like::
 
+        + [011799] /: An alt-svc header was found ...
         + OSVDB-XXXX: /path: Description of the finding.
         + /path: Description without OSVDB.
+
+    Run metadata (``+ Target IP:``, ``+ Server:``, ``+ Start Time:`` …) is
+    skipped: it describes the run, not a finding.  Lines with no identifier and
+    no path are dropped for the same reason.
     """
     findings: list[dict[str, Any]] = []
-    osvdb_re = re.compile(r"^\+\s+(?:OSVDB-(\d+):\s+)?(.+)$")
 
-    for line in output.splitlines():
-        line = line.strip()
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
         if not line.startswith("+"):
             continue
-        m = osvdb_re.match(line)
-        if not m:
+        msg = line[1:].strip()
+        if not msg or msg.startswith(_INFORMATIONAL_PREFIXES):
             continue
-        osvdb = m.group(1) or ""
-        msg = m.group(2).strip()
 
-        # Skip informational lines
-        if msg.startswith("Target IP:") or msg.startswith("Target Port:"):
-            continue
+        identifier = ""
+        id_match = _ID_RE.match(msg)
+        if id_match:
+            identifier = f"OSVDB-{id_match.group(1)}"
+            msg = id_match.group(2).strip()
+        else:
+            osvdb_match = _OSVDB_RE.match(msg)
+            if osvdb_match:
+                identifier = f"OSVDB-{osvdb_match.group(1)}"
+                msg = osvdb_match.group(2).strip()
 
         url = ""
-        url_match = re.match(r"^(/[^\s:]*|https?://[^\s:]*): (.+)$", msg)
+        url_match = _URL_RE.match(msg)
         if url_match:
             url = url_match.group(1)
-            msg = url_match.group(2)
+            msg = url_match.group(2).strip()
 
+        # Only lines with an identifier or a path are actual findings.
+        if not identifier and not url:
+            continue
+        if not msg:
+            continue
+
+        numeric_id = identifier.split("-", 1)[1] if identifier else ""
         findings.append({
             "type": "vulnerability",
-            "id": f"OSVDB-{osvdb}" if osvdb else "",
-            "osvdb": osvdb,
+            "id": identifier,
+            "osvdb": numeric_id,
             "url": url,
             "method": "GET",
             "msg": msg,
-            "references": f"https://osvdb.org/{osvdb}" if osvdb else "",
+            "references": f"https://osvdb.org/{numeric_id}" if numeric_id else "",
         })
 
     return findings

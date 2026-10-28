@@ -4,6 +4,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from core.security import DomainValidationError, safe_webhook_request
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,19 +56,28 @@ class SlackProvider(NotificationProvider):
         if not self.channel:
             return False
         
-        import requests
         webhook_url = self.channel.config.get('webhook_url')
         if not webhook_url:
             return False
         
         try:
-            requests.post(webhook_url, json={
-                'text': f"*{alert.title}*\n{alert.message}",
-                'severity': alert.severity,
-            }, timeout=5)
+            # SSRF-safe POST: validates the URL and pins the connection to a
+            # pre-resolved public IP (blocks loopback/private/metadata targets).
+            safe_webhook_request(
+                webhook_url,
+                json_payload={
+                    'text': f"*{alert.title}*\n{alert.message}",
+                    'severity': alert.severity,
+                },
+                connect_timeout=5.0,
+                read_timeout=5.0,
+            )
             logger.info(f"Slack message sent for {alert.alert_type}")
             return True
-        except Exception as e:
+        except DomainValidationError:
+            logger.warning("Slack webhook blocked by SSRF validation: %s", webhook_url)
+            return False
+        except Exception:
             logger.exception("Slack send failed")
             return False
     
@@ -84,22 +95,32 @@ class WebhookProvider(NotificationProvider):
         if not self.channel:
             return False
         
-        import requests
         webhook_url = self.channel.config.get('webhook_url')
         if not webhook_url:
             return False
         
         try:
-            requests.post(webhook_url, json={
-                'alert_type': alert.alert_type,
-                'severity': alert.severity,
-                'title': alert.title,
-                'message': alert.message,
-                'website': alert.website.domain,
-            }, timeout=5)
+            # SSRF-safe POST: user-supplied webhook URLs must never reach
+            # internal services. safe_webhook_request validates the hostname
+            # and connects only to a pre-validated public IP.
+            safe_webhook_request(
+                webhook_url,
+                json_payload={
+                    'alert_type': alert.alert_type,
+                    'severity': alert.severity,
+                    'title': alert.title,
+                    'message': alert.message,
+                    'website': alert.website.domain,
+                },
+                connect_timeout=5.0,
+                read_timeout=5.0,
+            )
             logger.info(f"Webhook sent for {alert.alert_type}")
             return True
-        except Exception as e:
+        except DomainValidationError:
+            logger.warning("Webhook blocked by SSRF validation: %s", webhook_url)
+            return False
+        except Exception:
             logger.exception("Webhook send failed")
             return False
     

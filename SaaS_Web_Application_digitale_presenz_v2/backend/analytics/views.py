@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import TrafficLog, AnalyticsEvent, AffiliateClick
+from subscriptions.models import Plan, Subscription
 from websites.models import Website
 from scans.models import Scan
 
@@ -68,6 +69,37 @@ class AdminDashboardAnalyticsView(APIView):
 
         monetization_index = min(100, int((total_pageviews * 0.4) + (total_websites * 0.3) + (total_users * 0.3)))
 
+        # Real recurring revenue: active, paid subscriptions only (trial users
+        # pay nothing yet, so they are counted separately).  A yearly plan is
+        # normalised to its monthly equivalent so MRR stays comparable.
+        paid_subscriptions = Subscription.objects.filter(
+            status=Subscription.Status.ACTIVE,
+        ).exclude(plan__tier=Plan.Tier.FREE).select_related("plan")
+        trialing = Subscription.objects.filter(
+            status=Subscription.Status.TRIALING,
+        ).exclude(plan__tier=Plan.Tier.FREE).count()
+
+        mrr = 0.0
+        by_plan: dict[str, dict] = {}
+        for subscription in paid_subscriptions:
+            plan = subscription.plan
+            if subscription.billing_cycle == Subscription.BillingCycle.YEARLY:
+                monthly = float(plan.price_yearly) / 12
+            else:
+                monthly = float(plan.price_monthly)
+            mrr += monthly
+            entry = by_plan.setdefault(
+                plan.tier,
+                {"tier": plan.tier, "name": plan.name, "count": 0, "mrr_eur": 0.0},
+            )
+            entry["count"] += 1
+            entry["mrr_eur"] += monthly
+
+        for entry in by_plan.values():
+            entry["mrr_eur"] = round(entry["mrr_eur"], 2)
+
+        paying_users = paid_subscriptions.count()
+
         return Response({
             "overview": {
                 "total_users": total_users,
@@ -85,6 +117,15 @@ class AdminDashboardAnalyticsView(APIView):
             "cookies": {
                 "accepted_all": cookie_accept,
                 "essential_only": cookie_essential,
+            },
+            "subscriptions": {
+                "mrr_eur": round(mrr, 2),
+                "arr_eur": round(mrr * 12, 2),
+                "paying_users": paying_users,
+                "trialing_users": trialing,
+                "by_plan": sorted(
+                    by_plan.values(), key=lambda entry: entry["mrr_eur"], reverse=True
+                ),
             },
             "estimated_revenue": {
                 "ads_eur": round(ad_revenue, 2),

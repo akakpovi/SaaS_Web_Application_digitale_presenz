@@ -43,7 +43,8 @@ def calculate_health_score(
     website=20, ssl=20, dns=15, email_security=15,
     security_headers=15, performance=15.
 
-    Uptime is deliberately excluded from the global score.
+    Uptime and the external security scanners (ZAP, Nuclei) are
+    deliberately excluded from the global score.
 
     Missing weighted checks contribute zero once at least one
     weighted result exists.

@@ -1,5 +1,6 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from accounts.models import User
 from subscriptions.models import Plan, Subscription
@@ -81,3 +82,40 @@ class SubscriptionMethodsTest(TestCase):
         self.sub.save()
         self.sub.cancel()
         self.assertFalse(self.sub.is_active)
+
+
+class UpgradeEndpointTest(TestCase):
+    """The upgrade endpoint must never grant a paid plan without payment."""
+
+    def setUp(self):
+        create_plans()
+        self.user = User.objects.create_user(email="upgrade@test.com", password="pass1234")
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    @override_settings(BILLING_ENABLED=False, BILLING_PROVIDER="")
+    def test_upgrade_is_disabled_when_billing_not_configured(self):
+        response = self.client.post(
+            "/api/v1/subscriptions/upgrade/",
+            {"plan_tier": Plan.Tier.BUSINESS, "billing_cycle": "yearly"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.data["code"], "billing_not_configured")
+        self.assertEqual(
+            Subscription.objects.get(user=self.user).plan.tier, Plan.Tier.FREE
+        )
+
+    @override_settings(BILLING_ENABLED=True, BILLING_PROVIDER="")
+    def test_upgrade_is_disabled_without_a_provider(self):
+        response = self.client.post(
+            "/api/v1/subscriptions/upgrade/",
+            {"plan_tier": Plan.Tier.PRO},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(
+            Subscription.objects.get(user=self.user).plan.tier, Plan.Tier.FREE
+        )

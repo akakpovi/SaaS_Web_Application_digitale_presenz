@@ -6,6 +6,7 @@ from django.db.models import Avg, Count, Max, Min
 from django.utils import timezone
 
 from scans.models import CheckResult, Scan
+from scans.services.scoring import CHECK_WEIGHTS
 from websites.models import Website
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ def generate_report_data(website: Website, period_start: date, period_end: date)
             statuses  = list(results.values_list("status", flat=True))
             check_breakdown[category] = {
                 "avg_score": round(avg_score, 1) if avg_score else None,
+                "max_score": CHECK_WEIGHTS.get(category),
                 "critical_count": statuses.count("critical"),
                 "warning_count":  statuses.count("warning"),
                 "healthy_count":  statuses.count("healthy"),
@@ -97,3 +99,80 @@ def generate_report_data(website: Website, period_start: date, period_end: date)
         "score_history":   score_history,
         "total_scans":     total_scans,
     }
+
+
+def month_bounds(day: date) -> tuple[date, date]:
+    """First and last day of the month containing *day*."""
+    first = day.replace(day=1)
+    if first.month == 12:
+        next_first = first.replace(year=first.year + 1, month=1)
+    else:
+        next_first = first.replace(month=first.month + 1)
+    return first, next_first - timedelta(days=1)
+
+
+def ensure_monthly_reports(user, months: int = 6, refresh_current: bool = False) -> list:
+    """Materialise monthly reports from stored scans.
+
+    The monthly beat task only creates reports going forward, so a user whose
+    history predates it would see an empty Reports page.  This backfills the
+    last *months* calendar months that actually contain completed scans and
+    never overwrites a report that is already generated.  It is idempotent.
+    """
+    from reports.models import Report
+
+    websites = (
+        Website.objects.filter(owner=user)
+        .filter(scans__status=Scan.Status.COMPLETED)
+        .distinct()
+    )
+    reports = []
+    today = timezone.localdate()
+
+    for website in websites:
+        for offset in range(months):
+            cursor = today.replace(day=1)
+            month = cursor.month - offset
+            year = cursor.year + (month - 1) // 12
+            month = (month - 1) % 12 + 1
+            period_start = date(year, month, 1)
+            period_end = month_bounds(period_start)[1]
+
+            exists = Scan.objects.filter(
+                website=website,
+                status=Scan.Status.COMPLETED,
+                created_at__date__gte=period_start,
+                created_at__date__lte=period_end,
+            ).exists()
+            if not exists:
+                continue
+
+            report, created = Report.objects.get_or_create(
+                website=website,
+                period=Report.Period.MONTHLY,
+                period_start=period_start,
+                defaults={
+                    "user": user,
+                    "period_end": period_end,
+                    "status": Report.Status.PENDING,
+                },
+            )
+            # Past months are immutable once generated. The current month is
+            # refreshed only on an explicit request (?refresh=1) so a GET used
+            # by every page load stays read-only and cheap.
+            current_month = period_start == today.replace(day=1)
+            if (
+                created
+                or report.generated_at is None
+                or report.status != Report.Status.GENERATED
+                or (refresh_current and current_month)
+            ):
+                data = generate_report_data(website, period_start, period_end)
+                for field, value in data.items():
+                    setattr(report, field, value)
+                report.status = Report.Status.GENERATED
+                report.generated_at = timezone.now()
+                report.save()
+            reports.append(report)
+
+    return reports

@@ -7,8 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SaaS_Web_Application_digitale_presenz_v2/backend
 
     services:
       postgres:
@@ -22,6 +25,8 @@ jobs:
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
       redis:
         image: redis:7-alpine
@@ -34,22 +39,29 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: SaaS_Web_Application_digitale_presenz_v2/backend/requirements.txt
 
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpq-dev gcc
+          sudo apt-get install -y libpq-dev gcc libpango-1.0-0 libpangocairo-1.0-0 \
+            libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info
 
       - name: Install Python deps
-        working-directory: backend
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
-        working-directory: backend
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.development
+      - name: Pricing catalogue consistency
+        working-directory: .
+        run: python scripts/check_pricing_sync.py
+
+      - name: Django checks
+        env: &django-env
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          DJANGO_SECRET_KEY: test-secret-key-for-ci-only-not-production
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
           POSTGRES_DB: presence
           POSTGRES_USER: presence
           POSTGRES_PASSWORD: test_password
@@ -58,8 +70,55 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           CELERY_BROKER_URL: redis://localhost:6379/1
           CELERY_RESULT_BACKEND: redis://localhost:6379/2
-          SECRET_KEY: test-secret-key-for-ci-only
-          JWT_SECRET_KEY: test-jwt-secret-for-ci-only
         run: |
-          python manage.py migrate
-          python manage.py test
+          python manage.py migrate --noinput
+          python manage.py check --deploy
+
+      - name: Run tests
+        env: *django-env
+        run: python manage.py test --noinput
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/pnpm-lock.yaml
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: Build + prerender
+        env:
+          VITE_API_BASE_URL: /api/v1
+          VITE_BASE_URL: https://presence.example
+        run: pnpm run build
+
+      - name: Verify prerendered output
+        # `pnpm run build` already runs the full SEO gate
+        # (scripts/check-seo-build.mjs) against these files; these greps keep a
+        # human-readable floor for a few of them.
+        run: |
+          grep -q "Website-Monitoring: einfache Preise" dist/pricing/index.html
+          grep -q "Simple Website Monitoring Pricing" dist/_i18n/pricing/index.html
+          grep -q 'lang="en"' dist/_i18n/pricing/index.html
+          grep -q "<loc>https://presence.example/pricing</loc>" dist/sitemap.xml
+          test -f dist/404.html
+          # Blog articles are pre-rendered only when the headless CMS is
+          # reachable at build time; the listing page always exists.
+          test -f dist/blog/index.html

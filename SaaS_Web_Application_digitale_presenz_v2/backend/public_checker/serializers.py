@@ -79,6 +79,7 @@ class PublicScanStateSerializer(serializers.Serializer):
             "queued",
             "processing",
             "completed",
+            "partial",
             "failed",
         )
     )

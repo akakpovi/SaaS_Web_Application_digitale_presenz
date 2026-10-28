@@ -321,6 +321,54 @@ class NiktoParserTests(TestCase):
         self.assertEqual(len(result), 1)
         self.assertIn("msg", result[0])
 
+    def test_parse_nikto_text_keeps_findings_and_drops_run_metadata(self):
+        """Nikto's default screen report is the collected stdout.
+
+        Real shape captured from the sandbox: findings carry a bracketed id
+        (``+ [011799] /: …``) while ``+ Target IP:``/``+ Server:`` describe the
+        run and must never become findings.
+        """
+        from scanners.parsers.nikto import parse_nikto_text
+
+        output = "\n".join([
+            "- Nikto v2.6.1",
+            "---",
+            "+ Target IP:          188.114.97.3",
+            "+ Target Hostname:    appchat.elomaiapp.com",
+            "+ Target Port:        80",
+            "+ Platform:           Unknown",
+            "+ Start Time:         2026-10-27 05:23:15 (GMT0)",
+            "---",
+            "+ Server: cloudflare",
+            "+ Multiple IPs found: 188.114.97.3, 188.114.96.3",
+            "+ [011799] /: An alt-svc header was found which is advertising HTTP/3.",
+            "+ OSVDB-1234: /admin/: Admin interface exposed.",
+            "+ /backup/: Directory indexing enabled.",
+            "+ End Time:           2026-10-27 05:24:02 (GMT0) (47 seconds)",
+        ])
+
+        findings = parse_nikto_text(output)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]["id"], "OSVDB-011799")
+        self.assertEqual(findings[0]["url"], "/")
+        self.assertIn("alt-svc", findings[0]["msg"])
+        self.assertEqual(findings[1]["url"], "/admin/")
+        self.assertEqual(findings[2]["url"], "/backup/")
+        self.assertFalse(any("cloudflare" in f["msg"] for f in findings))
+
+    def test_parse_nikto_text_ignores_text_without_findings(self):
+        from scanners.parsers.nikto import parse_nikto_text
+
+        output = "\n".join([
+            "- Nikto v2.6.1",
+            "+ Target IP: 188.114.97.3",
+            "+ Server: cloudflare",
+            "+ No CGI Directories found (use '-C all' to force check all possible dirs)",
+            "+ 1 host(s) tested",
+        ])
+
+        self.assertEqual(parse_nikto_text(output), [])
+
 
 class WhatWebParserTests(TestCase):
     def test_parse_empty(self):
@@ -335,3 +383,57 @@ class WhatWebParserTests(TestCase):
         result = parse_whatweb_json(json.dumps(data))
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) > 0)
+
+
+class DnsreconParserTests(TestCase):
+    def test_parse_empty_output(self):
+        from scanners.implementations.dnsrecon import _parse_dnsrecon_json
+        self.assertEqual(_parse_dnsrecon_json(""), [])
+        self.assertEqual(_parse_dnsrecon_json("   "), [])
+
+    def test_parse_json_interleaved_with_progress_lines(self):
+        """dnsrecon writes its JSON report and its progress to the same stream.
+
+        Real capture: the report array is followed by ``[*]``/``[+]`` progress
+        lines, which made a strict ``json.loads`` of the whole buffer fail and
+        reported a complete run as having zero records.
+        """
+        from scanners.implementations.dnsrecon import _parse_dnsrecon_json
+
+        output = "\n".join([
+            "[",
+            '    {"type": "NS", "name": "example.com", "address": "ns1.example.net"},',
+            '    {"type": "A", "name": "example.com", "address": "93.184.216.34"}',
+            "]",
+            "[*] \t AAAA example.com 2606:2800:220:1:248:1893:25c8:1946",
+            "[*] Enumerating SRV Records",
+            "[+] 0 Records Found",
+            "[*] Saving records to JSON file: /dev/stdout",
+        ])
+
+        records = _parse_dnsrecon_json(output)
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[0]["type"], "NS")
+        self.assertEqual(records[1]["address"], "93.184.216.34")
+
+    def test_run_header_is_not_normalized_into_a_finding(self):
+        """A real run yields A/AAAA findings only, never a ``scaninfo`` one."""
+        from scanners.implementations.dnsrecon import DnsreconScanner
+
+        records = [
+            {"type": "ScanInfo", "arguments": "dnsrecon -d example.com -t std"},
+            {"type": "A", "name": "example.com", "address": "93.184.216.34"},
+        ]
+        codes = [f.check_code for f in DnsreconScanner().normalize(records)]
+        self.assertEqual(codes, ["dnsrecon.a_records"])
+
+    def test_parse_dict_payload_and_garbage(self):
+        from scanners.implementations.dnsrecon import _parse_dnsrecon_json
+
+        self.assertEqual(
+            _parse_dnsrecon_json('{"results": [{"type": "MX"}]}')[0]["type"],
+            "MX",
+        )
+        self.assertEqual(_parse_dnsrecon_json("not json at all"), [])
+        self.assertEqual(_parse_dnsrecon_json("[{"), [])
+

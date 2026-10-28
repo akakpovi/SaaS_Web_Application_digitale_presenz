@@ -22,12 +22,14 @@ New additions
 
 from __future__ import annotations
 
+import inspect
 import logging
 import shutil
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Any, Final, Sequence
 
 from django.utils import timezone
 
@@ -62,6 +64,51 @@ class FindingStatus:
     WARNING = "warning"
     NOT_APPLICABLE = "not_applicable"
     UNKNOWN = "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Explicit scanner-status mappings
+#
+# Declared exhaustively (and at module level) so that an unmapped scanner
+# status is surfaced through ``logger.warning`` instead of being silently
+# swallowed by a ``dict.get()`` default.  ``Severity.UNKNOWN`` does not exist
+# — referencing it used to raise ``AttributeError`` and abort the whole
+# scanner pipeline before any CheckResult / Finding was written.
+# ---------------------------------------------------------------------------
+
+SEVERITY_BY_SCANNER_STATUS: Final[dict[str, str]] = {
+    "healthy":  Severity.INFO,
+    "passed":   Severity.INFO,
+    "good":     Severity.INFO,
+    "online":   Severity.INFO,
+    "neutral":  Severity.INFO,
+    "unknown":  Severity.INFO,
+    "warning":  Severity.MEDIUM,
+    "failed":   Severity.HIGH,
+    "error":    Severity.HIGH,
+    "critical": Severity.HIGH,
+    "offline":  Severity.CRITICAL,
+    "down":     Severity.CRITICAL,
+}
+
+FINDING_STATUS_BY_SCANNER_STATUS: Final[dict[str, str]] = {
+    "healthy":  FindingStatus.PASS,
+    "passed":   FindingStatus.PASS,
+    "good":     FindingStatus.PASS,
+    "online":   FindingStatus.PASS,
+    "neutral":  FindingStatus.UNKNOWN,
+    "unknown":  FindingStatus.UNKNOWN,
+    "warning":  FindingStatus.WARNING,
+    "failed":   FindingStatus.FAIL,
+    "error":    FindingStatus.FAIL,
+    "critical": FindingStatus.FAIL,
+    "offline":  FindingStatus.FAIL,
+    "down":     FindingStatus.FAIL,
+}
+
+#: Used only when a scanner reports a status outside the maps above.
+_FALLBACK_SEVERITY: Final[str] = Severity.MEDIUM
+_FALLBACK_FINDING_STATUS: Final[str] = FindingStatus.UNKNOWN
 
 
 # ---------------------------------------------------------------------------
@@ -133,6 +180,62 @@ class NormalizedFinding:
     """Time taken to produce this finding."""
 
 
+@dataclass(frozen=True)
+class ScanContext:
+    """Per-step execution contract passed from the orchestrator to scanners.
+
+    It carries the central SSRF validation result and the remaining scan
+    budget so an external tool never runs longer than the scan allows.
+    ``target`` is a ``scanners.security.target_validator.TargetInfo`` (typed
+    loosely here to keep this module free of Django/security imports).
+    """
+
+    scan_id: int
+    domain: str
+    timeout: int
+    """Effective per-step timeout in seconds, already clamped by the budget."""
+
+    deadline_monotonic: float
+    """``time.monotonic()`` deadline shared by the whole scan."""
+
+    target: Any = None
+    """Validated target (``TargetInfo``) for external scanners, else ``None``."""
+
+    sandbox_limits: Any = None
+    """``SandboxLimits`` computed by the orchestrator for delegated tools."""
+
+    def remaining_seconds(self) -> float:
+        """Seconds left in the overall scan budget (never negative)."""
+        return max(0.0, self.deadline_monotonic - time.monotonic())
+
+    def effective_timeout(self, default: int) -> int:
+        """Clamp *default* to the remaining scan budget (minimum 1s)."""
+        remaining = self.remaining_seconds()
+        if remaining <= 0:
+            return 1
+        return max(1, min(int(default), int(remaining)))
+
+
+@dataclass
+class ScanOutcome:
+    """Both artefacts produced by a single scanner execution.
+
+    External CLI tools are expensive (a Lighthouse/Chromium run is 10–60 s),
+    so ``scan()`` and ``scan_findings()`` must never run the tool twice.  A
+    scanner that overrides :meth:`BaseScanner.execute` returns this object
+    and the orchestrator persists both halves without re-execution.
+    """
+
+    result: ScanResult
+    findings: list[NormalizedFinding] = field(default_factory=list)
+    #: Raw scanner output, kept out of ``ScanResult.details`` so it is never
+    #: persisted in a CheckResult or exposed through an API.  The orchestrator
+    #: archives it privately and redacts it before writing.
+    raw_report: str | None = None
+    raw_report_format: str = ""
+    raw_report_meta: dict[str, Any] = field(default_factory=dict)
+
+
 # ---------------------------------------------------------------------------
 # Base scanner
 # ---------------------------------------------------------------------------
@@ -160,6 +263,24 @@ class BaseScanner(ABC):
     scanner_type: str = ScannerType.INTERNAL
     """Type of scanner — used by orchestrator for scheduling decisions."""
 
+    requires_advanced_security: bool = False
+    """Opt-in tools (ZAP, Nuclei) that must not run without the global flag.
+
+    The orchestrator skips their step when
+    ``SCANNER_ADVANCED_SECURITY_ENABLED`` is false; the adapters also refuse
+    to execute when called directly.
+    """
+
+    check_result_category: str | None = None
+    """Explicit ``CheckResult.Category`` produced by this scanner.
+
+    When set, the orchestrator uses it instead of its legacy name→category
+    map.  Scanners that do not contribute to the health score (nmap, nikto,
+    …) leave it ``None`` and are ignored by the CheckResult bridge.
+    """
+
+    _findings_signature_cache: dict[type, bool] = {}
+
     # The binary name used by CLI scanners (e.g. 'nmap').
     # Internal scanners leave this as None.
     _binary: str | None = None
@@ -176,6 +297,16 @@ class BaseScanner(ABC):
         """
         if self.scanner_type == ScannerType.INTERNAL:
             return True
+
+        # In Docker mode availability is "image configured and Docker present",
+        # not "binary on the worker's PATH".
+        if self.scanner_type == ScannerType.CLI:
+            from scanners.executors.sandbox import SandboxMode, get_sandbox_executor
+
+            executor = get_sandbox_executor()
+            if executor.mode == SandboxMode.DOCKER:
+                return executor.is_available(self.name)
+
         if self._binary is None:
             return False
         return shutil.which(self._binary) is not None
@@ -226,15 +357,69 @@ class BaseScanner(ABC):
             f"{self.__class__.__name__} does not implement normalize()"
         )
 
-    def scan_findings(self, domain: str) -> list[NormalizedFinding]:
-        """Run the scanner and return normalized findings.
+    def execute(
+        self,
+        domain: str,
+        context: ScanContext | None = None,
+    ) -> ScanOutcome:
+        """Execute the scanner once and return result + findings.
 
-        Default implementation calls ``scan()`` and converts the
-        :class:`ScanResult` to a single :class:`NormalizedFinding`.
-        CLI scanners with separate parse/normalize steps should override
-        this.
+        The default implementation is backward compatible with every legacy
+        adapter: it calls ``scan()`` and derives findings from that exact
+        result.  External tools that need the raw command output to build
+        findings (Lighthouse, testssl.sh) override this method so the binary
+        runs exactly once.
         """
         result = self.scan(domain)
+        return ScanOutcome(
+            result=result,
+            findings=self._collect_findings(domain, result),
+        )
+
+    def _findings_accepts_result(self) -> bool:
+        """Return True when ``scan_findings`` accepts ``result=``."""
+        key = type(self)
+        cached = BaseScanner._findings_signature_cache.get(key)
+        if cached is None:
+            try:
+                params = inspect.signature(self.scan_findings).parameters
+                cached = "result" in params
+            except (TypeError, ValueError):
+                cached = False
+            BaseScanner._findings_signature_cache[key] = cached
+        return cached
+
+    def _collect_findings(
+        self,
+        domain: str,
+        result: ScanResult,
+    ) -> list[NormalizedFinding]:
+        if self._findings_accepts_result():
+            return self.scan_findings(domain, result=result)
+        return self.scan_findings(domain)
+
+    def scan_findings(
+        self,
+        domain: str,
+        result: ScanResult | None = None,
+    ) -> list[NormalizedFinding]:
+        """Run the scanner and return normalized findings.
+
+        Default implementation converts a :class:`ScanResult` to a single
+        :class:`NormalizedFinding`.
+
+        ``result`` may be supplied by the orchestrator when ``scan()`` has
+        already been executed for the same domain.  This avoids running the
+        scanner twice (two HTTP/TLS/DNS round-trips) and guarantees the
+        findings are derived from the exact ScanResult that was persisted as
+        CheckResult.  When ``result`` is ``None`` the scanner is executed
+        here, which keeps the historical single-argument call working.
+
+        CLI scanners with separate parse/normalize steps override this
+        method and manage their own execution lifecycle.
+        """
+        if result is None:
+            result = self.scan(domain)
         return self._scan_result_to_findings(result, domain)
 
     # ------------------------------------------------------------------
@@ -269,25 +454,23 @@ class BaseScanner(ABC):
         single aggregated result.  Scanners that produce granular findings
         should override ``scan_findings()`` instead.
         """
-        from scans.models import CheckResult
+        # Explicit mapping — an unknown status is logged, never silent.
+        status_key = (result.status or "").strip().lower()
+        if status_key not in SEVERITY_BY_SCANNER_STATUS:
+            logger.warning(
+                "Scanner '%s' returned unmapped status %r for %s — falling "
+                "back to severity=%s / finding_status=%s",
+                self.name,
+                result.status,
+                domain,
+                _FALLBACK_SEVERITY,
+                _FALLBACK_FINDING_STATUS,
+            )
 
-        # Map internal status strings to Finding statuses.
-        status_map = {
-            "healthy": FindingStatus.PASS,
-            "warning": FindingStatus.WARNING,
-            "critical": FindingStatus.FAIL,
-            "neutral": FindingStatus.UNKNOWN,
-        }
-        # Map internal status to severity.
-        severity_map = {
-            "healthy": Severity.INFO,
-            "warning": Severity.MEDIUM,
-            "critical": Severity.HIGH,
-            "neutral": Severity.INFO,
-        }
-
-        finding_status = status_map.get(result.status, FindingStatus.UNKNOWN)
-        severity = severity_map.get(result.status, Severity.MEDIUM)
+        finding_status = FINDING_STATUS_BY_SCANNER_STATUS.get(
+            status_key, _FALLBACK_FINDING_STATUS
+        )
+        severity = SEVERITY_BY_SCANNER_STATUS.get(status_key, _FALLBACK_SEVERITY)
 
         # Derive category from scanner name.
         category = self.name

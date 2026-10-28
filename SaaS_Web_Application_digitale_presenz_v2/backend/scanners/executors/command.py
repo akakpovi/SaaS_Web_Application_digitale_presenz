@@ -56,8 +56,22 @@ _SAFE_ENV_KEYS: frozenset[str] = frozenset(
         "LOGNAME",
         # Nuclei needs these for template discovery
         "NUCLEI_TEMPLATES_PATH",
+        # Lighthouse / Chromium: explicit browser path (no secret).
+        "CHROME_PATH",
     }
 )
+
+
+def build_child_environment(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Return a filtered, minimal environment for a child process.
+
+    Only allowlisted variables are forwarded so scanner tools never inherit
+    Django settings, database credentials or API keys from the worker.
+    """
+    safe = {k: v for k, v in os.environ.items() if k in _SAFE_ENV_KEYS}
+    if extra:
+        safe.update(extra)
+    return safe
 
 
 @dataclass
@@ -71,6 +85,11 @@ class CommandResult:
     command: list[str] = field(default_factory=list)
     timed_out: bool = False
     output_truncated: bool = False
+    #: Set by the sandbox executor when the RSS watchdog killed the process.
+    memory_exceeded: bool = False
+    #: Machine-readable reason when the process was killed
+    #: (``timeout``, ``memory``, ``exit_code``, ``binary_not_found``).
+    killed_reason: str = ""
 
     @property
     def succeeded(self) -> bool:
@@ -233,10 +252,7 @@ class CommandExecutor:
 
     def _build_env(self, extra: dict[str, str] | None) -> dict[str, str]:
         """Build a filtered, minimal environment for the child process."""
-        safe = {k: v for k, v in os.environ.items() if k in _SAFE_ENV_KEYS}
-        if extra:
-            safe.update(extra)
-        return safe
+        return build_child_environment(extra)
 
     @staticmethod
     def _decode(data: bytes) -> str:

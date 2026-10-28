@@ -18,6 +18,9 @@ class TriggerSEOAuditView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, website_id: int):
+        from subscriptions.services.quotas import assert_paid_plan
+
+        assert_paid_plan(request.user)
         website = get_object_or_404(Website, id=website_id, owner=request.user)
         task = run_seo_audit.delay(website.id)
         return Response({"status": "queued", "task_id": task.id}, status=202)

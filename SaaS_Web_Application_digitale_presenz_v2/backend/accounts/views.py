@@ -14,16 +14,23 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .providers.google import GoogleOAuthUnavailable
 from .serializers import (
+    AccountDeletionSerializer,
     EmailVerificationSerializer,
     GoogleOAuthSerializer,
     LogoutSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     PresenceTokenObtainPairSerializer,
+    ProfileSerializer,
     RegistrationSerializer,
     UserSerializer,
 )
-from .services import send_password_reset_email, send_verification_email
+from .services import (
+    collect_user_data,
+    delete_user_account,
+    send_password_reset_email,
+    send_verification_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +66,11 @@ class TokenRefreshView(APIView):
         serializer = TokenRefreshSerializer(data=getattr(request, "data", {}))
         try:
             serializer.is_valid(raise_exception=True)
-        except TokenError as exc:
+        except (TokenError, User.DoesNotExist) as exc:
+            # A still-valid refresh JWT can outlive its account (GDPR erasure,
+            # admin deletion). SimpleJWT then raises User.DoesNotExist from
+            # ``validate()``; without this catch the API answers 500 instead of
+            # telling the client to drop its session.
             raise InvalidToken("This refresh token is invalid or expired.") from exc
         return Response(serializer.validated_data)
 
@@ -78,9 +89,97 @@ class LogoutView(APIView):
 
 
 class CurrentUserView(APIView):
+    """``GET`` the current account, ``DELETE`` it (GDPR Art. 17 erasure).
+
+    Deletion is confirmed with the account password so a stolen access token is
+    not enough to destroy an account.  The response carries an audit summary of
+    the cascaded rows; the account, its websites, scans, findings, alerts and
+    notification channels are gone by the time it is returned.
+    """
+
     @extend_schema(responses={200: UserSerializer}, tags=["authentication"])
     def get(self, request: object) -> Response:
         return Response(UserSerializer(getattr(request, "user")).data)
+
+    @extend_schema(
+        request=AccountDeletionSerializer,
+        responses={
+            200: OpenApiResponse(description="Account and all attached data erased."),
+            400: OpenApiResponse(description="Password confirmation missing or incorrect."),
+        },
+        tags=["authentication"],
+    )
+    def delete(self, request: object) -> Response:
+        user: User = getattr(request, "user")
+        serializer = AccountDeletionSerializer(
+            data=getattr(request, "data", {}) or {}, context={"user": user}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        # The traffic middleware runs *after* this view and reads the raw
+        # ``HttpRequest``: flag it there (DRF's ``Request`` proxies reads, not
+        # writes) so it never attributes traffic to the erased account.
+        http_request = getattr(request, "_request", request)
+        setattr(http_request, "skip_traffic_log", True)
+
+        summary = delete_user_account(user)
+        return Response(
+            {
+                "detail": "Account and all attached data have been deleted.",
+                **summary,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class DataExportView(APIView):
+    """``GET /api/v1/auth/export/`` — full data portability dump (GDPR Art. 15/20).
+
+    Returns one JSON document containing the account record and every
+    user-owned dataset (websites, scans, check results, scanner runs, findings,
+    alerts, monitoring, reports, reviews, SEO and social data).
+    """
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Machine-readable export of all account data.")},
+        tags=["authentication"],
+    )
+    def get(self, request: object) -> Response:
+        user: User = getattr(request, "user")
+        response = Response(collect_user_data(user), status=status.HTTP_200_OK)
+        # The payload is personal data: never cache it in a shared proxy.
+        response["Cache-Control"] = "private, no-store"
+        response["Content-Disposition"] = (
+            f'attachment; filename="presence-export-{user.pk}.json"'
+        )
+        return response
+
+
+class ProfileView(APIView):
+    """``GET`` / ``PATCH`` the signed-in user's preferences.
+
+    Business information and display language used to be hard-coded in the
+    settings screen with no persistence; both are now stored on the account
+    and scoped to the authenticated user.
+    """
+
+    @extend_schema(responses={200: ProfileSerializer}, tags=["authentication"])
+    def get(self, request: object) -> Response:
+        return Response(ProfileSerializer(getattr(request, "user")).data)
+
+    @extend_schema(
+        request=ProfileSerializer,
+        responses={200: ProfileSerializer},
+        tags=["authentication"],
+    )
+    def patch(self, request: object) -> Response:
+        user: User = getattr(request, "user")
+        serializer = ProfileSerializer(
+            user, data=getattr(request, "data", {}), partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class PasswordResetRequestView(APIView):

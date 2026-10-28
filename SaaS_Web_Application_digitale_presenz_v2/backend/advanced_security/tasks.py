@@ -32,7 +32,8 @@ def run_security_scan(website_id: int) -> dict:
             defaults={
                 "severity": SecurityIncident.Severity.CRITICAL,
                 "title": "Domain blacklisted for malware",
-                "description": "This website is listed as propagating malware or scams."
+                "description": "This website is listed as propagating malware or scams.",
+                "evidence": malware_res.get("sources", {}),
             }
         )
         if created:

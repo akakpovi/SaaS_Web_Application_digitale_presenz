@@ -8,25 +8,109 @@ New additions:
 
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from organizations.access import WRITE_ROLES, role_for_organization, website_access_q
+from organizations.models import Membership, Organization
+from organizations.services import ensure_personal_organization
 from scans.models import HealthStatus, Scan
 from scans.serializers import ScanSerializer
 from scans.tasks import run_authenticated_scan
 
 from .models import Website
+from .permissions import WebsiteRolePermission
 from .serializers import WebsiteDetailSerializer, WebsiteListSerializer, WebsiteSerializer
 
 
 class WebsiteViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, WebsiteRolePermission]
 
     def get_queryset(self):
-        return Website.objects.filter(owner=self.request.user).order_by("-created_at")
+        return (
+            Website.objects.filter(website_access_q(self.request.user))
+            .select_related("organization")
+            .distinct()
+            .order_by("-created_at")
+        )
+
+    def _resolve_target_organization(self, request: Request) -> Organization:
+        """Resolve the tenant a new website belongs to.
+
+        An explicit ``organization_id`` must reference an organization the
+        caller can read; a non-member gets 404 to avoid leaking tenant ids,
+        while a viewer gets 403 because its role cannot create resources.
+        Without an explicit id the personal organization is preferred.  If the
+        user belongs to exactly one writable team organization it is used
+        automatically; ambiguity is a 400 asking for ``organization_id``.
+        """
+        raw_organization_id = (
+            (request.data or {}).get("organization_id")
+            or (request.data or {}).get("organization")
+        )
+        if raw_organization_id:
+            try:
+                organization = Organization.objects.filter(
+                    pk=raw_organization_id
+                ).first()
+            except (DjangoValidationError, ValueError, TypeError):
+                raise ValidationError({"organization_id": "Invalid organization id."})
+            if organization is None:
+                raise NotFound("Organization not found.")
+            role = role_for_organization(request.user, organization)
+            if role is None:
+                raise NotFound("Organization not found.")
+            if role not in WRITE_ROLES:
+                raise PermissionDenied(
+                    "Your organization role does not allow adding a website."
+                )
+            return organization
+
+        personal = Organization.objects.filter(
+            billing_owner=request.user,
+            is_personal=True,
+        ).first()
+        if personal is not None:
+            return personal
+
+        writable_memberships = list(
+            Membership.objects.filter(
+                user=request.user,
+                role__in=WRITE_ROLES,
+            ).select_related("organization")[:2]
+        )
+        if len(writable_memberships) == 1:
+            return writable_memberships[0].organization
+        if len(writable_memberships) > 1:
+            raise ValidationError(
+                {
+                    "organization_id": (
+                        "You belong to several organizations; specify "
+                        "organization_id to create a website."
+                    )
+                }
+            )
+        return ensure_personal_organization(request.user)
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        organization = self._resolve_target_organization(request)
+        serializer = self.get_serializer(
+            data=request.data,
+            context={**self.get_serializer_context(), "organization": organization},
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -36,7 +120,11 @@ class WebsiteViewSet(viewsets.ModelViewSet):
         return WebsiteSerializer
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        from subscriptions.services.quotas import assert_can_add_website
+
+        organization = serializer.context.get("organization")
+        assert_can_add_website(self.request.user, organization=organization)
+        serializer.save(owner=self.request.user, organization=organization)
 
     @extend_schema(
         summary="Trigger a new scan",
@@ -76,6 +164,10 @@ class WebsiteViewSet(viewsets.ModelViewSet):
         backward compatibility with the current frontend.
         """
         website = self.get_object()
+
+        from subscriptions.services.quotas import assert_can_scan
+
+        assert_can_scan(request.user, organization=website.organization)
 
         # Check for active scan (409).
         active_scan = Scan.objects.filter(

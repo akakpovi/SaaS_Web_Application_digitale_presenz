@@ -9,7 +9,7 @@ from typing import Any
 from django.conf import settings
 
 from scanners.base import BaseScanner, NormalizedFinding, Severity, FindingStatus, ScanResult, ScannerType
-from scanners.executors.command import default_executor
+from scanners.executors.sandbox import get_sandbox_executor
 from scanners.exceptions import TargetValidationError
 from scanners.security.target_validator import validate_target
 
@@ -63,7 +63,7 @@ class FeroxbusterScanner(BaseScanner):
         except TargetValidationError as exc:
             return self._create_result(score=None, status="critical", message=str(exc))
 
-        result = default_executor.run(
+        result = get_sandbox_executor().run(
             command=self.build_command(target_info.url),
             timeout=self.timeout,
             scanner_name=self.name,
@@ -100,7 +100,7 @@ class FeroxbusterScanner(BaseScanner):
                 description=str(exc),
             )]
 
-        result = default_executor.run(
+        result = get_sandbox_executor().run(
             command=self.build_command(target_info.url),
             timeout=self.timeout,
             scanner_name=self.name,

@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 import uuid
@@ -102,6 +101,7 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
         "scan_id": str(scan.id),
         "check_id": str(scan.id),
         "status": scan.status,
+        "is_guest": scan.is_guest,
         "url": f"https://{scan.website.domain}",
         "domain": scan.website.domain,
         "score": scan.health_score or 0,
@@ -130,6 +130,66 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
             "register_url": f"/register?scan_id={scan.id}&url=https://{scan.website.domain}"
         }
     }
+
+
+# ---------------------------------------------------------------------------
+# Access-control helpers
+# ---------------------------------------------------------------------------
+
+#: Session key holding the guest scans created by this browser session.
+#: ``django.contrib.auth.login`` rotates the session key (``cycle_key``) but
+#: keeps the session payload, so this list survives a guest → account signup.
+GUEST_SCANS_SESSION_KEY = "guest_scan_ids"
+
+
+def _session_key_of(request: Request) -> str | None:
+    return getattr(request.session, "session_key", None)
+
+
+def _may_read_scan(request: Request, scan: Scan) -> bool:
+    """Can the requester read this scan's report?
+
+    * Guest scans are public by design: they are produced without an account,
+      hold no account data, and are purged after 24 h.  They are what the
+      public report page and the share flow rely on.
+    * Account scans (``is_guest=False``) are private: only their owner may
+      read them.  This is the IDOR that used to expose every scan by numeric
+      id (including private ones) to anonymous callers.
+    """
+    if scan.is_guest:
+        return True
+
+    user = getattr(request, "user", None)
+    if not (user and user.is_authenticated):
+        return False
+    return scan.website.owner_id == user.id
+
+
+def _session_owns_scan(request: Request, scan: Scan) -> bool:
+    """Is the requester the visitor/owner who *created* this scan?
+
+    Used by the state-changing/outbound endpoints (convert, email) which must
+    never act on someone else's scan:
+
+    * guest scan → the session that created it (matched by ``session_key``,
+      with a fallback on the ``guest_scan_ids`` session list so the link
+      survives the session-key rotation performed at login);
+    * account scan → its owner.
+    """
+    if not scan.is_guest:
+        user = getattr(request, "user", None)
+        return bool(
+            user
+            and user.is_authenticated
+            and scan.website.owner_id == user.id
+        )
+
+    session_key = _session_key_of(request)
+    if session_key and scan.session_key == session_key:
+        return True
+
+    owned_scans = request.session.get(GUEST_SCANS_SESSION_KEY) or []
+    return str(scan.id) in {str(scan_id) for scan_id in owned_scans}
 
 
 class PublicScanEndpointView(APIView):
@@ -188,6 +248,17 @@ class PublicScanEndpointView(APIView):
             scan.steps = steps
             scan.save(update_fields=["steps", "updated_at"])
 
+            if not request.user.is_authenticated:
+                # Remember this guest scan on the visitor's session so it can
+                # still be claimed after a signup (session key rotation).
+                owned_scans = [
+                    str(scan_id)
+                    for scan_id in request.session.get(GUEST_SCANS_SESSION_KEY, [])
+                    if str(scan_id) != str(scan.id)
+                ]
+                request.session[GUEST_SCANS_SESSION_KEY] = [str(scan.id)] + owned_scans[:19]
+                request.session.modified = True
+
         # Enqueue the scan task
         try:
             run_public_scan.delay(scan.id)
@@ -222,44 +293,59 @@ class PublicScanStatusView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request: Request, scan_id: str) -> Response:
-        # For numeric scan IDs (DB-backed scans), always query DB first for fresh state
-        if str(scan_id).isdigit():
+        """Return a scan report.
+
+        Security: the endpoint used to answer for *any* numeric scan id,
+        including private scans owned by authenticated users.  It now returns
+        404 as soon as the requester is not allowed to read the scan, so scan
+        existence is not disclosed either.
+        """
+        lookup = str(scan_id)
+
+        # For numeric scan IDs (DB-backed scans), always query the DB first
+        # so the caller sees fresh state.
+        if lookup.isdigit():
             scan = (
                 Scan.objects
                 .select_related("website")
                 .prefetch_related("check_results")
-                .filter(pk=int(scan_id))
+                .filter(pk=int(lookup))
                 .first()
             )
-            if scan:
-                response_data = _serialize_scan_with_rich_data(scan)
-                # Update cache with fresh data
-                cache.set(f"public_scan:{scan.id}", response_data, timeout=3600)
-                cache.set(f"public_check:{scan.id}", response_data, timeout=3600)
-                return Response(response_data, status=status.HTTP_200_OK)
+            if scan is None or not _may_read_scan(request, scan):
+                return Response(
+                    {"detail": "Scan not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-        # For UUID-based legacy scans, use cache
-        cached = cache.get(f"public_scan:{scan_id}") or cache.get(f"public_check:{scan_id}")
-        if cached:
-            if isinstance(cached, str):
-                try:
-                    cached = json.loads(cached)
-                except Exception:
-                    pass
-            if isinstance(cached, dict):
-                return Response(cached, status=status.HTTP_200_OK)
+            response_data = _serialize_scan_with_rich_data(scan)
+            # Update cache with fresh data
+            cache.set(f"public_scan:{scan.id}", response_data, timeout=3600)
+            cache.set(f"public_check:{scan.id}", response_data, timeout=3600)
+            return Response(response_data, status=status.HTTP_200_OK)
 
-        # Fallback: try to find by session_key for guest scans
+        # Legacy session-key lookup: only honoured for the session that owns
+        # the guest scan, so a leaked key cannot be used to enumerate scans.
+        session_key = _session_key_of(request)
+        if not session_key or lookup != session_key:
+            return Response(
+                {"detail": "Scan not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         scan = (
             Scan.objects
             .select_related("website")
             .prefetch_related("check_results")
-            .filter(session_key=str(scan_id))
+            .filter(session_key=session_key, is_guest=True)
+            .order_by("-created_at")
             .first()
         )
-
-        if not scan:
-            return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
+        if scan is None or not _may_read_scan(request, scan):
+            return Response(
+                {"detail": "Scan not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         response_data = _serialize_scan_with_rich_data(scan)
         return Response(response_data, status=status.HTTP_200_OK)
@@ -274,8 +360,18 @@ class PublicScanEmailView(APIView):
         if not email or "@" not in email:
             return Response({"detail": "Invalid email address."}, status=status.HTTP_400_BAD_REQUEST)
 
-        scan = Scan.objects.select_related("website").filter(pk=int(scan_id)).first() if str(scan_id).isdigit() else None
-        if not scan:
+        # Security: only the visitor/owner of the scan may have its report
+        # emailed — this endpoint used to accept any scan id and could be
+        # abused to exfiltrate a private scan report to an arbitrary address.
+        scan = (
+            Scan.objects
+            .select_related("website")
+            .filter(pk=int(scan_id), is_guest=True)
+            .first()
+            if str(scan_id).isdigit()
+            else None
+        )
+        if scan is None or not _session_owns_scan(request, scan):
             return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
 
         lead, _ = PublicLead.objects.get_or_create(
@@ -304,14 +400,44 @@ class PublicScanEmailView(APIView):
 
 
 class PublicScanConvertView(APIView):
+    """Claim a guest scan into the authenticated user's account.
+
+    Security (IDOR): the endpoint used to accept any numeric scan id and then
+    either take over its Website (``website.owner = request.user``) or attach
+    the scan to a website the caller does not own.  A signed-in attacker could
+    therefore steal another visitor's scan, and — worse — re-point an existing
+    account's website to themselves.
+
+    A conversion is now only possible when:
+
+    * the scan is still a *guest* scan (``is_guest=True``) — an account scan can
+      never be claimed by a third party;
+    * the calling session is the visitor that created it.
+    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request: Request, scan_id: str) -> Response:
-        scan = Scan.objects.select_related("website").filter(pk=int(scan_id)).first() if str(scan_id).isdigit() else None
-        if not scan:
+        if not str(scan_id).isdigit():
             return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
 
         with transaction.atomic():
+            scan = (
+                Scan.objects
+                .select_for_update()
+                .select_related("website")
+                .filter(pk=int(scan_id), is_guest=True)
+                .first()
+            )
+            if scan is None or not _session_owns_scan(request, scan):
+                logger.warning(
+                    "Rejected scan conversion: scan=%s user_id=%s "
+                    "(not a guest scan of this session)",
+                    scan_id,
+                    request.user.pk,
+                )
+                return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
+
             website = scan.website
             existing_user_site = Website.objects.filter(owner=request.user, domain=website.domain).first()
             if existing_user_site:

@@ -19,6 +19,19 @@ INTERVAL_MAP: Final[dict[str, timedelta]] = {
 
 
 class MonitoringConfig(models.Model):
+    class ScanPolicy(models.TextChoices):
+        """Which scan type the scheduler launches.
+
+        ``health`` is the historical behaviour (internal, passive checks).
+        ``security`` adds the external tools (ZAP, Nuclei, nmap, …) and
+        ``full`` runs both.  Active scanners are opt-in per website because
+        they generate real traffic against the customer's site.
+        """
+
+        HEALTH = "health", "Health checks only"
+        SECURITY = "security", "Security scanners (ZAP, Nuclei, …)"
+        FULL = "full", "Health + security"
+
     class Interval(models.TextChoices):
         FIVE_MIN    = "5m",  "Every 5 minutes"
         FIFTEEN_MIN = "15m", "Every 15 minutes"
@@ -32,11 +45,21 @@ class MonitoringConfig(models.Model):
         on_delete=models.CASCADE,
         related_name="monitoring_config",
     )
-    enabled = models.BooleanField(default=True)
+    # Continuous monitoring is opt-in: a website is created with monitoring
+    # off and no schedule.  The scheduler only picks up a config once the
+    # owner explicitly activates it (after the first scan, or from the
+    # monitoring page), so no site is scanned repeatedly without consent.
+    enabled = models.BooleanField(default=False)
     interval = models.CharField(
         max_length=4,
         choices=Interval.choices,
         default=Interval.TWENTY_FOUR,
+    )
+    scan_type = models.CharField(
+        max_length=16,
+        choices=ScanPolicy.choices,
+        default=ScanPolicy.HEALTH,
+        help_text="Scan type launched by the scheduler for this website.",
     )
     last_scan_at = models.DateTimeField(null=True, blank=True)
     next_scan_at = models.DateTimeField(null=True, blank=True)

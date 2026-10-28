@@ -9,6 +9,12 @@ class TrafficTrackingMiddleware(MiddlewareMixin):
         if any(path.startswith(prefix) for prefix in ["/static/", "/media/", "/favicon.ico", "/health/"]):
             return response
 
+        # An account-erasure request (DELETE /api/v1/auth/me/) has no user left
+        # to attribute traffic to: the row would violate the analytics_trafficlog
+        # foreign key and be silently dropped (or abort the transaction).
+        if getattr(request, "skip_traffic_log", False):
+            return response
+
         try:
             ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", ""))
             if ip:

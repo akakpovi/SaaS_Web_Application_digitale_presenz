@@ -5,6 +5,7 @@ __pycache__/
 *.sqlite3
 celerybeat-schedule
 staticfiles/
+scanner-archives/
 .pytest_cache/
 .mypy_cache/
 coverage.xml

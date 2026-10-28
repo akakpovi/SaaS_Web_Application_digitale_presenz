@@ -14,6 +14,7 @@ class StepStatus:
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
+    PARTIAL = "partial"
     FAILED = "failed"
     TIMEOUT = "timeout"
     SKIPPED = "skipped"
@@ -29,6 +30,16 @@ _HEALTH_STEPS: list[dict[str, Any]] = [
     {"key": "email_security", "label": "Email Security", "scanner": "email_security", "weight": 15},
     {"key": "security_headers", "label": "Security Headers", "scanner": "security_headers", "weight": 15},
     {"key": "performance", "label": "Performance", "scanner": "performance", "weight": 15},
+    {
+        "key": "lighthouse",
+        "label": "Performance & SEO (Lighthouse)",
+        "scanner": "lighthouse",
+        "weight": 10,
+        # The legacy performance scanner already runs in this scan.  Lighthouse
+        # enriches the result but is not a required security control, so its
+        # unavailability must not make an otherwise complete scan "partial".
+        "optional": True,
+    },
     {"key": "uptime", "label": "Uptime Check", "scanner": "uptime", "weight": 10},
 ]
 
@@ -64,6 +75,11 @@ def build_initial_steps(scan_type: str) -> list[dict[str, Any]]:
             "label": step["label"],
             "scanner": step["scanner"],
             "weight": step["weight"],
+            # Every configured step is required by default.  A policy gate
+            # (e.g. the advanced-security feature flag) explicitly marks a
+            # step optional before skipping it, so an intentional skip does
+            # not downgrade an otherwise complete scan.
+            "required": not bool(step.get("optional", False)),
             "status": StepStatus.PENDING,
             "progress": 0,
             "duration_ms": None,
@@ -91,8 +107,9 @@ def compute_overall_progress(steps: list[dict[str, Any]]) -> int:
         step_weight = step.get("weight", 1)
         step_progress = step.get("progress", 0)
 
-        if status in (StepStatus.COMPLETED, StepStatus.FAILED,
-                      StepStatus.TIMEOUT, StepStatus.UNAVAILABLE, StepStatus.SKIPPED):
+        if status in (StepStatus.COMPLETED, StepStatus.PARTIAL,
+                      StepStatus.FAILED, StepStatus.TIMEOUT,
+                      StepStatus.UNAVAILABLE, StepStatus.SKIPPED):
             # Completed steps contribute their full weight.
             weighted_sum += step_weight * 100
         elif status == StepStatus.RUNNING:

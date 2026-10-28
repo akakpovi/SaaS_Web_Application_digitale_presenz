@@ -1,3 +1,20 @@
+# =============================================================================
+# DÉPRÉCIÉ — NE PAS DÉMARRER CETTE PILE
+#
+# Cette pile dupliquait le backend (projet Compose `backend`, volumes
+# `backend_*`, base vide) et faisait tourner une version du code différente de
+# celle du dépôt : deux stacks backend concurrentes, dont l'ancienne servait
+# réellement le trafic.
+#
+# La pile canonique unique est ../../docker-compose.yml (backend + frontend).
+#
+# Arrêt de cette pile obsolète (les volumes sont conservés) :
+#   docker compose -f \
+#     SaaS_Web_Application_digitale_presenz_v2/backend/docker-compose.yml down
+# Suppression définitive des volumes associés (données jetables) :
+#   ... down -v
+# =============================================================================
+
 services:
   web:
     build:
@@ -6,7 +23,8 @@ services:
     command: >-
       sh -c "python manage.py migrate --noinput &&
       gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
-      --access-logfile - --error-logfile -"
+      --access-logfile - --error-logfile -
+      --access-logformat '%(h)s %(l)s %(u)s %(t)s \"%(m)s %(U)s %(H)s\" %(s)s %(b)s'"
     expose:
       - "8000"
     volumes:

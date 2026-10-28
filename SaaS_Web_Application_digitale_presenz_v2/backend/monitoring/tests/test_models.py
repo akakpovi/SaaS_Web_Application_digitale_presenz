@@ -28,12 +28,13 @@ class MonitoringConfigSignalTest(TestCase):
         website = Website.objects.create(owner=self.user, domain="example.com")
         self.assertTrue(MonitoringConfig.objects.filter(website=website).exists())
 
-    def test_auto_config_defaults(self):
+    def test_auto_config_is_opt_in(self):
+        """A new website is not scanned on a schedule until the owner opts in."""
         website = Website.objects.create(owner=self.user, domain="example2.com")
         config = MonitoringConfig.objects.get(website=website)
-        self.assertTrue(config.enabled)
+        self.assertFalse(config.enabled)
         self.assertEqual(config.interval, MonitoringConfig.Interval.TWENTY_FOUR)
-        self.assertIsNotNone(config.next_scan_at)
+        self.assertIsNone(config.next_scan_at)
 
 
 class MonitoringConfigMethodsTest(TestCase):

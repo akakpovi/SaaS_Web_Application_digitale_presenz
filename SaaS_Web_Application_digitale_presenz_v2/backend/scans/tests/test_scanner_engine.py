@@ -331,6 +331,13 @@ class StepsBuilderTests(TestCase):
         ]
         self.assertEqual(compute_overall_progress(steps), 50)
 
+    def test_partial_step_counts_as_terminal_for_progress(self):
+        steps = [
+            {"key": "a", "weight": 50, "status": StepStatus.PARTIAL, "progress": 100},
+            {"key": "b", "weight": 50, "status": StepStatus.PENDING, "progress": 0},
+        ]
+        self.assertEqual(compute_overall_progress(steps), 50)
+
 
 # ═══════════════════════════════════════════════════
 # Scanner Registry tests
@@ -408,12 +415,24 @@ class OrchestratorLifecycleTests(TestCase):
             scan_type=Scan.ScanType.HEALTH,
         )
         from scans.services.orchestrator import ScanOrchestrator
-        with patch.object(ScanOrchestrator, "_run_all_steps"):
+
+        def finish_steps(orchestrator_self, scan_obj, domain, steps):
+            for step in steps:
+                step["status"] = "completed"
+                step["progress"] = 100
+                step["result_usable"] = True
+            scan_obj.steps = steps
+            scan_obj.save(update_fields=["steps", "updated_at"])
+
+        with patch.object(
+            ScanOrchestrator, "_run_all_steps", autospec=True,
+            side_effect=finish_steps,
+        ):
             orchestrator = ScanOrchestrator(scan_id=scan.id)
             orchestrator.run()
         scan.refresh_from_db()
-        # After run(), it should be COMPLETED
-        self.assertIn(scan.status, [Scan.Status.COMPLETED, Scan.Status.RUNNING])
+        self.assertIsNotNone(scan.started_at)
+        self.assertEqual(scan.status, Scan.Status.COMPLETED)
 
     @patch("scanners.registry.ScannerRegistry")
     def test_orchestrator_creates_scanner_runs(self, mock_registry):
@@ -476,8 +495,9 @@ class OrchestratorLifecycleTests(TestCase):
             ScanOrchestrator(scan_id=scan.id).run()
 
         scan.refresh_from_db()
-        # Scan should complete despite website scanner failure
-        self.assertEqual(scan.status, Scan.Status.COMPLETED)
+        # The scan finishes, but a failed required scanner makes it PARTIAL.
+        self.assertEqual(scan.status, Scan.Status.PARTIAL)
+        self.assertIn("website failed", scan.failure_message)
         # Both scanner runs should exist
         runs = {r.scanner: r for r in ScannerRun.objects.filter(scan=scan)}
         self.assertEqual(runs["website"].status, "failed")
@@ -504,7 +524,9 @@ class OrchestratorLifecycleTests(TestCase):
             ScanOrchestrator(scan_id=scan.id).run()
 
         scan.refresh_from_db()
-        self.assertEqual(scan.status, Scan.Status.COMPLETED)
+        # No usable scanner result: the scan is failed, not a successful check.
+        self.assertEqual(scan.status, Scan.Status.FAILED)
+        self.assertIn("nmap unavailable", scan.failure_message)
         run = ScannerRun.objects.get(scan=scan, scanner="nmap")
         self.assertEqual(run.status, "unavailable")
         # Step should be marked unavailable
@@ -1040,6 +1062,32 @@ class ScanSubEndpointTests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["severity"], "high")
 
+    def test_findings_are_ordered_by_severity_not_alphabetically(self):
+        """Regression: string ordering put "high" after "info"."""
+        for severity, code in (
+            ("info", "nmap.summary"),
+            ("high", "nmap.open_port.3306"),
+            ("critical", "nmap.exposed_admin"),
+            ("low", "nmap.banner"),
+            ("medium", "nmap.tls_weak"),
+        ):
+            Finding.objects.create(
+                scanner_run=self.run,
+                category="security",
+                check_code=code,
+                title=code,
+                severity=severity,
+                status="warning",
+            )
+
+        response = self.client.get(f"/api/v1/scans/{self.scan.id}/findings/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        severities = [row["severity"] for row in response.data]
+        self.assertEqual(
+            severities,
+            ["critical", "high", "medium", "low", "info", "info"],
+        )
+
     def test_findings_filter_by_category(self):
         response = self.client.get(f"/api/v1/scans/{self.scan.id}/findings/?category=ssl")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1139,3 +1187,102 @@ class ScanListFilterTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for field in ["scan_type", "progress", "current_step", "steps", "is_active"]:
             self.assertIn(field, response.data)
+
+
+# ═══════════════════════════════════════════════════
+# Single-execution guarantee (P0-01)
+# ═══════════════════════════════════════════════════
+
+class SingleExecutionTests(TestCase):
+    """A scanner must be executed once per scan, not twice.
+
+    The orchestrator used to call ``scan()`` and then ``scan_findings()``,
+    which internally called ``scan()`` again — two HTTP/TLS/DNS round-trips
+    per scanner.  The findings must be derived from the ScanResult that was
+    already produced and persisted as CheckResult.
+    """
+
+    def setUp(self):
+        self.user = make_user("single@example.com")
+        self.website = make_website(self.user, domain="single-execution.example.com")
+
+    def _make_counting_scanner(self):
+        from scanners.base import BaseScanner, ScannerType
+
+        class CountingScanner(BaseScanner):
+            name = "website"
+            scanner_type = ScannerType.INTERNAL
+            scan_calls = 0
+
+            def scan(self, domain):
+                CountingScanner.scan_calls += 1
+                return self._create_result(
+                    score=20,
+                    status="healthy",
+                    message="Site accessible",
+                    http_status=200,
+                )
+
+        CountingScanner.scan_calls = 0
+        return CountingScanner()
+
+    @patch("scanners.registry.ScannerRegistry")
+    def test_scanner_executed_once_and_artefacts_persisted(self, mock_registry):
+        scanner = self._make_counting_scanner()
+        mock_registry.get.return_value = scanner
+
+        scan = Scan.objects.create(
+            website=self.website,
+            status=Scan.Status.QUEUED,
+            scan_type=Scan.ScanType.HEALTH,
+        )
+
+        from scans.services.orchestrator import ScanOrchestrator
+
+        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps:
+            mock_steps.return_value = [
+                {"key": "website", "label": "Website", "scanner": "website",
+                 "weight": 20, "status": "pending", "progress": 0},
+            ]
+            ScanOrchestrator(scan_id=scan.id).run()
+
+        # The scanner ran exactly once, even though findings were collected.
+        self.assertEqual(type(scanner).scan_calls, 1)
+
+        # And the artefacts were still persisted from that single run.
+        scan.refresh_from_db()
+        self.assertEqual(scan.status, Scan.Status.COMPLETED)
+        check = CheckResult.objects.get(scan=scan, category=CheckResult.Category.WEBSITE)
+        self.assertEqual(check.score, 20)
+        findings = Finding.objects.filter(scanner_run__scan=scan)
+        self.assertEqual(findings.count(), 1)
+        self.assertEqual(findings.first().check_code, "website.overall")
+        self.assertEqual(findings.first().status, FindingStatus.PASS)
+        self.assertEqual(findings.first().severity, Severity.INFO)
+        self.assertIsNotNone(scan.health_score)
+
+    def test_base_scanner_reuses_supplied_result(self):
+        """``scan_findings(result=...)`` must not call ``scan()`` again."""
+        scanner = self._make_counting_scanner()
+
+        first = scanner.scan("single-execution.example.com")
+        findings = scanner.scan_findings(
+            "single-execution.example.com", result=first
+        )
+
+        self.assertEqual(type(scanner).scan_calls, 1)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].evidence, {"http_status": 200})
+
+    def test_unknown_scanner_status_falls_back_explicitly(self):
+        """An unmapped status must not raise and must be mapped explicitly."""
+        scanner = self._make_counting_scanner()
+        result = ScanResult(
+            score=0, status="wat-is-this", message="Unexpected", details={}
+        )
+
+        findings = scanner._scan_result_to_findings(result, "example.com")
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].severity, Severity.MEDIUM)
+        self.assertEqual(findings[0].status, FindingStatus.UNKNOWN)

@@ -5,7 +5,7 @@ All existing endpoints are preserved.  New endpoints are additive.
 
 from __future__ import annotations
 
-from django.db.models import QuerySet
+from django.db.models import Case, IntegerField, QuerySet, Value, When
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
@@ -13,6 +13,8 @@ from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
+
+from organizations.access import check_result_access_q, scan_access_q
 
 from .models import CheckResult, Finding, Scan, ScannerRun
 from .serializers import (
@@ -41,9 +43,10 @@ class ScanViewSet(ReadOnlyModelViewSet[Scan]):
 
     def get_queryset(self) -> QuerySet[Scan]:
         qs = (
-            Scan.objects.filter(website__owner=self.request.user)
-            .select_related("website")
+            Scan.objects.filter(scan_access_q(self.request.user))
+            .select_related("website", "website__organization")
             .prefetch_related("check_results")
+            .distinct()
             .order_by("-created_at")
         )
 
@@ -96,9 +99,29 @@ class ScanViewSet(ReadOnlyModelViewSet[Scan]):
         Supports ``?severity=``, ``?category=``, ``?status=`` query params.
         """
         scan = self.get_object()
-        qs = Finding.objects.filter(
-            scanner_run__scan=scan
-        ).select_related("scanner_run").order_by("-severity", "category")
+        # Severity is a label, not an ordinal: ordering by the raw column put
+        # "medium" first and "high"/"critical" after "info".  Rank it
+        # explicitly so the most serious finding is always listed first.
+        severity_rank = Case(
+            *[
+                When(severity=label, then=Value(rank))
+                for label, rank in (
+                    ("critical", 5),
+                    ("high", 4),
+                    ("medium", 3),
+                    ("low", 2),
+                    ("info", 1),
+                )
+            ],
+            default=Value(0),
+            output_field=IntegerField(),
+        )
+        qs = (
+            Finding.objects.filter(scanner_run__scan=scan)
+            .select_related("scanner_run")
+            .annotate(severity_rank=severity_rank)
+            .order_by("-severity_rank", "category", "check_code", "id")
+        )
 
         severity = request.query_params.get("severity")
         if severity:
@@ -136,8 +159,12 @@ class CheckResultViewSet(ReadOnlyModelViewSet[CheckResult]):
         scan_id = self.kwargs["scan_pk"]
         return (
             CheckResult.objects
-            .filter(scan_id=scan_id, scan__website__owner=self.request.user)
+            .filter(
+                check_result_access_q(self.request.user),
+                scan_id=scan_id,
+            )
             .select_related("scan")
+            .distinct()
         )
 
     def get_object(self) -> CheckResult:

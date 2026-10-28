@@ -18,6 +18,7 @@ class Scan(models.Model):
         QUEUED = "queued", "Queued"
         RUNNING = "running", "Running"
         COMPLETED = "completed", "Completed"
+        PARTIAL = "partial", "Partial (incomplete coverage)"
         FAILED = "failed", "Failed"
         CANCELLED = "cancelled", "Cancelled"
 
@@ -110,7 +111,15 @@ class Scan(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(
-                    status__in=["pending", "queued", "running", "completed", "failed", "cancelled"]
+                    status__in=[
+                        "pending",
+                        "queued",
+                        "running",
+                        "completed",
+                        "partial",
+                        "failed",
+                        "cancelled",
+                    ]
                 ),
                 name="scan_status_valid",
             ),
@@ -119,8 +128,14 @@ class Scan(models.Model):
     _TRANSITIONS = {
         Status.PENDING: {Status.QUEUED, Status.FAILED, Status.CANCELLED},
         Status.QUEUED: {Status.RUNNING, Status.FAILED, Status.CANCELLED},
-        Status.RUNNING: {Status.COMPLETED, Status.FAILED, Status.CANCELLED},
+        Status.RUNNING: {
+            Status.COMPLETED,
+            Status.PARTIAL,
+            Status.FAILED,
+            Status.CANCELLED,
+        },
         Status.COMPLETED: set(),
+        Status.PARTIAL: set(),
         Status.FAILED: set(),
         Status.CANCELLED: set(),
     }
@@ -137,7 +152,12 @@ class Scan(models.Model):
             self.queued_at = now
         if target == self.Status.RUNNING:
             self.started_at = now
-        if target in {self.Status.COMPLETED, self.Status.FAILED, self.Status.CANCELLED}:
+        if target in {
+            self.Status.COMPLETED,
+            self.Status.PARTIAL,
+            self.Status.FAILED,
+            self.Status.CANCELLED,
+        }:
             self.completed_at = now
         if target == self.Status.FAILED:
             self.failed_at = now
@@ -189,6 +209,8 @@ class CheckResult(models.Model):
         SECURITY_HEADERS = "security_headers", "Security Headers"
         PERFORMANCE = "performance", "Performance"
         UPTIME = "uptime", "Uptime"
+        ZAP = "zap", "OWASP ZAP"
+        NUCLEI = "nuclei", "Nuclei"
 
     scan = models.ForeignKey(Scan, on_delete=models.CASCADE, related_name="check_results")
     category = models.CharField(max_length=32, choices=Category.choices)
@@ -211,9 +233,14 @@ class CheckResult(models.Model):
     def clean(self) -> None:
         from .services.scoring import CHECK_WEIGHTS
 
-        if self.category == self.Category.UPTIME:
+        if self.category not in CHECK_WEIGHTS:
             if self.score is not None:
-                raise ValidationError({"score": "Uptime is tracked separately and cannot contribute to health score."})
+                raise ValidationError({
+                    "score": (
+                        "This category is tracked separately and cannot "
+                        "contribute to the health score."
+                    )
+                })
             return
         if self.score is None:
             raise ValidationError({"score": "A weighted health check requires a score."})
@@ -228,6 +255,7 @@ class ScannerRun(models.Model):
         PENDING = "pending", "Pending"
         RUNNING = "running", "Running"
         COMPLETED = "completed", "Completed"
+        PARTIAL = "partial", "Partial (incomplete report)"
         FAILED = "failed", "Failed"
         TIMEOUT = "timeout", "Timeout"
         CANCELLED = "cancelled", "Cancelled"

@@ -1,4 +1,12 @@
-"""WhatWeb technology detection adapter."""
+"""WhatWeb technology detection adapter.
+
+Completeness
+------------
+WhatWeb writes one JSON object per scanned target.  An unreachable target
+produces an empty log and a non-zero exit code, and the adapter reports that run
+as incomplete: "nothing detected" and "nothing was scanned" are different
+results and must not be confused.
+"""
 
 from __future__ import annotations
 
@@ -7,11 +15,28 @@ from typing import Any
 
 from django.conf import settings
 
-from scanners.base import BaseScanner, NormalizedFinding, Severity, FindingStatus, ScanResult, ScannerType
-from scanners.executors.command import default_executor
+from scanners.base import (
+    BaseScanner,
+    FindingStatus,
+    NormalizedFinding,
+    ScanContext,
+    ScanOutcome,
+    ScanResult,
+    ScannerType,
+    Severity,
+)
 from scanners.exceptions import TargetValidationError
+from scanners.implementations.tool_run import (
+    SandboxError,
+    ToolRun,
+    build_outcome,
+    evaluate_completeness,
+    resolve_target,
+    run_tool,
+    target_validation_outcome,
+    unavailable_outcome,
+)
 from scanners.parsers.whatweb import parse_whatweb_json
-from scanners.security.target_validator import validate_target
 
 logger = logging.getLogger(__name__)
 
@@ -33,89 +58,110 @@ class WhatWebScanner(BaseScanner):
     @property
     def timeout(self) -> int:  # type: ignore[override]
         cfg = getattr(settings, "SCANNER_CONFIG", {})
-        return cfg.get("whatweb", {}).get("timeout", 30)
+        return cfg.get("whatweb", {}).get("timeout", 25)
 
-    def scan(self, domain: str) -> ScanResult:
+    def execute(
+        self,
+        domain: str,
+        context: ScanContext | None = None,
+    ) -> ScanOutcome:
+        """Run WhatWeb exactly once and return result + normalized findings."""
         if not self.is_available():
-            return self._create_result(
-                score=None,
-                status="neutral",
+            return build_outcome(
+                self,
+                run=ToolRun(exit_code=-1),
+                findings=[
+                    NormalizedFinding(
+                        check_code="whatweb.unavailable",
+                        category="security",
+                        severity=Severity.INFO,
+                        status=FindingStatus.NOT_APPLICABLE,
+                        title="WhatWeb not available",
+                        recommendation="Install whatweb to enable technology detection.",
+                    )
+                ],
                 message="WhatWeb not available — skipped",
+                status="neutral",
                 recommendation="Install whatweb to enable technology detection.",
+                scan_complete=False,
+                partial_reason="unavailable",
             )
 
         try:
-            target_info = validate_target(f"https://{domain}")
+            target_info = resolve_target(domain, context)
         except TargetValidationError as exc:
-            return self._create_result(score=None, status="critical", message=str(exc))
-
-        result = default_executor.run(
-            command=self.build_command(target_info.url),
-            timeout=self.timeout,
-            scanner_name=self.name,
-        )
-
-        parsed = parse_whatweb_json(result.stdout)
-        techs = [p.get("technology", "") for p in parsed]
-
-        return self._create_result(
-            score=None,
-            status="neutral",
-            message=f"Detected {len(techs)} technologies: {', '.join(techs[:5])}",
-            duration_ms=result.duration_ms,
-            technologies=techs,
-        )
-
-    def scan_findings(self, domain: str) -> list[NormalizedFinding]:
-        if not self.is_available():
-            return [NormalizedFinding(
-                check_code="whatweb.unavailable",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.NOT_APPLICABLE,
-                title="WhatWeb not available",
-                recommendation="Install whatweb to enable technology detection.",
-            )]
+            return target_validation_outcome(self, error=str(exc))
 
         try:
-            target_info = validate_target(f"https://{domain}")
-        except TargetValidationError as exc:
-            return [NormalizedFinding(
-                check_code="whatweb.target_validation",
-                category="security",
-                severity=Severity.HIGH,
-                status=FindingStatus.FAIL,
-                title="Target validation failed",
-                description=str(exc),
-            )]
+            run = run_tool(
+                self,
+                self.build_command(target_info.url),
+                context=context,
+            )
+        except SandboxError as exc:
+            logger.error("WhatWeb sandbox unavailable: %s", exc)
+            return unavailable_outcome(self, reason=str(exc))
 
-        result = default_executor.run(
-            command=self.build_command(target_info.url),
-            timeout=self.timeout,
-            scanner_name=self.name,
+        complete, reason = evaluate_completeness(run, ok_exit_codes=(0,))
+        if complete and not self._looks_like_whatweb_json(run.stdout):
+            # WhatWeb failed to reach the target: the log stays empty or holds
+            # an error line, which is not a technology fingerprint.
+            complete, reason = False, "unparsable_report"
+
+        parsed = parse_whatweb_json(run.stdout)
+        findings = self.normalize(parsed)
+        techs = [p.get("technology", "") for p in parsed if p.get("technology")]
+
+        return build_outcome(
+            self,
+            run=run,
+            findings=findings,
+            message=(
+                f"Detected {len(techs)} technologies: {', '.join(techs[:5])}"
+                if complete
+                else f"WhatWeb scan incomplete ({reason}): "
+                f"{len(techs)} technologies seen so far"
+            ),
+            status="neutral" if complete else "warning",
+            scan_complete=complete,
+            partial_reason=reason,
+            technologies=techs,
+            raw_report=run.stdout or None,
+            raw_report_format="whatweb-json",
+            raw_report_meta={
+                "technologies": len(techs),
+                "stderr_present": bool(run.stderr.strip()),
+            },
         )
 
-        if result.timed_out:
-            return [NormalizedFinding(
-                check_code="whatweb.timeout",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.UNKNOWN,
-                title=f"WhatWeb timed out after {self.timeout}s",
-                duration_ms=result.duration_ms,
-            )]
+    @staticmethod
+    def _looks_like_whatweb_json(output: str) -> bool:
+        """WhatWeb --log-json writes JSON objects, one per target."""
+        for line in (output or "").splitlines():
+            line = line.strip()
+            if line.startswith("{") or line.startswith("["):
+                return True
+        return False
 
-        parsed = parse_whatweb_json(result.stdout)
-        return self.normalize(parsed)
+    def scan(self, domain: str) -> ScanResult:
+        return self.execute(domain).result
+
+    def scan_findings(
+        self,
+        domain: str,
+        result: ScanResult | None = None,
+    ) -> list[NormalizedFinding]:
+        """Legacy entry point; the tool runs once via :meth:`execute`."""
+        return self.execute(domain).findings
 
     def build_command(self, target: str, options: dict | None = None) -> list[str]:
         return [
             "whatweb",
             "--log-json", "/dev/stdout",
             "--color", "never",
-            "--no-errors",
             "--quiet",
-            "--aggression", "1",  # Passive/stealthy
+            # Aggression 1 = passive: one request per target, no payloads.
+            "--aggression", "1",
             "--", target,
         ]
 
@@ -130,7 +176,11 @@ class WhatWebScanner(BaseScanner):
             tech = item.get("technology", "")
             versions = item.get("versions", [])
             severity = Severity.LOW if tech in _SENSITIVE_TECH else Severity.INFO
-            status = FindingStatus.WARNING if (tech in _SENSITIVE_TECH and versions) else FindingStatus.PASS
+            status = (
+                FindingStatus.WARNING
+                if (tech in _SENSITIVE_TECH and versions)
+                else FindingStatus.PASS
+            )
 
             findings.append(NormalizedFinding(
                 check_code=f"whatweb.technology.{tech.lower().replace(' ', '_').replace('-', '_')}",
@@ -139,7 +189,8 @@ class WhatWebScanner(BaseScanner):
                 status=status,
                 title=f"Technology detected: {tech}" + (f" {', '.join(versions)}" if versions else ""),
                 description=(
-                    f"Version information exposed for {tech}" if versions and tech in _SENSITIVE_TECH
+                    f"Version information exposed for {tech}"
+                    if versions and tech in _SENSITIVE_TECH
                     else f"{tech} detected"
                 ),
                 evidence=item,
@@ -149,15 +200,15 @@ class WhatWebScanner(BaseScanner):
                 ),
             ))
 
-        # Summary finding
-        findings.append(NormalizedFinding(
-            check_code="whatweb.technologies_summary",
-            category="security",
-            severity=Severity.INFO,
-            status=FindingStatus.PASS,
-            title=f"WhatWeb detected {len(all_techs)} technologies",
-            evidence={"technologies": all_techs},
-        ))
+        if all_techs:
+            findings.append(NormalizedFinding(
+                check_code="whatweb.technologies_summary",
+                category="security",
+                severity=Severity.INFO,
+                status=FindingStatus.PASS,
+                title=f"WhatWeb detected {len(all_techs)} technologies",
+                evidence={"technologies": all_techs},
+            ))
 
         return findings
 
