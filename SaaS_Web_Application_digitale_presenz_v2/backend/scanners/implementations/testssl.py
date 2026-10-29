@@ -299,15 +299,29 @@ class TestSSLScanner(BaseScanner):
         *,
         jsonfile: str = "/dev/stdout",
     ) -> list[str]:
-        # ``--std`` is the bounded standard set (protocols, standard cipher
-        # categories, server defaults + certificate, HSTS/security headers).
-        # A full run — and even ``--fast`` — does not finish inside any
-        # per-step budget on a rate-limited public target, so the step always
-        # runs a scope it can actually complete rather than a run that is
-        # killed mid-flight and can never prove coverage.
+        # ``--std`` only tests cipher categories (upstream help: "tests
+        # standard cipher categories by strength").  It does NOT test
+        # protocols, certificate/server defaults, HSTS/security headers or
+        # vulnerability probes.  The previous comment claimed the opposite and
+        # the real report contained 0 protocols, 0 serverDefaults and 0
+        # vulnerabilities.  Each missing category is therefore requested
+        # explicitly below.
+        #
+        # ``--ip one`` limits the run to the first DNS address.  On the
+        # multi-address Cloudflare target, scanning every address with the full
+        # category set took 140 s (it would be killed at the 120 s step
+        # timeout), while one address takes 65 s at rest and 100 s under four
+        # CPU burners.  The
+        # per-address divergence is therefore not covered by this step; the
+        # step timeout and the 540 s whole-scan budget are unchanged.
         return [
             self._get_binary(),
             "--std",
+            "--protocols",
+            "--server-defaults",
+            "--headers",
+            "--vulnerable",
+            "--ip", "one",
             "--jsonfile-pretty", jsonfile,
             "--quiet",
             "--nodns", "min",

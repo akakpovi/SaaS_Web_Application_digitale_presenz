@@ -703,20 +703,16 @@ SCANNER_CONFIG: dict = {
         },
     },
     "testssl":     {
-        # Measured on the reference Cloudflare-fronted target with testssl
-        # 3.0.8 and the bounded standard set (``--std``: protocols, standard
-        # cipher categories, server defaults/certificate, HSTS/security
-        # headers): 36 s alone and 94 s with four CPU burners saturating the
-        # host.  The old 90 s budget killed the run at 90.5 s under load (scan
-        # 58), although the same command completes in 36 s at rest.  A real
-        # full scan on 2026-10-28 (scan 59) still reached 120.7 s and was
-        # killed even at 120 s, so this value removes the easy timeout but
-        # does not guarantee completion on this target.  Raising it to 180 s
-        # would push the 537 s whole scan past its 540 s budget and drop the
-        # remaining steps; the limitation is therefore explicit rather than
-        # hidden behind a larger timeout.  A full run and even ``--fast``
-        # still exceed 200 s, so the step keeps the standard set; vulnerability
-        # probes (``-U``) and per-cipher enumeration are out of scope.
+        # testssl 3.0.8: ``--std`` alone only tests cipher categories.  The
+        # adapter therefore adds --protocols, --server-defaults (certificate),
+        # --headers (HSTS) and --vulnerable, and limits the run to the first
+        # DNS address (--ip one) so the full category set fits the 120 s step
+        # timeout.  Measured on appchat.elomaiapp.com: 65 s at rest and 100 s
+        # under four CPU burners, with protocols/serverDefaults/headerResponse/
+        # vulnerabilities all populated.  Scanning both resolved addresses
+        # took 140 s and would be killed.  The 120 s timeout and the 540 s
+        # whole-scan budget are unchanged; per-address divergence is not
+        # covered by this step.
         "timeout": _env_int("SCANNER_TIMEOUT_TESTSSL", 120),
         # Debian's testssl.sh package installs /usr/bin/testssl.
         "binary": os.environ.get("SCANNER_TESTSSL_BINARY", "testssl"),

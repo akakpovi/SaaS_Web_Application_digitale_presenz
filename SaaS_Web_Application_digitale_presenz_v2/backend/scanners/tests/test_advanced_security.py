@@ -813,13 +813,25 @@ class AdvancedScannerCommandTests(SimpleTestCase):
         self.assertIn("-maxtime", command)
         self.assertIn("-nointeractive", command)
 
-    def test_testssl_runs_the_bounded_standard_set(self):
+    def test_testssl_requests_every_covered_category(self):
+        """``--std`` alone is cipher-only; all four other categories must be
+        requested explicitly, or the report looks complete while containing no
+        protocol, certificate, HSTS or vulnerability result."""
         from scanners.implementations.testssl import TestSSLScanner
 
         command = TestSSLScanner().build_command(
             "example.com", jsonfile="/tmp/report/testssl.json"
         )
-        self.assertIn("--std", command)
+        for flag in (
+            "--std",
+            "--protocols",
+            "--server-defaults",
+            "--headers",
+            "--vulnerable",
+        ):
+            with self.subTest(flag=flag):
+                self.assertIn(flag, command)
+        self.assertEqual(command[command.index("--ip") + 1], "one")
         self.assertIn("/tmp/report/testssl.json", command)
         self.assertIn("--jsonfile-pretty", command)
         self.assertEqual(command[-1], "example.com:443")

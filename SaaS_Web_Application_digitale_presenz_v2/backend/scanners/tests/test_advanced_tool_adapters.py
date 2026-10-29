@@ -110,6 +110,19 @@ TESTSSL_NESTED_JSON = (
     ']}]}'
 )
 
+TESTSSL_FULL_COVERAGE_JSON = (
+    '{"scanResult":[{"targetHost":"example.com","ip":"93.184.216.34",'
+    '"port":"443",'
+    '"protocols":[{"id":"TLS1_0","severity":"HIGH",'
+    '"finding":"TLS 1.0 offered"}],'
+    '"serverDefaults":[{"id":"cert_expirationStatus","severity":"OK",'
+    '"finding":"Certificate expires in 90 days"}],'
+    '"headerResponse":[{"id":"HSTS_time","severity":"OK",'
+    '"finding":"365 days"}],'
+    '"vulnerabilities":[{"id":"heartbleed","severity":"OK",'
+    '"finding":"not vulnerable"}]}]}'
+)
+
 DNSRECON_JSON = (
     '[{"type":"A","name":"example.com","address":"93.184.216.34"},'
     '{"type":"MX","name":"example.com","address":"10 mail.example.com"}]'
@@ -276,7 +289,15 @@ class AdvancedScannerWiringTests(SimpleTestCase):
             "nmap": ("-oX", "-", "nmap"),
             "nikto": ("-h", "-maxtime", "nikto"),
             "whatweb": ("--log-json", "whatweb"),
-            "testssl": ("--std", "--jsonfile-pretty", "testssl"),
+            "testssl": (
+                "--std",
+                "--protocols",
+                "--server-defaults",
+                "--headers",
+                "--vulnerable",
+                "--jsonfile-pretty",
+                "testssl",
+            ),
             "dnsrecon": ("-t", "std", "dnsrecon"),
             "gobuster": ("dir", "-w", "gobuster"),
         }
@@ -575,6 +596,29 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         self.assertNotIn("testssl.", codes)
         for finding in outcome.findings:
             self.assertTrue(finding.title.strip().endswith(finding.check_code.split(".", 1)[1]))
+
+    def test_testssl_full_coverage_is_not_silently_dropped(self):
+        """Protocol, certificate, HSTS and vulnerability sections must all
+        survive parsing; a cipher-only report is the regression this guards."""
+        from scanners.parsers.testssl import parse_testssl_json
+
+        expected = {
+            "TLS1_0",
+            "cert_expirationStatus",
+            "HSTS_time",
+            "heartbleed",
+        }
+        parsed = parse_testssl_json(TESTSSL_FULL_COVERAGE_JSON)
+        self.assertEqual({item["id"] for item in parsed}, expected)
+
+        outcome, _ = _execute(
+            testssl_scanner, _run(stdout=TESTSSL_FULL_COVERAGE_JSON)
+        )
+        self.assertEqual(
+            {finding.check_code for finding in outcome.findings},
+            {f"testssl.{check_id}" for check_id in expected},
+        )
+        self.assertEqual(outcome.result.details["total_checks"], 4)
 
     def test_dnsrecon_records_are_grouped(self):
         outcome, _ = _execute(dnsrecon_scanner, _run(stdout=DNSRECON_JSON))
