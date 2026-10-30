@@ -1,7 +1,8 @@
 from typing import Any
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 
 
@@ -10,6 +11,69 @@ class HealthStatus(models.TextChoices):
     WARNING = "warning", "Warning"
     CRITICAL = "critical", "Critical"
     NEUTRAL = "neutral", "Neutral"
+
+
+class JourneyState(models.TextChoices):
+    RUNNING = "running", "Running"
+    AWAITING_CONFIRMATION = "awaiting_confirmation", "Awaiting confirmation"
+    COMPLETED = "completed", "Completed"
+    PARTIAL = "partial", "Partial"
+    FAILED = "failed", "Failed"
+    EXPIRED = "expired", "Expired"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class ScanJourney(models.Model):
+    """A linear, user-driven scan journey made of one or more child scans.
+
+    The journey owns the progression state; each executed stage is a regular
+    ``Scan`` linked through ``Scan.journey``.  ``Scan`` keeps its existing
+    terminal status machine unchanged.
+    """
+
+    website = models.ForeignKey(
+        "websites.Website",
+        on_delete=models.CASCADE,
+        related_name="scan_journeys",
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    state = models.CharField(
+        max_length=24,
+        choices=JourneyState.choices,
+        default=JourneyState.RUNNING,
+    )
+    current_stage = models.PositiveSmallIntegerField(default=1)
+    total_stages = models.PositiveSmallIntegerField(default=2)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["website", "created_at"]),
+            models.Index(fields=["state", "expires_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["website"],
+                condition=Q(state__in=["running", "awaiting_confirmation"]),
+                name="unique_active_journey_per_website",
+            ),
+            models.CheckConstraint(
+                condition=Q(current_stage__gte=1)
+                & Q(current_stage__lte=F("total_stages")),
+                name="journey_stage_range",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Journey {self.pk} - {self.website_id} [{self.state}]"
 
 
 class Scan(models.Model):
@@ -46,6 +110,15 @@ class Scan(models.Model):
         default=ScanType.HEALTH,
         help_text="Type of scan: health (internal checks), security (external tools), or full."
     )
+    journey = models.ForeignKey(
+        ScanJourney,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="stages",
+    )
+    journey_stage = models.PositiveSmallIntegerField(null=True, blank=True)
+    quota_charged = models.BooleanField(default=True)
     health_score = models.PositiveSmallIntegerField(null=True, blank=True)
     health_status = models.CharField(
         max_length=12,
@@ -103,11 +176,28 @@ class Scan(models.Model):
             models.Index(fields=["is_guest", "created_at"]),
             models.Index(fields=["session_key"]),
             models.Index(fields=["scan_type", "status"]),
+            models.Index(fields=["quota_charged", "created_at"]),
         ]
         constraints = [
             models.CheckConstraint(
                 condition=Q(health_score__isnull=True) | Q(health_score__gte=0, health_score__lte=100),
                 name="scan_health_score_range",
+            ),
+            models.UniqueConstraint(
+                fields=["journey", "journey_stage"],
+                condition=Q(journey__isnull=False),
+                name="unique_scan_per_journey_stage",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(journey__isnull=True, journey_stage__isnull=True)
+                    | Q(
+                        journey__isnull=False,
+                        journey_stage__isnull=False,
+                        journey_stage__gte=1,
+                    )
+                ),
+                name="scan_journey_stage_consistent",
             ),
             models.CheckConstraint(
                 condition=Q(

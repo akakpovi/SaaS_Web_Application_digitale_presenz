@@ -870,6 +870,10 @@ SCAN_TOTAL_TIME_BUDGET_SECONDS: int = _env_int(
 # Maximum concurrent authenticated scans per user.
 MAX_CONCURRENT_SCANS_PER_USER: int = _env_int("MAX_CONCURRENT_SCANS_PER_USER", 1)
 
+# A scan journey waiting for the user's confirmation expires after this delay,
+# so an abandoned journey never keeps the per-website active-journey slot.
+SCAN_JOURNEY_TTL_HOURS = 24
+
 # ---- External data providers (all optional; scanners degrade honestly) ----
 # Google Safe Browsing malware reputation (https://developers.google.com/safe-browsing)
 GOOGLE_SAFE_BROWSING_API_KEY = env("GOOGLE_SAFE_BROWSING_API_KEY", "")
