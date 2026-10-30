@@ -382,17 +382,12 @@ contraintes `pg_constraint` classiques.
 
 ## 11. Scan anti-secrets des fichiers du lot
 
-Commande exécutée avant commit sur les cinq fichiers du lot (modèle,
-settings, migration, tests, ce rapport) :
-
-```text
-$ rg -n -i -e 'AKA_AI_API_KEY\s*=\s*["'"'][^"'"']+' \
-  -e 'API[_-]?KEY\s*[:=]\s*["'"'][^"'"']+' \
-  -e 'SECRET[_-]?KEY\s*[:=]\s*["'"'][^"'"']+' \
-  -e 'BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY' \
-  -e 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@' \
-  ... fichiers du lot
-```
+Scan exécuté avant commit sur les cinq fichiers du lot (modèle, settings,
+migration, tests, ce rapport). `rg` n'étant pas installé sur l'hôte, le scan
+a été réalisé par un script Python en lecture seule, avec les motifs à haute
+signature suivants : clé privée PEM, URL PostgreSQL/Redis avec mot de passe,
+jetons `sk-`, `ghp_`, `xox*`, `AIza*`, `Bearer`, et affectations littérales
+`AKA_AI_API_KEY`, `SECRET_KEY` ou `PASSWORD`.
 
 Résultat : `AUCUNE_OCCURRENCE_SIGNATURE_SECRETE` (0 occurrence).
 
