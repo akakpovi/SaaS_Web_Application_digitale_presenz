@@ -127,6 +127,11 @@ services:
       # /tmp when this directory is not writable and then breaks the ZAP
       # bind mount.  Keep it in sync with the volume below.
       SCANNER_SANDBOX_SHARED_WORK_DIR: /tmp/presence-scanner
+      # Scenario-C templates live in the repository; the Docker sandbox needs
+      # their host path (not the worker's /app view) for the read-only mount
+      # into the Nuclei container.  The canonical stack is started from the
+      # repository root, so ${PWD} is that absolute path.
+      SCANNER_NUCLEI_SCENARIO_TEMPLATES_PATH: ${PWD}/SaaS_Web_Application_digitale_presenz_v2/backend/scanners/templates
     # Allow the unprivileged `app` user to open the host Docker socket.
     # Default 984 matches this host; override DOCKER_GID with
     # `stat -c '%g' /var/run/docker.sock` on another machine.
@@ -235,7 +240,10 @@ services:
   # in the web image and never run unconfined.
   scanner-tools:
     build:
-      context: ./SaaS_Web_Application_digitale_presenz_v2/backend/docker/scanner-tools
+      # Backend root: the scenario-C templates and the complementary Gobuster
+      # wordlist are copied from the repository into the image.
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+      dockerfile: docker/scanner-tools/Dockerfile
     image: presence-scanner-tools:2026-10-27
     # Same hardening the sandbox applies to a scan (minus the scanner
     # network): the probe only reads the filesystem.

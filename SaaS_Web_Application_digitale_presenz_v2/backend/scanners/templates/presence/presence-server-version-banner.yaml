@@ -1,0 +1,43 @@
+id: presence-server-version-banner
+
+info:
+  name: Presence - Server version banner (informational)
+  author: Presence
+  severity: info
+  description: |
+    The Server header advertises an old Apache or nginx branch. This is
+    informational only: backported fixes, distribution patches, and modified
+    banners make the version insufficient to confirm a vulnerability.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    - https://httpd.apache.org/security/vulnerabilities_24.html
+    - https://nginx.org/en/CHANGES
+  metadata:
+    max-request: 1
+    verified: true
+  tags: presence,version,banner,info
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    max-redirects: 2
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: header
+        regex:
+          - '(?im)^server:\s*(Apache/2\.(2|3)\b|Apache/2\.4\.([0-9]|[1-4][0-9]|5[0-7])\b|nginx/1\.(1[0-9]|2[0-3])\b)'
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: header
+        group: 1
+        regex:
+          - '(?im)^server:\s*([^\r\n]+)'

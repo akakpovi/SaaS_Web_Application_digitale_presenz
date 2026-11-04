@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 from typing import Any
 
@@ -64,19 +65,23 @@ class NucleiScanner(BaseScanner):
         return getattr(settings, "SCANNER_CONFIG", {}).get("nuclei", {}) or {}
 
     @property
-    def profile(self) -> dict[str, Any]:
-        """Explicit execution profile (``standard`` or ``deep``).
+    def profile_name(self) -> str:
+        """Configured default profile, selected only by deployment settings."""
+        return str(self._cfg.get("profile") or "standard").strip().lower()
 
-        The profile owns every CLI parameter.  Request data never selects it:
-        only the trusted deployment settings do, so a client cannot ask for a
-        longer timeout or a more intrusive template set.
+    def profile_for(self, name: str | None = None) -> dict[str, Any]:
+        """Return an explicit execution profile.
+
+        ``name`` comes from a trusted step definition (the stage-2 journey
+        profile) or from deployment settings.  Request data never selects it,
+        so a client cannot ask for a longer timeout or a more intrusive set.
         """
         cfg = self._cfg
-        name = str(cfg.get("profile") or "standard").strip().lower()
+        selected_name = str(name or self.profile_name or "standard").strip().lower()
         profiles = cfg.get("profiles") or {}
-        selected = profiles.get(name) or profiles.get("standard") or {}
+        selected = profiles.get(selected_name) or profiles.get("standard") or {}
         profile = dict(selected)
-        profile.setdefault("name", name if selected else "legacy")
+        profile.setdefault("name", selected_name if selected else "legacy")
         # Backward compatibility with the pre-profile configuration keys.
         profile.setdefault("tags", cfg.get("tags", ["cve", "exposure", "misconfig"]))
         profile.setdefault("timeout", cfg.get("timeout", 170))
@@ -90,7 +95,28 @@ class NucleiScanner(BaseScanner):
         profile.setdefault("protocol", "")
         profile.setdefault("exclude_tags", [])
         profile.setdefault("ip_version", "4")
+        profile.setdefault("extra_args", [])
+        profile.setdefault("template_paths", [])
         return profile
+
+    @property
+    def profile(self) -> dict[str, Any]:
+        return self.profile_for()
+
+    def timeout_for_profile(self, name: str | None = None) -> int:
+        """Hard wall-clock budget owned by *name* (defaults to the profile)."""
+        try:
+            return max(1, int(self.profile_for(name).get("timeout", 150)))
+        except (TypeError, ValueError):
+            return 150
+
+    def duration_alert_for_profile(self, name: str | None = None) -> int:
+        """Soft threshold above which a run of *name* is reported as late."""
+        profile = self.profile_for(name)
+        try:
+            return max(1, int(profile.get("duration_alert_s", 150)))
+        except (TypeError, ValueError):
+            return 150
 
     @property
     def profile_timeout(self) -> int:
@@ -100,18 +126,12 @@ class NucleiScanner(BaseScanner):
         ``SCANNER_CONFIG["nuclei"]["timeout"]``: otherwise a profile with a
         shorter budget is silently given the old, larger sandbox timeout.
         """
-        try:
-            return max(1, int(self.profile.get("timeout", 150)))
-        except (TypeError, ValueError):
-            return 150
+        return self.timeout_for_profile()
 
     @property
     def duration_alert_s(self) -> int:
         """Soft threshold above which a run is reported as late."""
-        try:
-            return max(1, int(self.profile.get("duration_alert_s", 150)))
-        except (TypeError, ValueError):
-            return 150
+        return self.duration_alert_for_profile()
 
     @property
     def timeout(self) -> int:  # type: ignore[override]
@@ -120,6 +140,13 @@ class NucleiScanner(BaseScanner):
     @property
     def _templates_path(self) -> str:
         return str(self._cfg.get("templates_path", "") or "").strip()
+
+    @property
+    def _scenario_templates_path(self) -> str:
+        """Host directory holding the stage-2 ``selected/`` and ``presence/``."""
+        return str(
+            self._cfg.get("scenario_templates_path", "") or ""
+        ).strip()
 
     @property
     def binary_version(self) -> str:
@@ -318,10 +345,21 @@ class NucleiScanner(BaseScanner):
                 ],
             )
 
+        profile_name = (
+            context.profile
+            if context is not None and getattr(context, "profile", None)
+            else self.profile_name
+        )
+        profile = self.profile_for(profile_name)
+        profile_timeout = self.timeout_for_profile(profile_name)
+        profile_label = str(profile.get("name", "standard"))
+        duration_alert_s = self.duration_alert_for_profile(profile_name)
+        resolve_missing = bool(profile.get("resolve_missing", True))
+
         timeout = (
-            context.effective_timeout(self.timeout)
+            context.effective_timeout(profile_timeout)
             if context is not None
-            else self.timeout
+            else profile_timeout
         )
         executor = get_sandbox_executor()
         limits = (
@@ -330,30 +368,83 @@ class NucleiScanner(BaseScanner):
             else executor.limits_for(self.name, timeout=timeout)
         )
 
-        templates_path = self._templates_path
+        templates_root = self._templates_path
+        scenario_templates_root = self._scenario_templates_path
+        profile_paths = [
+            str(path).strip()
+            for path in (profile.get("template_paths") or [])
+            if str(path).strip()
+        ]
         docker_templates = "/nuclei-templates"
-        container_templates = (
-            docker_templates
-            if templates_path and executor.mode == SandboxMode.DOCKER
-            else templates_path
-        )
+        mounts: list[tuple[str, str]] | None = None
+        env_templates = ""
+
+        if profile_paths:
+            container_scenario_root = "/opt/scanner-templates"
+            if executor.mode == SandboxMode.DOCKER:
+                # The assets may be baked into a dedicated image at these
+                # container paths.  When the host directory is configured it
+                # is mounted over the same root, so the stock Nuclei image can
+                # use the repository selection without a custom build.
+                template_paths_used = profile_paths
+                env_templates = container_scenario_root
+                if scenario_templates_root:
+                    mounts = [
+                        (scenario_templates_root, container_scenario_root)
+                    ]
+            else:
+                # Process mode has no container: resolve the profile's
+                # subdirectories under the scenario root, then under the full
+                # catalogue root for deployments that co-locate them.
+                host_root = scenario_templates_root or templates_root
+                if not host_root:
+                    # Process mode runs from the application tree: the assets
+                    # shipped with the repository are a valid fallback.
+                    host_root = os.path.join(
+                        os.path.dirname(
+                            os.path.dirname(os.path.abspath(__file__))
+                        ),
+                        "templates",
+                    )
+                template_paths_used = (
+                    [
+                        os.path.join(
+                            host_root, os.path.basename(path.rstrip("/"))
+                        )
+                        for path in profile_paths
+                    ]
+                    if host_root
+                    else profile_paths
+                )
+        else:
+            container_templates = (
+                docker_templates
+                if templates_root and executor.mode == SandboxMode.DOCKER
+                else templates_root
+            )
+            template_paths_used = (
+                [container_templates] if container_templates else []
+            )
+            env_templates = container_templates
+            if templates_root and executor.mode == SandboxMode.DOCKER:
+                mounts = [(templates_root, docker_templates)]
 
         try:
             command_result = executor.run(
                 command=self.build_command(
                     target.url,
-                    templates_path=container_templates or None,
+                    templates_path=(template_paths_used[0] if template_paths_used else None),
+                    template_paths=template_paths_used or None,
+                    profile_name=profile_name,
                 ),
                 limits=limits,
                 scanner_name=self.name,
                 # Official Nuclei images set the binary as ENTRYPOINT.  Clear
                 # it so the command above is not passed as "nuclei nuclei …".
                 docker_entrypoint="",
-                mounts=[(templates_path, docker_templates)]
-                if templates_path and executor.mode == SandboxMode.DOCKER
-                else None,
-                env_extra={"NUCLEI_TEMPLATES_PATH": container_templates}
-                if container_templates
+                mounts=mounts,
+                env_extra={"NUCLEI_TEMPLATES_PATH": env_templates}
+                if env_templates
                 else None,
             )
         except SandboxError as exc:
@@ -377,7 +468,13 @@ class NucleiScanner(BaseScanner):
             )
 
         parsed = parse_nuclei_jsonl(command_result.stdout)
-        findings = self.normalize(parsed)
+        # Stage 2 needs one finding per missing header.  Nuclei emits one JSONL
+        # record per matcher for ``http-missing-security-headers`` (ten on a
+        # typical target), all sharing the same template id and matched URL.
+        # Classic profiles keep their historical single-finding aggregation.
+        findings = self.normalize(
+            parsed, preserve_matchers=(profile_name == "scenario_c")
+        )
         high = [
             item for item in parsed
             if item.get("severity") in ("high", "critical")
@@ -396,6 +493,14 @@ class NucleiScanner(BaseScanner):
             except (TypeError, ValueError):
                 percent = None
 
+        raw_templates = (stats or {}).get("templates")
+        try:
+            templates_loaded = (
+                None if raw_templates is None else int(raw_templates)
+            )
+        except (TypeError, ValueError):
+            templates_loaded = None
+
         # A scan is complete only when the process ended cleanly, the target
         # was not dropped, Nuclei itself reported 100% progress, and its JSONL
         # was not truncated by the subprocess output cap.  A truncated report
@@ -410,6 +515,9 @@ class NucleiScanner(BaseScanner):
             and not command_result.output_truncated
             and percent is not None
             and percent >= 100
+            # A scan that loaded zero templates proves nothing: the profile
+            # assets are missing from the image or the mounted path.
+            and (templates_loaded is None or templates_loaded > 0)
         )
 
         meta: NormalizedFinding | None = None
@@ -469,6 +577,16 @@ class NucleiScanner(BaseScanner):
                 title="Nuclei scan did not complete",
                 description=command_result.stderr,
             )
+        elif templates_loaded == 0:
+            partial_reason = "no_templates"
+            meta = self._partial_finding(
+                check_code="nuclei.no_templates",
+                title="Nuclei loaded no templates",
+                description=(
+                    "Nuclei reported 0 loaded templates; the profile assets "
+                    "are missing from the image or the mounted path."
+                ),
+            )
 
         if partial_reason or not complete:
             status = "warning"
@@ -479,15 +597,13 @@ class NucleiScanner(BaseScanner):
         else:
             status = "neutral"
 
-        duration_over_alert = (
-            command_result.duration_ms > self.duration_alert_s * 1000
-        )
+        duration_over_alert = command_result.duration_ms > duration_alert_s * 1000
         if duration_over_alert:
             logger.warning(
                 "Nuclei profile '%s' exceeded its %ds alert threshold "
                 "(duration=%dms, complete=%s) for scan %s",
-                self.profile.get("name", "standard"),
-                self.duration_alert_s,
+                profile_label,
+                duration_alert_s,
                 command_result.duration_ms,
                 complete,
                 getattr(context, "scan_id", None),
@@ -517,13 +633,13 @@ class NucleiScanner(BaseScanner):
                 output_truncated=command_result.output_truncated,
                 scan_complete=complete,
                 partial_reason=partial_reason,
-                profile=self.profile.get("name", "standard"),
-                profile_timeout_s=self.profile_timeout,
-                duration_alert_s=self.duration_alert_s,
+                profile=profile_label,
+                profile_timeout_s=profile_timeout,
+                duration_alert_s=duration_alert_s,
                 duration_over_alert=duration_over_alert,
                 # Conservative default: a profile narrower than the catalog
                 # can add/update findings but cannot prove an old one is gone.
-                resolve_missing=bool(self.profile.get("resolve_missing", True)),
+                resolve_missing=resolve_missing,
                 host_skipped=host_skipped,
                 percent=percent,
                 templates_loaded=(stats or {}).get("templates"),
@@ -538,9 +654,9 @@ class NucleiScanner(BaseScanner):
                 "scanner_version": self.binary_version,
                 "adapter_version": self.scanner_version,
                 "templates_version": self.templates_version,
-                "templates_path": templates_path,
-                "profile": self.profile.get("name", "standard"),
-                "profile_timeout_s": self.profile_timeout,
+                "templates_path": template_paths_used,
+                "profile": profile_label,
+                "profile_timeout_s": profile_timeout,
                 "duration_ms": command_result.duration_ms,
                 "exit_code": command_result.exit_code,
                 "timed_out": command_result.timed_out,
@@ -567,8 +683,11 @@ class NucleiScanner(BaseScanner):
         target: str,
         options: dict | None = None,
         templates_path: str | None = None,
+        *,
+        template_paths: list[str] | None = None,
+        profile_name: str | None = None,
     ) -> list[str]:
-        profile = self.profile
+        profile = self.profile_for(profile_name)
         tags = profile.get("tags") or []
         tags_value = ",".join(tags) if isinstance(tags, list) else str(tags)
         exclude_value = ",".join(profile.get("exclude_tags") or [])
@@ -608,19 +727,38 @@ class NucleiScanner(BaseScanner):
             command += ["-tags", tags_value]
         if exclude_value:
             command += ["-exclude-tags", exclude_value]
-        if templates_path:
+
+        selected_paths = [
+            str(path)
+            for path in (template_paths or profile.get("template_paths") or [])
+            if str(path).strip()
+        ]
+        if selected_paths:
+            for path in selected_paths:
+                command += ["-t", path]
+        elif templates_path:
             command += ["-t", templates_path]
 
         severity = str(profile.get("severity", "") or "").strip()
         if severity:
             command += ["-severity", severity]
 
+        extra_args = profile.get("extra_args") or []
+        if isinstance(extra_args, str):
+            extra_args = extra_args.split()
+        command += [str(arg) for arg in extra_args if str(arg).strip()]
+
         return command
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_nuclei_jsonl(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self,
+        parsed_results: list[dict[str, Any]],
+        *,
+        preserve_matchers: bool = False,
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         seen: set[tuple[str, str]] = set()
 
@@ -635,7 +773,20 @@ class NucleiScanner(BaseScanner):
 
             template_id = str(item.get("template_id", "unknown") or "unknown")
             matched_at = str(item.get("matched_at", "") or "")
+            matcher_name = str(item.get("matcher_name", "") or "").strip()
+            check_code = f"nuclei.{template_id}"[:128]
             key = (template_id, matched_at)
+            if (
+                preserve_matchers
+                and template_id == "http-missing-security-headers"
+                and matcher_name
+            ):
+                # One missing header = one actionable finding.  The matcher
+                # name is the header identifier (e.g. ``content-security-policy``).
+                matcher_slug = re.sub(r"[^a-z0-9]+", "-", matcher_name.lower()).strip("-")
+                if matcher_slug:
+                    check_code = f"nuclei.{template_id}.{matcher_slug}"[:128]
+                    key = (check_code, matched_at)
             if key in seen:
                 continue
             seen.add(key)
@@ -645,7 +796,7 @@ class NucleiScanner(BaseScanner):
 
             findings.append(
                 NormalizedFinding(
-                    check_code=f"nuclei.{template_id}"[:128],
+                    check_code=check_code,
                     category="security",
                     severity=severity,
                     status=status,

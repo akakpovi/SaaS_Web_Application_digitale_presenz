@@ -47,6 +47,31 @@ else
     status=1
 fi
 
+# Scenario-C assets are baked into the image.  A missing directory or an
+# empty selection would make the stage-2 profile silently scan nothing.
+for templates in /opt/scanner-templates/selected /opt/scanner-templates/presence; do
+    if [ -d "$templates" ]; then
+        count="$(find "$templates" -name '*.yaml' -type f | wc -l | tr -d ' ')"
+        if [ "$count" -gt 0 ]; then
+            printf '%-12s %s (%s templates)\n' "templates" "$templates" "$count"
+        else
+            printf '%-12s EMPTY (%s)\n' "templates" "$templates"
+            status=1
+        fi
+    else
+        printf '%-12s MISSING (%s)\n' "templates" "$templates"
+        status=1
+    fi
+done
+
+extra_wordlist="${SCANNER_GOBUSTER_EXTRA_WORDLIST:-/opt/scanner-wordlists/presence-extra.txt}"
+if [ -r "$extra_wordlist" ]; then
+    printf '%-12s %s (%s entries)\n' "extra-list" "$extra_wordlist" "$(grep -cv '^[[:space:]]*$' "$extra_wordlist" | tr -d ' ')"
+else
+    printf '%-12s MISSING (%s)\n' "extra-list" "$extra_wordlist"
+    status=1
+fi
+
 if [ "$status" -ne 0 ]; then
     echo "scanner-tools-check: at least one tool is unavailable" >&2
 fi

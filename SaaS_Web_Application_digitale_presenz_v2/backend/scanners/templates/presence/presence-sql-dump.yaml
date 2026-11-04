@@ -1,0 +1,49 @@
+id: presence-sql-dump
+
+info:
+  name: Presence - SQL dump exposure
+  author: Presence
+  severity: high
+  description: |
+    A database dump is publicly readable. The body must contain real SQL
+    statements, so a catch-all HTML response is not reported as a dump.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+  metadata:
+    max-request: 3
+    verified: true
+  tags: presence,exposure,backup,database
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/database.sql"
+      - "{{BaseURL}}/dump.sql"
+      - "{{BaseURL}}/db.sql"
+
+    stop-at-first-match: true
+    max-size: 8192
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(CREATE TABLE|INSERT INTO|DROP TABLE|-- MySQL dump|-- PostgreSQL database dump|LOCK TABLES)'
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), '<html')"
+          - "!contains(tolower(body), '<!doctype')"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        group: 1
+        regex:
+          - '(?i)CREATE TABLE(?:\s+IF NOT EXISTS)?\s+[`"]?([a-zA-Z0-9_]+)'

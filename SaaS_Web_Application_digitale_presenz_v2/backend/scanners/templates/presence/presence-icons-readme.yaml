@@ -1,0 +1,44 @@
+id: presence-icons-readme
+
+info:
+  name: Presence - Apache icons README exposure
+  author: Presence
+  severity: low
+  description: |
+    The default Apache /icons/README file is publicly readable. The body must
+    contain the README's characteristic text, not merely return HTTP 200.
+  reference:
+    - https://httpd.apache.org/docs/2.4/mod/mod_autoindex.html
+  metadata:
+    max-request: 1
+    verified: true
+  tags: presence,exposure,default-file,apache
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/icons/README"
+
+    max-size: 4096
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(Apache|HTTP Server|icons)'
+
+      - type: word
+        part: body
+        words:
+          - "README"
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), '<html')"
+          - "!contains(tolower(body), '<!doctype')"
+        condition: and
+
+      - type: status
+        status:
+          - 200

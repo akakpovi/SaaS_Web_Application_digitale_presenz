@@ -1,0 +1,38 @@
+id: presence-backup-archive
+
+info:
+  name: Presence - Backup archive exposure
+  author: Presence
+  severity: high
+  description: |
+    A backup archive is publicly downloadable. Detection relies on the ZIP or
+    gzip magic bytes, not on the HTTP status or the file name alone.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    - https://www.rfc-editor.org/rfc/rfc1952
+  metadata:
+    max-request: 3
+    verified: true
+  tags: presence,exposure,backup,archive
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/backup.zip"
+      - "{{BaseURL}}/www.zip"
+      - "{{BaseURL}}/site.zip"
+
+    stop-at-first-match: true
+    max-size: 64
+
+    matchers-condition: and
+    matchers:
+      - type: binary
+        part: body
+        binary:
+          - "504B0304"
+          - "1F8B08"
+
+      - type: status
+        status:
+          - 200

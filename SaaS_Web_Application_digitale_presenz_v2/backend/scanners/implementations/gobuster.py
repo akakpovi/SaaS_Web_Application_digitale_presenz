@@ -18,10 +18,13 @@ cover the wordlist and proves nothing about the paths it never tested.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import secrets
+import time
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 import requests
 from django.conf import settings
@@ -37,6 +40,7 @@ from scanners.base import (
     Severity,
 )
 from scanners.exceptions import TargetValidationError
+from scanners.executors.sandbox import SandboxMode, get_sandbox_executor
 from scanners.implementations.tool_run import (
     SandboxError,
     ToolRun,
@@ -129,6 +133,39 @@ def probe_soft_404(
         sampled_path=sampled_path,
         status_code=response.status_code,
     )
+
+
+def _canonical_path(value: str) -> str:
+    """Return the comparable path component of a Gobuster result.
+
+    Gobuster prints ``/path`` but may echo a full URL when the target was
+    redirected.  Query strings and a trailing slash do not identify a
+    different resource, so they are removed before merging the two passes
+    and before cross-tool de-duplication.
+    """
+    text = str(value or "").strip()
+    if "://" in text:
+        text = urlsplit(text).path or "/"
+    else:
+        text = text.split("?", 1)[0].split("#", 1)[0]
+    text = "/" + text.strip("/")
+    return text.rstrip("/").lower() or "/"
+
+
+def _merge_gobuster_paths(
+    first: list[dict[str, Any]],
+    second: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge the two Gobuster passes, de-duplicated by canonical path."""
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in [*first, *second]:
+        key = _canonical_path(item.get("path", ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    return merged
 
 
 def _parse_gobuster_output(output: str) -> list[dict[str, Any]]:
@@ -224,6 +261,8 @@ class GobusterScanner(BaseScanner):
         except TargetValidationError as exc:
             return target_validation_outcome(self, error=str(exc))
 
+        # Wall-clock start of the step: both passes share the same step budget.
+        step_started = time.monotonic()
         cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
         probe: Soft404Probe | None = None
         if cfg.get("soft_404_detection", True):
@@ -249,12 +288,88 @@ class GobusterScanner(BaseScanner):
             logger.error("Gobuster sandbox unavailable: %s", exc)
             return unavailable_outcome(self, reason=str(exc))
 
-        # A quiet complete run prints nothing when no path matches.
         complete, reason = evaluate_completeness(
             run, ok_exit_codes=(0,), requires_output=False
         )
         parsed = _parse_gobuster_output(run.stdout)
+
+        # ── Optional complementary pass ─────────────────────────────────
+        # The main wordlist is never replaced or modified: the extra list is
+        # a small, versioned set of Presence paths (backups, Git, diagnostics)
+        # that the generic list does not cover.  Its cost is negligible
+        # compared with common.txt, so it runs for classic and journey scans
+        # alike.  An empty configuration keeps the historical single pass.
+        extra_wordlist = self.extra_wordlist
+        extra_complete = True
+        extra_reason = ""
+        extra_run: ToolRun | None = None
+        if extra_wordlist and self._extra_wordlist_available(extra_wordlist):
+            step_budget = int(context.timeout) if context is not None else int(self.timeout)
+            extra_timeout = max(1, step_budget - int(time.monotonic() - step_started))
+            try:
+                extra_run = run_tool(
+                    self,
+                    self.build_command(
+                        target_info.url,
+                        soft404_length=(
+                            probe.excluded_length if probe is not None else None
+                        ),
+                        wordlist=extra_wordlist,
+                    ),
+                    context=context,
+                    timeout=extra_timeout,
+                )
+            except SandboxError as exc:
+                # The main pass succeeded: keep its results and report the
+                # incomplete complementary coverage instead of discarding
+                # verified paths.
+                logger.error("Gobuster complementary pass failed: %s", exc)
+                extra_complete = False
+                extra_reason = "extra_wordlist_failed"
+            else:
+                extra_complete, extra_reason = evaluate_completeness(
+                    extra_run, ok_exit_codes=(0,), requires_output=False
+                )
+                parsed = _merge_gobuster_paths(
+                    parsed, _parse_gobuster_output(extra_run.stdout)
+                )
+                # The step duration must be the real cost of both passes.
+                run.duration_ms += extra_run.duration_ms
+                run.timed_out = run.timed_out or extra_run.timed_out
+                run.memory_exceeded = (
+                    run.memory_exceeded or extra_run.memory_exceeded
+                )
+                run.output_truncated = (
+                    run.output_truncated or extra_run.output_truncated
+                )
+                if extra_run.exit_code != 0 and run.exit_code == 0:
+                    run.exit_code = extra_run.exit_code
+                run.killed_reason = run.killed_reason or extra_run.killed_reason
+
+        if not extra_complete:
+            complete = False
+            reason = reason or extra_reason
+
         findings = self.normalize(parsed)
+        passes = [
+            {
+                "wordlist": self.wordlist,
+                "paths_found": len(_parse_gobuster_output(run.stdout)),
+            }
+        ]
+        if extra_run is not None:
+            passes.append(
+                {
+                    "wordlist": extra_wordlist,
+                    "paths_found": len(_parse_gobuster_output(extra_run.stdout)),
+                }
+            )
+        raw_report = run.stdout or ""
+        if extra_run is not None and extra_run.stdout:
+            raw_report = (
+                f"# pass 1: {self.wordlist}\n{raw_report}\n"
+                f"# pass 2: {extra_wordlist}\n{extra_run.stdout}"
+            )
 
         return build_outcome(
             self,
@@ -271,11 +386,15 @@ class GobusterScanner(BaseScanner):
             partial_reason=reason,
             paths_found=len(parsed),
             wordlist=self.wordlist,
-            raw_report=run.stdout or None,
+            extra_wordlist=extra_wordlist or None,
+            passes=passes,
+            raw_report=raw_report or None,
             raw_report_format="gobuster-text",
             raw_report_meta={
                 "paths_found": len(parsed),
                 "wordlist": self.wordlist,
+                "extra_wordlist": extra_wordlist or None,
+                "passes": passes,
             },
             soft_404_probe=(
                 {
@@ -298,6 +417,28 @@ class GobusterScanner(BaseScanner):
         cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
         return str(cfg.get("wordlist") or DEFAULT_WORDLIST)
 
+    @property
+    def extra_wordlist(self) -> str:
+        """Optional second-pass wordlist; empty disables the pass."""
+        cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
+        return str(cfg.get("extra_wordlist") or "").strip()
+
+    @staticmethod
+    def _extra_wordlist_available(path: str) -> bool:
+        """Whether the complementary list can be read by the process.
+
+        In Docker mode the file is baked into the scanner image, so it cannot
+        (and must not) be checked on the worker host.  In process mode it must
+        exist locally; a missing file is a deployment error, not a reason to
+        fail the main enumeration.
+        """
+        try:
+            if get_sandbox_executor().mode == SandboxMode.DOCKER:
+                return True
+        except Exception:  # pragma: no cover - defensive: executor unavailable
+            return False
+        return os.path.isfile(path)
+
     def scan(self, domain: str) -> ScanResult:
         return self.execute(domain).result
 
@@ -315,6 +456,7 @@ class GobusterScanner(BaseScanner):
         options: dict | None = None,
         *,
         soft404_length: int | None = None,
+        wordlist: str | None = None,
     ) -> list[str]:
         cfg = getattr(settings, "SCANNER_CONFIG", {}).get("gobuster", {})
         threads = int(cfg.get("threads", 10) or 10)
@@ -322,7 +464,7 @@ class GobusterScanner(BaseScanner):
         command = [
             "gobuster", "dir",
             "-u", target,
-            "-w", self.wordlist,
+            "-w", wordlist or self.wordlist,
             "-t", str(threads),
             "-q",                       # only results on stdout
             "--timeout", request_timeout,

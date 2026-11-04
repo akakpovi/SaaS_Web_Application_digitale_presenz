@@ -1,0 +1,45 @@
+id: presence-directory-listing
+
+info:
+  name: Presence - Directory listing
+  author: Presence
+  severity: low
+  description: |
+    A directory index is publicly accessible. A normal HTML page, a redirect,
+    or a soft-404 body does not satisfy the listing signature.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    - https://httpd.apache.org/docs/2.4/mod/mod_autoindex.html
+  metadata:
+    max-request: 7
+    verified: true
+  tags: presence,misconfig,listing,exposure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/admin/"
+      - "{{BaseURL}}/old/"
+      - "{{BaseURL}}/config/"
+      - "{{BaseURL}}/docs/"
+      - "{{BaseURL}}/backup/"
+      - "{{BaseURL}}/uploads/"
+      - "{{BaseURL}}/files/"
+
+    stop-at-first-match: true
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "Index of /"
+
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(Parent Directory|href=["'']\.\./["''])'
+
+      - type: status
+        status:
+          - 200

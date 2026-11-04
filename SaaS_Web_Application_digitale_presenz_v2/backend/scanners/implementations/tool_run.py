@@ -186,6 +186,22 @@ def run_tool(
         if context is not None and context.sandbox_limits is not None
         else executor.limits_for(scanner.name, timeout=effective_timeout)
     )
+    if timeout is not None:
+        # An adapter may split one step into several tool invocations (the
+        # complementary Gobuster pass).  The explicit budget is then the
+        # remaining part of the step, so the executor must not reuse the
+        # step-start envelope for every pass.
+        effective_timeout = max(
+            1,
+            min(
+                int(timeout),
+                int(scanner.timeout),
+                context.effective_timeout(int(timeout))
+                if context is not None
+                else int(timeout),
+            ),
+        )
+        limits = limits.with_timeout(effective_timeout)
 
     result = executor.run(
         command=list(command),

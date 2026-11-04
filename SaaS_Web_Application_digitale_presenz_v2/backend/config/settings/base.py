@@ -485,6 +485,21 @@ SCANNER_TOOLS_IMAGE: Final = env(
     "SCANNER_TOOLS_IMAGE", "presence-scanner-tools:2026-10-27"
 ).strip() or "presence-scanner-tools:2026-10-27"
 
+# ---- Progressive scan journey, stage 2 (scenario C) -----------------------
+# The stage-2 budget is deliberately separate from the classic 540 s budget:
+# it is the wall-clock envelope shared by the optimised Nuclei profile and the
+# two bounded Gobuster passes.  It is not used for scheduled scans or for any
+# scan whose journey_stage is NULL.
+SCAN_JOURNEY_STAGE2_TIME_BUDGET_SECONDS: int = _env_int(
+    "SCAN_JOURNEY_STAGE2_TIME_BUDGET_SECONDS", 360
+)
+SCAN_JOURNEY_STAGE2_NUCLEI_TIMEOUT: int = _env_int(
+    "SCAN_JOURNEY_STAGE2_NUCLEI_TIMEOUT", 180
+)
+SCAN_JOURNEY_STAGE2_GOBUSTER_TIMEOUT: int = _env_int(
+    "SCAN_JOURNEY_STAGE2_GOBUSTER_TIMEOUT", 120
+)
+
 
 def _env_image(name: str, default: str) -> str:
     """Image reference from the environment, falling back when left blank.
@@ -638,6 +653,48 @@ SCANNER_CONFIG: dict = {
                 "timeout": _env_int("SCANNER_TIMEOUT_NUCLEI_THOROUGH", 178),
                 "duration_alert_s": 150,
             },
+            "scenario_c": {
+                "description": (
+                    "Stage-2 progressive journey profile: 61 explicitly "
+                    "selected exposure/misconfiguration templates plus the "
+                    "10 original Presence controls.  Not the full catalogue; "
+                    "used only for journey_stage=2."
+                ),
+                # Container paths.  In Docker mode the host template root is
+                # mounted read-only at /opt/scanner-templates; process mode
+                # resolves the same subdirectories below templates_path.
+                "template_paths": [
+                    "/opt/scanner-templates/selected",
+                    "/opt/scanner-templates/presence",
+                ],
+                "severity": "info,low,medium,high,critical",
+                "protocol": "http",
+                "request_timeout": 5,
+                "retries": 1,
+                "concurrency": 20,
+                "bulk_size": 10,
+                "rate_limit": 60,
+                "max_host_error": 40,
+                "exclude_tags": [
+                    "dos",
+                    "fuzz",
+                    "fuzzing",
+                    "intrusive",
+                    "brute-force",
+                    "default-login",
+                    "credential-stuffing",
+                    "token-spray",
+                ],
+                "extra_args": ["-duc"],
+                "requires_advanced_security": True,
+                "time_budget_seconds": 180,
+                "timeout": SCAN_JOURNEY_STAGE2_NUCLEI_TIMEOUT,
+                "duration_alert_s": SCAN_JOURNEY_STAGE2_NUCLEI_TIMEOUT,
+                # This is a hand-picked subset, not the whole catalogue: a
+                # complete run cannot prove that an out-of-selection finding
+                # is gone.
+                "resolve_missing": False,
+            },
             "deep": {
                 "description": (
                     "Adds the full CVE tag selection, including CVEs not "
@@ -680,6 +737,14 @@ SCANNER_CONFIG: dict = {
         # image ships the binary only, not the templates.
         "templates_path": os.environ.get(
             "SCANNER_NUCLEI_TEMPLATES_PATH", ""
+        ).strip(),
+        # Host directory holding the scenario-C selection
+        # (``selected/`` + ``presence/``).  In Docker mode it is bind-mounted
+        # read-only at /opt/scanner-templates; process mode resolves the two
+        # subdirectories below it.  Kept separate from ``templates_path`` so
+        # the standard profile still scans the full catalogue.
+        "scenario_templates_path": os.environ.get(
+            "SCANNER_NUCLEI_SCENARIO_TEMPLATES_PATH", ""
         ).strip(),
         # Deployment-reported versions stored in archive metadata.  Empty is
         # honest (``unknown``) rather than a guessed or stale value.
@@ -772,6 +837,12 @@ SCANNER_CONFIG: dict = {
         "wordlist": os.environ.get(
             "SCANNER_GOBUSTER_WORDLIST", "/usr/share/dirb/wordlists/common.txt"
         ),
+        # Optional second pass, bounded to 19 original Presence paths.  Empty
+        # disables it; the main wordlist above is never modified.
+        "extra_wordlist": os.environ.get(
+            "SCANNER_GOBUSTER_EXTRA_WORDLIST",
+            "/opt/scanner-wordlists/presence-extra.txt",
+        ).strip(),
         "threads": _env_int("SCANNER_GOBUSTER_THREADS", 10),
         "request_timeout": os.environ.get(
             "SCANNER_GOBUSTER_REQUEST_TIMEOUT", "10s"

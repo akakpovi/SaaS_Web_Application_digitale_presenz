@@ -26,6 +26,10 @@
 # Build (also done by `docker compose up -d --build`):
 #   docker compose build scanner-tools
 #
+# The build context is the backend root (not this directory) so the scenario-C
+# template selection and the complementary Gobuster wordlist, which live in
+# the repository, are baked into the image under the paths the sandbox uses.
+#
 # Rebuild only after bumping the tag in docker-compose.yml,
 # SCANNER_TOOLS_IMAGE in config/settings/base.py and .env.example.
 
@@ -133,7 +137,19 @@ RUN groupadd --system --gid 10001 scanner \
     && useradd --system --uid 10001 --gid scanner \
         --home-dir /tmp --shell /usr/sbin/nologin scanner
 
-COPY check-tools.sh /usr/local/bin/scanner-tools-check
+# Scenario-C assets.  These are versioned with the repository (and their
+# SHA-256 is recorded in the integration report), never downloaded at scan
+# time.  ``selected`` holds the 61 upstream templates chosen by the QA
+# benchmark; ``presence`` holds the 10 original Presence controls.  The
+# complementary wordlist is only 19 paths: the main Debian dirb list stays
+# untouched.
+COPY scanners/templates/selected/ /opt/scanner-templates/selected/
+COPY scanners/templates/presence/ /opt/scanner-templates/presence/
+COPY scanners/templates/LICENSE /opt/scanner-templates/LICENSE
+COPY scanners/wordlists/presence-extra.txt /opt/scanner-wordlists/presence-extra.txt
+COPY scanners/wordlists/LICENSE.md /opt/scanner-wordlists/LICENSE.md
+
+COPY docker/scanner-tools/check-tools.sh /usr/local/bin/scanner-tools-check
 RUN chmod 0755 /usr/local/bin/scanner-tools-check \
     && /usr/local/bin/scanner-tools-check
 

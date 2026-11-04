@@ -1,0 +1,41 @@
+id: presence-robots-sensitive-paths
+
+info:
+  name: Presence - Sensitive paths disclosed in robots.txt
+  author: Presence
+  severity: info
+  description: |
+    robots.txt publicly discloses paths whose names indicate administrative,
+    backup, configuration, database, or private content. This is informational:
+    a public robots.txt file is normal, but these entries help map the site.
+  reference:
+    - https://www.rfc-editor.org/rfc/rfc9309
+    - https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+  metadata:
+    max-request: 1
+    verified: true
+  tags: presence,robots,discovery,surface
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/robots.txt"
+
+    max-size: 8192
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - '(?im)^\s*Disallow:\s*/(admin|backup|\.git|config|db|sql|private|internal)'
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), '<html')"
+          - "!contains(tolower(body), '<!doctype')"
+        condition: and
+
+      - type: status
+        status:
+          - 200

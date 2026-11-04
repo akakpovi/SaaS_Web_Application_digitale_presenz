@@ -1,0 +1,50 @@
+id: presence-php-config-backup
+
+info:
+  name: Presence - PHP configuration backup exposure
+  author: Presence
+  severity: high
+  description: |
+    A PHP configuration backup is publicly readable and contains database
+    credentials. The response must start with a PHP opening tag and include
+    credential assignments; an HTML error page is not a finding.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    - https://www.php.net/manual/en/configuration.file.php
+  metadata:
+    max-request: 4
+    verified: true
+  tags: presence,exposure,backup,php,config
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/config.php.bak"
+      - "{{BaseURL}}/config.inc.php.bak"
+      - "{{BaseURL}}/config/config.inc.php.bak"
+      - "{{BaseURL}}/wp-config.php.bak"
+
+    stop-at-first-match: true
+    max-size: 4096
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "<?php"
+
+      - type: regex
+        part: body
+        regex:
+          - "(?i)(DB_NAME|DB_USER|DB_PASSWORD|DB_HOST|database_name|database_user|database_password)"
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), '<html')"
+          - "!contains(tolower(body), '<!doctype')"
+        condition: and
+
+      - type: status
+        status:
+          - 200

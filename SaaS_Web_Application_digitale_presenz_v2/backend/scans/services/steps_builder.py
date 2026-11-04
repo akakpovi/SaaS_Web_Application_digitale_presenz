@@ -56,21 +56,51 @@ _SECURITY_STEPS: list[dict[str, Any]] = [
 
 _FULL_STEPS: list[dict[str, Any]] = _HEALTH_STEPS + _SECURITY_STEPS
 
+#: Progressive journey stage 2 (scenario C).  Nikto is deliberately absent:
+#: the optimised Nuclei profile plus the original Presence templates replace
+#: it for journeys only.  Classic scans keep ``_SECURITY_STEPS`` unchanged.
+_JOURNEY_STAGE2_STEPS: list[dict[str, Any]] = [
+    {
+        "key": "nuclei",
+        "label": "Optimised Template Scan (Nuclei)",
+        "scanner": "nuclei",
+        "weight": 25,
+        "profile": "scenario_c",
+        "timeout_setting": "SCAN_JOURNEY_STAGE2_NUCLEI_TIMEOUT",
+    },
+    {
+        "key": "gobuster",
+        "label": "Directory Enumeration (Gobuster)",
+        "scanner": "gobuster",
+        "weight": 10,
+        "timeout_setting": "SCAN_JOURNEY_STAGE2_GOBUSTER_TIMEOUT",
+    },
+]
 
-def build_initial_steps(scan_type: str) -> list[dict[str, Any]]:
+
+def build_initial_steps(
+    scan_type: str,
+    *,
+    journey_stage: int | None = None,
+) -> list[dict[str, Any]]:
     """Return the initial steps list for a given scan type.
 
-    Each step starts with status=pending and progress=0.
+    ``journey_stage=2`` selects the scenario-C pipeline regardless of the
+    scan type.  Every other value, including ``None``, keeps the historical
+    behaviour exactly: classic scans never see the new profile.
     """
-    if scan_type == "security":
+    if journey_stage == 2:
+        template = _JOURNEY_STAGE2_STEPS
+    elif scan_type == "security":
         template = _SECURITY_STEPS
     elif scan_type == "full":
         template = _FULL_STEPS
     else:
         template = _HEALTH_STEPS  # Default: health
 
-    return [
-        {
+    steps: list[dict[str, Any]] = []
+    for step in template:
+        item = {
             "key": step["key"],
             "label": step["label"],
             "scanner": step["scanner"],
@@ -85,8 +115,20 @@ def build_initial_steps(scan_type: str) -> list[dict[str, Any]]:
             "duration_ms": None,
             "error": None,
         }
-        for step in template
-    ]
+        if step.get("profile"):
+            item["profile"] = step["profile"]
+        if step.get("timeout_setting"):
+            item["timeout_setting"] = step["timeout_setting"]
+        steps.append(item)
+    return steps
+
+
+def get_steps_for_scan(scan: Any) -> list[dict[str, Any]]:
+    """Select the pipeline for *scan* without changing classic scans."""
+    return build_initial_steps(
+        getattr(scan, "scan_type", "health"),
+        journey_stage=getattr(scan, "journey_stage", None),
+    )
 
 
 def compute_overall_progress(steps: list[dict[str, Any]]) -> int:

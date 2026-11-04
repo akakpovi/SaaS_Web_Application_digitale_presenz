@@ -1,0 +1,52 @@
+id: presence-env-exposure
+
+info:
+  name: Presence - Environment file exposure
+  author: Presence
+  severity: high
+  description: |
+    A dotenv file is publicly readable and contains assignment statements for
+    application secrets. The response must look like a real environment file,
+    not like an HTML catch-all page.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    - https://datatracker.ietf.org/doc/html/rfc9110
+  metadata:
+    max-request: 3
+    verified: true
+  tags: presence,exposure,config,secrets
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/.env.local"
+      - "{{BaseURL}}/.env.production"
+
+    stop-at-first-match: true
+    max-size: 4096
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - '(?m)^\s*(APP_KEY|APP_SECRET|DB_PASSWORD|DB_USER|DB_HOST|SECRET_KEY|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|MAIL_PASSWORD)\s*='
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), '<html')"
+          - "!contains(tolower(body), '<body')"
+          - "!contains(tolower(body), '<!doctype')"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        group: 1
+        regex:
+          - '(?m)^\s*([A-Z0-9_]+)\s*='

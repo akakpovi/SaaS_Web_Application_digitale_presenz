@@ -1,0 +1,50 @@
+id: presence-admin-login-surface
+
+info:
+  name: Presence - Administrator login surface
+  author: Presence
+  severity: info
+  description: |
+    A public page contains a password field and login wording. This is an
+    informational exposure-surface finding, not a confirmed authentication
+    weakness. A page that merely mentions "admin" is not reported.
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+  metadata:
+    max-request: 6
+    verified: true
+  tags: presence,admin,login,surface
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/admin/"
+      - "{{BaseURL}}/admin/login"
+      - "{{BaseURL}}/administrator/"
+      - "{{BaseURL}}/login"
+      - "{{BaseURL}}/login.php"
+      - "{{BaseURL}}/wp-login.php"
+
+    stop-at-first-match: true
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - '(?i)<input[^>]+type=["'']password["'']'
+
+      - type: regex
+        part: body
+        regex:
+          - '(?i)(login|sign[ -]?in|admin)'
+
+      - type: dsl
+        dsl:
+          - "!contains(tolower(body), 'index of /')"
+          - "!contains(tolower(body), '<title>404')"
+        condition: and
+
+      - type: status
+        status:
+          - 200

@@ -204,6 +204,13 @@ class ScanContext:
     sandbox_limits: Any = None
     """``SandboxLimits`` computed by the orchestrator for delegated tools."""
 
+    profile: str | None = None
+    """Trusted scanner profile selected by the scan step, if any.
+
+    Only the orchestrator supplies this value; it never comes from request
+    data.  Adapters without profiles ignore it.
+    """
+
     def remaining_seconds(self) -> float:
         """Seconds left in the overall scan budget (never negative)."""
         return max(0.0, self.deadline_monotonic - time.monotonic())

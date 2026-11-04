@@ -38,6 +38,17 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _budget_settings_for_scan(scan: Any) -> tuple[str, int]:
+    """Return ``(setting name, default)`` for the scan's wall-clock budget.
+
+    Only journey stage 2 has its own envelope.  ``journey_stage=None`` (every
+    classic monitoring scan) keeps the historical 540-second budget.
+    """
+    if getattr(scan, "journey_stage", None) == 2:
+        return "SCAN_JOURNEY_STAGE2_TIME_BUDGET_SECONDS", 360
+    return "SCAN_TOTAL_TIME_BUDGET_SECONDS", 540
+
+
 class ScanOrchestrator:
     """Orchestrates scanner execution for a given scan."""
 
@@ -55,6 +66,15 @@ class ScanOrchestrator:
         # external steps fail fast without re-resolving DNS.
         self._target_info: Any | None = None
         self._target_error: str | None = None
+        # Wall-clock budget of the active scan (540 s classic, 360 s stage 2).
+        self._time_budget_seconds: int = 540
+        # Stage-2 cross-scanner de-duplication (Nuclei content proof vs a
+        # Gobuster path discovery).  Disabled for classic scans so their
+        # historical finding set is preserved exactly.
+        self._dedup_findings: bool = False
+        self._finding_keys: set[tuple[str, str, str]] = set()
+        self._findings_by_key: dict[tuple[str, str, str], Any] = {}
+        self._findings_by_path: dict[str, Any] = {}
 
     @classmethod
     def _findings_accepts_result(cls, scanner: Any) -> bool:
@@ -94,7 +114,7 @@ class ScanOrchestrator:
         from scans.models import Scan
         from scans.services.scoring import recalculate_scan_health
         from scans.services.status import aggregate_scan_status
-        from scans.services.steps_builder import build_initial_steps
+        from scans.services.steps_builder import get_steps_for_scan
 
         scan = self._load_scan()
         if scan is None:
@@ -117,15 +137,24 @@ class ScanOrchestrator:
 
         domain = scan.website.domain
 
+        # Only journey stage 2 opts into cross-scanner de-duplication.
+        self._dedup_findings = scan.journey_stage == 2
+        self._finding_keys.clear()
+        self._findings_by_key.clear()
+        self._findings_by_path.clear()
+
         # Hard budget for the whole scan (all steps share it). A slow external
         # tool must never keep a Celery worker busy beyond this deadline.
-        budget = max(
-            1, int(getattr(settings, "SCAN_TOTAL_TIME_BUDGET_SECONDS", 540))
-        )
+        # Journey stage 2 has its own 360 s envelope; every other scan keeps
+        # the historical 540 s budget, including classic monitoring scans.
+        budget_setting, default_budget = _budget_settings_for_scan(scan)
+        budget = max(1, int(getattr(settings, budget_setting, default_budget)))
+        self._time_budget_seconds = budget
         self._deadline = time.monotonic() + budget
 
-        # Initialise steps list for this scan type.
-        steps = build_initial_steps(scan.scan_type)
+        # Initialise steps for this scan.  ``journey_stage=2`` selects the
+        # scenario-C pipeline; classic scans keep the historical lists.
+        steps = get_steps_for_scan(scan)
         scan.steps = steps
         scan.progress = 0
         scan.current_step = ""
@@ -259,7 +288,7 @@ class ScanOrchestrator:
                     steps,
                     index,
                     "Scan time budget exhausted "
-                    f"({getattr(settings, 'SCAN_TOTAL_TIME_BUDGET_SECONDS', 540)}s)",
+                    f"({self._time_budget_seconds}s)",
                 )
                 self._flush_step(scan, steps)
                 logger.warning(
@@ -349,7 +378,9 @@ class ScanOrchestrator:
                         f"Scanner '{scanner_name}' binary not found on PATH"
                     )
 
-                effective_timeout = self._effective_timeout(scanner, scanner_name)
+                effective_timeout = self._effective_timeout(
+                    scanner, scanner_name, step=step
+                )
 
                 # ── Central SSRF gate for every delegated tool ─────────
                 if is_external:
@@ -378,6 +409,9 @@ class ScanOrchestrator:
                     deadline_monotonic=self._deadline,
                     target=target,
                     sandbox_limits=sandbox_limits,
+                    # Trusted step definition: the orchestrator, never request
+                    # data, selects the Nuclei profile for stage-2 journeys.
+                    profile=step.get("profile"),
                 )
 
                 # Run the scanner ONCE via ``execute()``.  Adapters that
@@ -594,13 +628,19 @@ class ScanOrchestrator:
                 step["status"] = StepStatus.SKIPPED
                 step["error"] = reason
 
-    def _effective_timeout(self, scanner: Any, scanner_name: str) -> int:
+    def _effective_timeout(
+        self,
+        scanner: Any,
+        scanner_name: str,
+        *,
+        step: dict[str, Any] | None = None,
+    ) -> int:
         """Clamp the scanner timeout to the sandbox cap and scan budget.
 
-        Adapters with an explicit execution profile (Nuclei) expose
-        ``profile_timeout``.  That value is authoritative for the *process*
-        budget; the legacy top-level ``SCANNER_CONFIG[name]["timeout"]`` must
-        not silently override a shorter profile (or mask a longer one).
+        A stage-2 step may name a ``timeout_setting``; that deployment setting
+        is then authoritative (180 s Nuclei, 120 s Gobuster).  Otherwise the
+        historical precedence applies: an adapter's ``profile_timeout``
+        (Nuclei) wins over ``SCANNER_CONFIG[name]["timeout"]``.
         """
         scanner_cfg = self._scanner_cfg(scanner_name)
         try:
@@ -609,14 +649,25 @@ class ScanOrchestrator:
             # A malformed third-party adapter must not crash the whole step.
             configured = 60
 
-        profile_timeout = getattr(scanner, "profile_timeout", None)
-        # Only a real integer is authoritative.  MagicMock-based test doubles
-        # (and third-party adapters) return arbitrary objects whose int() is
-        # meaningless and must keep the legacy config fallback.
-        if isinstance(profile_timeout, int) and not isinstance(
-            profile_timeout, bool
-        ):
-            configured = profile_timeout
+        step_timeout: int | None = None
+        if step:
+            setting_name = step.get("timeout_setting")
+            if setting_name:
+                try:
+                    step_timeout = max(1, int(getattr(settings, setting_name)))
+                except (AttributeError, TypeError, ValueError):
+                    step_timeout = None
+        if step_timeout is not None:
+            configured = step_timeout
+        else:
+            profile_timeout = getattr(scanner, "profile_timeout", None)
+            # Only a real integer is authoritative.  MagicMock-based test
+            # doubles (and third-party adapters) return arbitrary objects
+            # whose int() is meaningless and must keep the legacy fallback.
+            if isinstance(profile_timeout, int) and not isinstance(
+                profile_timeout, bool
+            ):
+                configured = profile_timeout
 
         sandbox_cfg = getattr(settings, "SCANNER_SANDBOX", {}) or {}
         max_timeout = int(sandbox_cfg.get("max_timeout", 300) or 300)
@@ -860,20 +911,71 @@ class ScanOrchestrator:
             return {"status": "failed", "detail": type(exc).__name__}
 
     def _persist_findings(self, scanner_run: Any, findings: list) -> None:
-        """Bulk-create Finding records from NormalizedFinding instances."""
+        """Create Finding records from NormalizedFinding instances.
+
+        Classic scans keep the historical bulk-create behaviour.  Journey
+        stage 2 de-duplicates content findings by their canonical identity and
+        folds a Gobuster path discovery into the content finding that already
+        proved the same resource, so one issue is reported once.
+        """
         from scans.models import Finding
+        from scans.services.finding_dedup import (
+            finding_dedup_key,
+            finding_path,
+            finding_url,
+            is_path_discovery,
+            merge_complementary_evidence,
+            severity_rank,
+        )
 
         if not findings:
             return
 
-        max_raw = getattr(settings, "SCANNER_MAX_RAW_OUTPUT", 50_000)
-
         finding_objs = []
+        pending: list[tuple[Any, Any]] = []
         for f in findings:
             # Coerce reference_url to a safe value (no None, not too long).
             ref_url = (f.reference_url or "")[:500]
+            content_key: tuple[str, str, str] | None = None
 
-            finding_objs.append(Finding(
+            if self._dedup_findings:
+                if is_path_discovery(f):
+                    path = finding_path(f)
+                    target = self._findings_by_path.get(path) if path else None
+                    if target is not None:
+                        if merge_complementary_evidence(target, f):
+                            if target.pk:
+                                target.save(update_fields=["evidence"])
+                        logger.debug(
+                            "ScanOrchestrator: folded %s into %s (scan %d)",
+                            f.check_code,
+                            target.check_code,
+                            self.scan_id,
+                        )
+                        continue
+                else:
+                    url = finding_url(f)
+                    if url:
+                        content_key = finding_dedup_key(
+                            f.category, f.check_code, url
+                        )
+                        if content_key in self._finding_keys:
+                            # Same source, same canonical identity: keep the
+                            # highest severity rather than the first seen.
+                            existing = self._findings_by_key.get(content_key)
+                            if existing is not None and (
+                                severity_rank(f.severity)
+                                > severity_rank(existing.severity)
+                            ):
+                                existing.severity = f.severity
+                                existing.status = f.status
+                                existing.save(
+                                    update_fields=["severity", "status"]
+                                )
+                            continue
+                        self._finding_keys.add(content_key)
+
+            obj = Finding(
                 scanner_run=scanner_run,
                 category=f.category[:32],
                 check_code=f.check_code[:128],
@@ -887,12 +989,39 @@ class ScanOrchestrator:
                 recommendation=f.recommendation or "",
                 reference_url=ref_url,
                 duration_ms=f.duration_ms if f.duration_ms else None,
-            ))
+            )
+            if self._dedup_findings:
+                # Individual inserts give each content finding a primary key
+                # immediately, so a later Gobuster step can append evidence to
+                # the stored row without a second lookup.
+                obj.save()
+                if content_key is not None:
+                    self._findings_by_key[content_key] = obj
+                pending.append((f, obj))
+            else:
+                finding_objs.append(obj)
 
-        Finding.objects.bulk_create(finding_objs, ignore_conflicts=True)
+        if not self._dedup_findings:
+            Finding.objects.bulk_create(finding_objs, ignore_conflicts=True)
+            logger.debug(
+                "ScanOrchestrator: Persisted %d finding(s) for scanner_run %d",
+                len(finding_objs),
+                scanner_run.pk,
+            )
+            return
+
+        for f, obj in pending:
+            if is_path_discovery(f):
+                continue
+            path = finding_path(f)
+            if path:
+                # First content proof wins; a second proof for the same path
+                # is a different issue and was already kept under its own key.
+                self._findings_by_path.setdefault(path, obj)
         logger.debug(
-            "ScanOrchestrator: Persisted %d finding(s) for scanner_run %d",
-            len(finding_objs),
+            "ScanOrchestrator: Persisted %d finding(s) for scanner_run %d "
+            "(stage-2 de-duplication)",
+            len(pending),
             scanner_run.pk,
         )
 

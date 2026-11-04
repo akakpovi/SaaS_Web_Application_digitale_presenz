@@ -262,6 +262,14 @@ def _allowed_bind_roots() -> list[str]:
     shared = shared_work_dir()
     if shared:
         roots.append(shared)
+    # Read-only asset mount for the scenario-C Nuclei templates.  The path is
+    # deployment configuration, never scan input, and is the only non-temp
+    # directory the sandbox will expose.
+    scenario_templates = str(
+        _scanner_settings("nuclei").get("scenario_templates_path") or ""
+    ).strip()
+    if scenario_templates:
+        roots.append(os.path.realpath(scenario_templates))
     return roots
 
 
@@ -270,10 +278,10 @@ def _validate_bind_mounts(
 ) -> list[tuple[str, str]]:
     """Validate host bind mounts used for scanner output files.
 
-    Only directories under the system temporary directory (or the configured
-    shared work directory) may be mounted.  This keeps the sandbox API from
-    becoming an arbitrary host-filesystem escape if a future adapter mishandles
-    input.
+    Only directories under the system temporary directory, the configured
+    shared work directory, or the configured scenario-template directory may be
+    mounted.  This keeps the sandbox API from becoming an arbitrary
+    host-filesystem escape if a future adapter mishandles input.
     """
     if not mounts:
         return []
@@ -882,10 +890,15 @@ class SandboxedCommandExecutor:
             argv += ["--tmpfs", str(entry)]
 
         for host_path, container_path in _validate_bind_mounts(mounts):
-            argv += [
-                "--mount",
-                f"type=bind,src={host_path},dst={container_path}",
-            ]
+            # Scanner assets (Nuclei templates) are inputs, not outputs: the
+            # tool must never be able to modify the repository selection.
+            readonly = container_path == "/opt/scanner-templates" or (
+                container_path.startswith("/opt/scanner-templates/")
+            )
+            mount = f"type=bind,src={host_path},dst={container_path}"
+            if readonly:
+                mount += ",readonly"
+            argv += ["--mount", mount]
 
         if env_extra:
             for key, value in env_extra.items():
