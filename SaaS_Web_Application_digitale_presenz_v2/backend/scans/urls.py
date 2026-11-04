@@ -1,10 +1,11 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import CheckResultViewSet, ScanViewSet
+from .views import CheckResultViewSet, JourneyViewSet, ScanViewSet
 
 router = DefaultRouter()
 router.register("scans", ScanViewSet, basename="scan")
+router.register("scan-journeys", JourneyViewSet, basename="scan-journey")
 
 check_result_list = CheckResultViewSet.as_view({"get": "list"})
 check_result_detail = CheckResultViewSet.as_view({"get": "retrieve"})

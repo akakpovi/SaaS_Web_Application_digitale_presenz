@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import CheckResult, Finding, Scan, ScannerRun
+from .models import CheckResult, Finding, Scan, ScanJourney, ScannerRun
 
 
 class CheckResultSerializer(serializers.ModelSerializer):
@@ -150,5 +150,81 @@ class FindingSerializer(serializers.ModelSerializer):
             "reference_url",
             "duration_ms",
             "created_at",
+        ]
+        read_only_fields = fields
+
+
+# ---------------------------------------------------------------------------
+# Progressive scan journeys (Lot D)
+# ---------------------------------------------------------------------------
+
+
+class ScanSummarySerializer(serializers.ModelSerializer):
+    """Summary of a journey child scan."""
+
+    class Meta:
+        model = Scan
+        fields = [
+            "id",
+            "journey_stage",
+            "status",
+            "quota_charged",
+            "created_at",
+            "completed_at",
+        ]
+        read_only_fields = fields
+
+
+class JourneyCreateSerializer(serializers.Serializer):
+    """Admission payload: only the target website id is accepted."""
+
+    website = serializers.IntegerField(
+        min_value=1,
+        help_text="ID du site à scanner.",
+    )
+
+
+class JourneyListSerializer(serializers.ModelSerializer):
+    """Lightweight journey representation for list responses."""
+
+    website_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ScanJourney
+        fields = [
+            "id",
+            "website",
+            "website_url",
+            "state",
+            "current_stage",
+            "total_stages",
+            "expires_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_website_url(self, obj: ScanJourney) -> str:
+        return f"https://{obj.website.domain}"
+
+
+class JourneyDetailSerializer(JourneyListSerializer):
+    """Full journey representation, including its child scans."""
+
+    scans = ScanSummarySerializer(source="stages", many=True, read_only=True)
+
+    class Meta(JourneyListSerializer.Meta):
+        fields = [
+            "id",
+            "website",
+            "website_url",
+            "requested_by",
+            "state",
+            "current_stage",
+            "total_stages",
+            "expires_at",
+            "created_at",
+            "updated_at",
+            "scans",
         ]
         read_only_fields = fields
