@@ -101,9 +101,19 @@ def month_start():
 
 
 def scans_used_this_month(user=None, *, organization=None) -> int:
+    """Count the scans that consume a quota unit this month.
+
+    ``quota_charged=False`` identifies the additional stages of a progressive
+    journey: one journey is one unit (charged on stage 1), so followers must
+    never count against the plan.  Classic scans keep the default ``True`` and
+    are therefore counted exactly as before.
+    """
     from scans.models import Scan
 
-    qs = Scan.objects.filter(created_at__gte=month_start())
+    qs = Scan.objects.filter(
+        created_at__gte=month_start(),
+        quota_charged=True,
+    )
     if organization is not None:
         qs = qs.filter(website__organization=organization)
     elif user is not None:

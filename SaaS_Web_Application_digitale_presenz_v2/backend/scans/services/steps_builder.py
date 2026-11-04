@@ -56,6 +56,19 @@ _SECURITY_STEPS: list[dict[str, Any]] = [
 
 _FULL_STEPS: list[dict[str, Any]] = _HEALTH_STEPS + _SECURITY_STEPS
 
+#: Progressive journey stage 1: one fast, bounded TLS pass.  The budget for
+#: the whole stage is 150 s (``SCAN_JOURNEY_STAGE1_TIME_BUDGET_SECONDS``);
+#: testssl keeps its 120 s per-step timeout, so the adapter can still close
+#: its report before the orchestrator reaches the stage deadline.
+_JOURNEY_STAGE1_STEPS: list[dict[str, Any]] = [
+    {
+        "key": "testssl",
+        "label": "TLS Deep Analysis (testssl.sh)",
+        "scanner": "testssl",
+        "weight": 100,
+    },
+]
+
 #: Progressive journey stage 2 (scenario C).  Nikto is deliberately absent:
 #: the optimised Nuclei profile plus the original Presence templates replace
 #: it for journeys only.  Classic scans keep ``_SECURITY_STEPS`` unchanged.
@@ -85,11 +98,14 @@ def build_initial_steps(
 ) -> list[dict[str, Any]]:
     """Return the initial steps list for a given scan type.
 
-    ``journey_stage=2`` selects the scenario-C pipeline regardless of the
-    scan type.  Every other value, including ``None``, keeps the historical
-    behaviour exactly: classic scans never see the new profile.
+    ``journey_stage=1`` selects the bounded TLS stage and ``journey_stage=2``
+    the scenario-C pipeline, regardless of the scan type.  Every other value,
+    including ``None``, keeps the historical behaviour exactly: classic scans
+    never see the journey profiles.
     """
-    if journey_stage == 2:
+    if journey_stage == 1:
+        template = _JOURNEY_STAGE1_STEPS
+    elif journey_stage == 2:
         template = _JOURNEY_STAGE2_STEPS
     elif scan_type == "security":
         template = _SECURITY_STEPS
@@ -124,7 +140,11 @@ def build_initial_steps(
 
 
 def get_steps_for_scan(scan: Any) -> list[dict[str, Any]]:
-    """Select the pipeline for *scan* without changing classic scans."""
+    """Select the pipeline for *scan* without changing classic scans.
+
+    A journey child is fully defined by its ``journey_stage``; a classic scan
+    (``journey_stage=None``) keeps its historical, scan-type-based pipeline.
+    """
     return build_initial_steps(
         getattr(scan, "scan_type", "health"),
         journey_stage=getattr(scan, "journey_stage", None),

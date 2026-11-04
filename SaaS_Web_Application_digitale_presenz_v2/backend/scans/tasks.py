@@ -118,7 +118,12 @@ def _dispatch_advisor(scan_id: int) -> bool:
         return False
 
 
-def _finalize_scan(scan_id: int) -> dict:
+def _finalize_scan(
+    scan_id: int,
+    *,
+    update_monitoring: bool = True,
+    update_health: bool = True,
+) -> dict:
     """Verify and repair the terminal state of a completed scan.
 
     A scan is only useful to the product when it ends up COMPLETED or PARTIAL
@@ -131,6 +136,10 @@ def _finalize_scan(scan_id: int) -> dict:
     recomputes the score and logs an explicit diagnostic when the scan is
     empty.  A PARTIAL scan keeps the score computed from the checks that did
     run, but it is never forced to 0 and never presented as a complete scan.
+
+    Journey children pass ``update_monitoring=False`` and ``update_health=False``:
+    a stage is not a scheduled site measurement, and a TLS-only stage must not
+    publish a scan health score that looks like the site's global score.
     """
     from scans.models import CheckResult, Finding, Scan, ScannerRun
     from scans.services.scoring import recalculate_scan_health
@@ -145,7 +154,8 @@ def _finalize_scan(scan_id: int) -> dict:
 
     report["status"] = scan.status
 
-    _record_monitoring_outcome(scan)
+    if update_monitoring:
+        _record_monitoring_outcome(scan)
 
     if scan.status not in (Scan.Status.COMPLETED, Scan.Status.PARTIAL):
         logger.warning(
@@ -171,22 +181,29 @@ def _finalize_scan(scan_id: int) -> dict:
         ),
     ).count()
 
-    health = recalculate_scan_health(scan)
+    if update_health:
+        health = recalculate_scan_health(scan)
 
-    if (
-        scan.status == Scan.Status.COMPLETED
-        and health.score is None
-        and scan.scan_type in _SCORED_SCAN_TYPES
-    ):
-        logger.error(
-            "Scan %d completed with score=None (type=%s, check_results=%d) — "
-            "forcing score=0 so the API never exposes a NULL score",
+        if (
+            scan.status == Scan.Status.COMPLETED
+            and health.score is None
+            and scan.scan_type in _SCORED_SCAN_TYPES
+        ):
+            logger.error(
+                "Scan %d completed with score=None (type=%s, "
+                "check_results=%d) — forcing score=0 so the API never "
+                "exposes a NULL score",
+                scan_id,
+                scan.scan_type,
+                report["check_results"],
+            )
+            Scan.objects.filter(pk=scan_id).update(health_score=0)
+            report["score_forced"] = True
+    else:
+        logger.info(
+            "Scan %d is a journey stage — health score left untouched",
             scan_id,
-            scan.scan_type,
-            report["check_results"],
         )
-        Scan.objects.filter(pk=scan_id).update(health_score=0)
-        report["score_forced"] = True
 
     if report["check_results"] == 0:
         logger.error(
@@ -238,15 +255,73 @@ def run_authenticated_scan(self, scan_id: int) -> dict:
     The task is idempotent: if the scan is already COMPLETED, PARTIAL, FAILED
     or CANCELLED, the orchestrator exits immediately.
     """
-    from scans.services.orchestrator import ScanOrchestrator
     from scans.models import Scan
+    from scans.services.orchestrator import ScanOrchestrator, claim_scan
 
     logger.info("Starting scan task for scan_id=%d", scan_id)
     try:
+        scan = (
+            Scan.objects.filter(pk=scan_id)
+            .only("id", "status", "journey_id")
+            .first()
+        )
+        if scan is None:
+            logger.error("Scan task: scan %d not found", scan_id)
+            return {"scan_id": scan_id, "status": "missing"}
+
+        is_journey = scan.journey_id is not None
+        terminal_states = (
+            Scan.Status.COMPLETED,
+            Scan.Status.PARTIAL,
+            Scan.Status.FAILED,
+            Scan.Status.CANCELLED,
+        )
+
+        # Atomic QUEUED → RUNNING claim.  Two deliveries of the same Celery
+        # message can no longer run the same scanners twice: the loser exits
+        # before creating a second set of ScannerRun/Finding rows.
+        # A scan already terminal keeps the historical re-entry path below
+        # (finalisation and, for a completed classic scan, advisor retry).
+        if scan.status not in terminal_states and not claim_scan(scan_id):
+            logger.info(
+                "Scan task: scan %d is already claimed or no longer queued "
+                "(status=%s) — exiting without running scanners",
+                scan_id,
+                scan.status,
+            )
+            return {
+                "scan_id": scan_id,
+                "status": "skipped",
+                "reason": "claim_lost",
+            }
+
         orchestrator = ScanOrchestrator(scan_id=scan_id)
         orchestrator.run()
         # Guarantee the terminal state is usable (score + artefacts written).
-        report = _finalize_scan(scan_id)
+        # Journey children are finalised without the classic side effects.
+        report = _finalize_scan(
+            scan_id,
+            update_monitoring=not is_journey,
+            update_health=not is_journey,
+        )
+
+        if is_journey:
+            # The journey owns progression.  No alert, AI advisor, monitoring
+            # outcome or health-score side effect is triggered for a stage.
+            from scans.services.journey_service import JourneyService
+
+            journey = JourneyService.on_stage_completed(scan_id)
+            report["journey_id"] = getattr(journey, "pk", None)
+            report["journey_state"] = getattr(journey, "state", None)
+            logger.info(
+                "Scan task completed for journey stage scan_id=%d "
+                "journey_id=%s journey_state=%s",
+                scan_id,
+                report["journey_id"],
+                report["journey_state"],
+            )
+            return {"scan_id": scan_id, "status": "done", **report}
+
         # Alerts and AI analysis are only launched for a fully verified scan.
         # A PARTIAL scan keeps its stored findings for diagnosis, but it must
         # not trigger an automatic resolution or be analysed as complete.
@@ -271,8 +346,15 @@ def run_authenticated_scan(self, scan_id: int) -> dict:
                 Scan.Status.CANCELLED,
             ):
                 scan.transition_to(Scan.Status.FAILED, failure_message=str(exc)[:500])
-                _record_monitoring_outcome(scan)
-                _dispatch_scan_issue_alert(scan_id)
+                if scan.journey_id is None:
+                    _record_monitoring_outcome(scan)
+                    _dispatch_scan_issue_alert(scan_id)
+                else:
+                    # A crashed stage must fail its journey, not leave it
+                    # running forever.
+                    from scans.services.journey_service import JourneyService
+
+                    JourneyService.on_stage_completed(scan_id)
         except Exception:
             pass
         raise

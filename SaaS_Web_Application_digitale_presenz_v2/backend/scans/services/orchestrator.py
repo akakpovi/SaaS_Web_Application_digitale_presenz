@@ -41,12 +41,45 @@ logger = logging.getLogger(__name__)
 def _budget_settings_for_scan(scan: Any) -> tuple[str, int]:
     """Return ``(setting name, default)`` for the scan's wall-clock budget.
 
-    Only journey stage 2 has its own envelope.  ``journey_stage=None`` (every
-    classic monitoring scan) keeps the historical 540-second budget.
+    Each journey stage has its own envelope: 150 s for the bounded TLS stage
+    and 360 s for the scenario-C stage.  ``journey_stage=None`` (every classic
+    monitoring scan) keeps the historical 540-second budget.
     """
-    if getattr(scan, "journey_stage", None) == 2:
+    stage = getattr(scan, "journey_stage", None)
+    if stage == 1:
+        return "SCAN_JOURNEY_STAGE1_TIME_BUDGET_SECONDS", 150
+    if stage == 2:
         return "SCAN_JOURNEY_STAGE2_TIME_BUDGET_SECONDS", 360
     return "SCAN_TOTAL_TIME_BUDGET_SECONDS", 540
+
+
+def claim_scan(scan_id: int) -> bool:
+    """Atomically move a scan from QUEUED to RUNNING.
+
+    A single conditional ``UPDATE`` is the whole claim: two workers (or two
+    deliveries of the same Celery message) cannot both succeed, because the
+    second one no longer matches ``status='queued'``.  This is deliberately
+    not ``select_for_update()`` + ``save()``: that pattern can still let a
+    stale in-memory row overwrite the transition of another worker.
+
+    Returns:
+        True when this caller owns the scan, False when it was already claimed
+        (RUNNING) or is no longer queued (terminal/cancelled).
+    """
+    from scans.models import Scan
+
+    now = timezone.now()
+    updated = Scan.objects.filter(
+        id=scan_id,
+        status=Scan.Status.QUEUED,
+    ).update(
+        status=Scan.Status.RUNNING,
+        started_at=now,
+        # ``auto_now`` is bypassed by ``QuerySet.update()``; the reaper relies
+        # on ``updated_at`` to measure idleness, so set it explicitly.
+        updated_at=now,
+    )
+    return updated == 1
 
 
 class ScanOrchestrator:
@@ -191,14 +224,21 @@ class ScanOrchestrator:
             return
 
         # ── Recalculate health score ───────────────────────────────────
-        try:
-            recalculate_scan_health(scan)
-        except Exception as exc:
-            logger.error(
-                "ScanOrchestrator: Failed to recalculate health for scan %d: %s",
-                self.scan_id,
-                exc,
-            )
+        # A journey stage is not a full-site measurement: stage 1 only proves
+        # TLS and stage 2 only covers Nuclei/Gobuster.  Writing a scan-level
+        # health score for such a stage would present a partial measurement as
+        # the site's health, so journey children keep ``health_score=NULL``.
+        # Classic scans keep the historical recalculation untouched.
+        if scan.journey_id is None:
+            try:
+                recalculate_scan_health(scan)
+            except Exception as exc:
+                logger.error(
+                    "ScanOrchestrator: Failed to recalculate health for scan "
+                    "%d: %s",
+                    self.scan_id,
+                    exc,
+                )
 
         # ── Finalise from the stored per-scanner outcomes ─────────────
         # ``Scan.status`` must describe what was actually verified, not just
