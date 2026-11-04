@@ -484,6 +484,20 @@ def reap_stale_scans() -> dict:
     }
 
 
+@shared_task(name="scans.tasks.reap_stale_journeys")
+def reap_stale_journeys() -> dict:
+    """Expire and reconcile progressive journeys abandoned by their users.
+
+    The scan reaper above only knows classic scans.  A journey waiting for a
+    confirmation has no active child scan, so nothing else would ever close
+    it and ``unique_active_journey_per_website`` would block the site forever.
+    The transition rules stay in the journey service.
+    """
+    from scans.services.journey_reaper import reap_journeys
+
+    return reap_journeys()
+
+
 @shared_task(name="scans.tasks.cancel_scan")
 def cancel_scan(scan_id: int) -> dict:
     """Attempt to cancel a running or queued scan."""

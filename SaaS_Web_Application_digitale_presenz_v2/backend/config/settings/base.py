@@ -377,6 +377,10 @@ CELERY_BEAT_SCHEDULE.update({
         "task": "scans.tasks.reap_stale_scans",
         "schedule": 300.0,
     },
+    "reap-stale-journeys": {
+        "task": "scans.tasks.reap_stale_journeys",
+        "schedule": 300.0,
+    },
     # Standing credential check: catches a revoked/expired key before a
     # customer scan silently falls back to deterministic recommendations.
     "verify-aka-credentials": {
@@ -944,6 +948,12 @@ MAX_CONCURRENT_SCANS_PER_USER: int = _env_int("MAX_CONCURRENT_SCANS_PER_USER", 1
 # A scan journey waiting for the user's confirmation expires after this delay,
 # so an abandoned journey never keeps the per-website active-journey slot.
 SCAN_JOURNEY_TTL_HOURS = 24
+# Journey reaper (Lot E): operational knobs.  The service keeps safe defaults,
+# so a deployment that does not set these still gets a working sweep.
+SCAN_JOURNEY_STUCK_AWAITING_HOURS = 12
+SCAN_JOURNEY_STUCK_RUNNING_MINUTES = 60
+SCAN_JOURNEY_REAPER_INACTIVE_MINUTES = 15
+SCAN_JOURNEY_ACCUMULATION_THRESHOLD = 3
 
 # ---- External data providers (all optional; scanners degrade honestly) ----
 # Google Safe Browsing malware reputation (https://developers.google.com/safe-browsing)

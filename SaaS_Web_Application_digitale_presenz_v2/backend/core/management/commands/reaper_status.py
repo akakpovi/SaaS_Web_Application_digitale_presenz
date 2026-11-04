@@ -11,8 +11,9 @@ from core.reaper_metrics import read_reaper_metrics
 
 class Command(BaseCommand):
     help = (
-        "Show how many AI runs/scans each reaper closed and when its last "
-        "tick ran.  Reads the shared cache (Redis in normal deployments)."
+        "Show how many AI runs/scans/journeys each reaper closed and when "
+        "its last tick ran.  Reads the shared cache (Redis in normal "
+        "deployments)."
     )
 
     def handle(self, *args, **options):
