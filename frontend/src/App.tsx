@@ -33,8 +33,11 @@ function LocaleSync() {
   const routeLocale = detectLocaleFromPath(location.pathname);
 
   useEffect(() => {
-    if (routeLocale && i18n.resolvedLanguage !== routeLocale) {
-      void i18n.changeLanguage(routeLocale);
+    if (routeLocale) {
+      if (i18n.resolvedLanguage !== routeLocale) {
+        void i18n.changeLanguage(routeLocale);
+      }
+      document.documentElement.lang = routeLocale;
     }
   }, [routeLocale]);
 
