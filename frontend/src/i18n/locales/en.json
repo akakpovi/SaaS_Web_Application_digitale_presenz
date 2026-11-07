@@ -71,7 +71,7 @@
     "empty_title": "No websites yet",
     "empty_btn": "Add your first website",
     "search": "Search websites...",
-    "pro_feature": "🔒 Pro Feature: {feature}",
+    "pro_feature": "🔒 Pro Feature: {{feature}}",
     "score_explanation": "Maximum score: 20 points per category",
     "score_legend": "Score out of 20 points",
     "scan_success": "✅ Scan started successfully!",
@@ -111,7 +111,9 @@
     "performance": "⚡ Performance",
     "uptime": "📊 Uptime",
     "reviews": "⭐ Reviews",
-    "seo": "🔍 SEO Audit"
+    "seo": "🔍 SEO Audit",
+    "nuclei": "🧪 Nuclei",
+    "exposure": "🔎 Exposure"
   },
   "alerts": {
     "title": "Alerts",

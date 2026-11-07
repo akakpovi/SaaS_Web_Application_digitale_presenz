@@ -1,8 +1,9 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AppShell } from './components/AppShell';
 import { AuthProvider } from './context/AuthContext';
+import i18n, { detectBrowserLocale, detectLocale, detectLocaleFromPath } from './i18n';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import CookieConsent from './components/CookieConsent';
 import Dashboard from './pages/Dashboard';
@@ -26,13 +27,29 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { VerifyEmail } from './pages/VerifyEmail';
 import { BlogPage } from './pages/BlogPage';
+
+function LocaleSync() {
+  const location = useLocation();
+  const routeLocale = detectLocaleFromPath(location.pathname);
+
+  useEffect(() => {
+    if (routeLocale && i18n.resolvedLanguage !== routeLocale) {
+      void i18n.changeLanguage(routeLocale);
+    }
+  }, [routeLocale]);
+
+  return null;
+}
+
 function App() {
   return (
     <HelmetProvider>
       <Router>
+        <LocaleSync />
         <AuthProvider>
           <CookieConsent />
           <Routes>
+            <Route path="/" element={<Navigate to={`/${detectBrowserLocale()}/`} replace />} />
             {/* Public routes */}
             <Route path="/:lang/" element={<Landing />} />
             <Route path="/:lang/login" element={<Login />} />
@@ -62,7 +79,7 @@ function App() {
               <Route path="settings" element={<Settings />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/fr/" replace />} />
+            <Route path="*" element={<Navigate to={`/${detectLocale()}/`} replace />} />
           </Routes>
         </AuthProvider>
       </Router>

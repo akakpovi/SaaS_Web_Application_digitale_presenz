@@ -7,6 +7,30 @@ import frTranslations from './locales/fr.json';
 import enTranslations from './locales/en.json';
 import deTranslations from './locales/de.json';
 
+export const SUPPORTED_LOCALES = ['de', 'fr', 'en'] as const;
+export type Lang = (typeof SUPPORTED_LOCALES)[number];
+export const DEFAULT_LOCALE: Lang = 'de';
+
+function normalizeLocale(value?: string | null): Lang | null {
+  const base = (value || '').split('-')[0].toLowerCase();
+  return (SUPPORTED_LOCALES as readonly string[]).includes(base)
+    ? (base as Lang)
+    : null;
+}
+
+export function detectLocaleFromPath(pathname = window.location.pathname): Lang | null {
+  const match = pathname.match(/^\/(de|fr|en)(?:\/|$)/);
+  return match ? (match[1] as Lang) : null;
+}
+
+export function detectBrowserLocale(): Lang {
+  return normalizeLocale(typeof navigator !== 'undefined' ? navigator.language : null) ?? DEFAULT_LOCALE;
+}
+
+export function detectLocale(pathname = window.location.pathname): Lang {
+  return detectLocaleFromPath(pathname) ?? detectBrowserLocale();
+}
+
 const resources = {
   fr: { translation: frTranslations },
   en: { translation: enTranslations },
@@ -18,16 +42,18 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'fr',
+    lng: detectLocale(),
+    supportedLngs: [...SUPPORTED_LOCALES],
+    fallbackLng: DEFAULT_LOCALE,
+    load: 'languageOnly',
     debug: false,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['path', 'cookie', 'localStorage', 'navigator'],
+      order: ['path', 'navigator'],
       lookupFromPathIndex: 0,
-      caches: ['cookie', 'localStorage'],
-      cookieMinutes: 43200,
+      caches: [],
     },
   });
 

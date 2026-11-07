@@ -17,7 +17,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   const setLang = (l: Lang) => i18n.changeLanguage(l);
   return (
     <LangContext.Provider value={{
-      lang: (i18n.language?.slice(0, 2) as Lang) ?? "en",
+      lang: (i18n.language?.slice(0, 2) as Lang) ?? "de",
       setLang,
       t: (key: string) => t(key),
     }}>

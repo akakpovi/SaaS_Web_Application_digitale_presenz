@@ -99,8 +99,8 @@ export function WebsiteDetails() {
   const [error, setError] = useState<string | null>(null);
   const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
 
-  const currentLang = (i18n.language || 'fr').split('-')[0].toLowerCase() as 'fr' | 'en' | 'de';
-  const intervalLabels = INTERVAL_LABELS[currentLang] || INTERVAL_LABELS.fr;
+  const currentLang = (i18n.language || 'de').split('-')[0].toLowerCase() as 'fr' | 'en' | 'de';
+  const intervalLabels = INTERVAL_LABELS[currentLang] || INTERVAL_LABELS.de;
 
   const fetchWebsiteData = async () => {
     setLoading(true);

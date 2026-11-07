@@ -246,8 +246,8 @@ export function Websites() {
   const { i18n } = useTranslation();
   const { user, plan } = useAuth();
 
-  const currentLang = (lang || i18n.language || 'fr').split('-')[0].toLowerCase() as 'fr' | 'en' | 'de';
-  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+  const currentLang = (lang || i18n.language || 'de').split('-')[0].toLowerCase() as 'fr' | 'en' | 'de';
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.de;
 
   // États
   const [websites, setWebsites] = useState<WebsiteItem[]>([]);

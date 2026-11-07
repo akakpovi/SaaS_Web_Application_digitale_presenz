@@ -71,7 +71,7 @@
     "empty_title": "Aucun site pour le moment",
     "empty_btn": "Ajouter votre premier site",
     "search": "Rechercher un site...",
-    "pro_feature": "🔒 Fonctionnalité Pro: {feature}",
+    "pro_feature": "🔒 Fonctionnalité Pro: {{feature}}",
     "score_explanation": "Score maximum: 20 points par catégorie",
     "score_legend": "Score sur 20 points",
     "scan_success": "✅ Scan lancé avec succès !",
@@ -111,7 +111,9 @@
     "performance": "⚡ Performance",
     "uptime": "📊 Disponibilité",
     "reviews": "⭐ Avis clients",
-    "seo": "🔍 Audit SEO"
+    "seo": "🔍 Audit SEO",
+    "nuclei": "🧪 Nuclei",
+    "exposure": "🔎 Exposition"
   },
   "alerts": {
     "title": "Alertes",

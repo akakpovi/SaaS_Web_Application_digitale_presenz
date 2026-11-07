@@ -71,7 +71,7 @@
     "empty_title": "Noch keine Websites",
     "empty_btn": "Erste Website hinzufügen",
     "search": "Website suchen...",
-    "pro_feature": "🔒 Pro-Funktion: {feature}",
+    "pro_feature": "🔒 Pro-Funktion: {{feature}}",
     "score_explanation": "Maximale Punktzahl: 20 Punkte pro Kategorie",
     "score_legend": "Punktzahl von 20 Punkten",
     "scan_success": "✅ Scan erfolgreich gestartet!",
@@ -111,7 +111,9 @@
     "performance": "⚡ Leistung",
     "uptime": "📊 Verfügbarkeit",
     "reviews": "⭐ Bewertungen",
-    "seo": "🔍 SEO-Audit"
+    "seo": "🔍 SEO-Audit",
+    "nuclei": "🧪 Nuclei",
+    "exposure": "🔎 Exposition"
   },
   "alerts": {
     "title": "Warnungen",

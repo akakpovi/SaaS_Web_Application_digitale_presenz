@@ -9,8 +9,10 @@ interface User {
 }
 
 interface Plan {
-  tier: 'free' | 'pro' | 'business';
+  tier: 'free' | 'pro' | 'business' | 'agency' | 'qa';
+  name?: string;
   max_websites: number;
+  active_websites?: number;
 }
 
 interface AuthContextType {
@@ -49,9 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const subRes = await api.get('/subscriptions/me/', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setPlan(subRes.data.plan);
+        setPlan({
+          ...subRes.data.plan,
+          active_websites: subRes.data.usage?.websites ?? subRes.data.plan?.active_websites ?? 0,
+        });
       } catch (e) {
-        setPlan({ tier: 'free', max_websites: 1 });
+        setPlan({ tier: 'free', max_websites: 1, active_websites: 0 });
       }
     } catch (error) {
       localStorage.removeItem('access_token');

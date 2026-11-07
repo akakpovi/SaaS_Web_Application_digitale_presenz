@@ -36,8 +36,8 @@ api.interceptors.response.use(
       localStorage.removeItem("refresh_token");
 
       // Détecter la langue courante de l'URL pour rediriger proprement
-      const currentLang = window.location.pathname.split("/")[1] || "fr";
-      const langPrefix = ["fr", "en", "de"].includes(currentLang) ? `/${currentLang}` : "/fr";
+      const currentLang = window.location.pathname.split("/")[1] || "de";
+      const langPrefix = ["de", "fr", "en"].includes(currentLang) ? `/${currentLang}` : "/de";
       
       if (!window.location.pathname.includes("/login")) {
         window.location.href = `${langPrefix}/login?expired=true`;

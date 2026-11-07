@@ -13,7 +13,7 @@ export function Login() {
   const { lang } = useParams<{ lang?: string }>();
   const { i18n } = useTranslation();
 
-  const currentLang = lang || i18n.language?.split('-')[0] || 'fr';
+  const currentLang = lang || i18n.language?.split('-')[0] || 'de';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

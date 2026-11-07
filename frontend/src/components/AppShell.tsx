@@ -18,7 +18,7 @@ const SHELL_TEXTS = {
     settings: "Paramètres",
     logout: "Déconnexion",
     freePlan: "Plan Gratuit",
-    unlimited: "Gratuit - {used}/{max} sites",
+    unlimited: "{plan} - {used}/{max} sites",
     blog: "Blog",
   },
   en: {
@@ -35,7 +35,7 @@ const SHELL_TEXTS = {
     settings: "Settings",
     logout: "Sign out",
     freePlan: "Free Plan",
-    unlimited: "Free - {used}/{max} sites",
+    unlimited: "{plan} - {used}/{max} sites",
     blog: "Blog",
   },
   de: {
@@ -52,7 +52,7 @@ const SHELL_TEXTS = {
     settings: "Einstellungen",
     logout: "Abmelden",
     freePlan: "Kostenlos",
-    unlimited: "Kostenlos - {used}/{max} Websites",
+    unlimited: "{plan} - {used}/{max} Websites",
     blog: "Blog",
   },
 };
@@ -67,12 +67,17 @@ export function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const currentLang = ((lang || i18n.language || 'fr').split('-')[0].toLowerCase()) as 'fr' | 'en' | 'de';
+  const currentLang = ((lang || i18n.language || 'de').split('-')[0].toLowerCase()) as 'fr' | 'en' | 'de';
   const t = SHELL_TEXTS[currentLang] || SHELL_TEXTS.fr;
   const langUpper = currentLang.toUpperCase();
 
-  const maxSites = plan?.tier === 'free' ? 3 : (plan?.tier === 'pro' ? 10 : '∞');
-  const usedSites = plan?.active_websites || 0;
+  const maxSites = plan?.max_websites ?? 1;
+  const usedSites = plan?.active_websites ?? 0;
+  const planName = plan?.name || t.freePlan;
+  const quotaLabel = t.unlimited
+    .replace('{plan}', planName)
+    .replace('{used}', usedSites.toString())
+    .replace('{max}', maxSites.toString());
 
   const handleLanguageChange = (targetLang: string) => {
     i18n.changeLanguage(targetLang.toLowerCase());
@@ -155,8 +160,8 @@ export function AppShell() {
 
           <div className="pt-2">
             <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-emerald-700">{t.freePlan}</span>
-              <span className="text-[10px] font-semibold text-emerald-600">{t.unlimited}</span>
+              <span className="text-[10px] font-bold uppercase text-emerald-700">{planName}</span>
+              <span className="text-[10px] font-semibold text-emerald-600">{quotaLabel}</span>
             </div>
           </div>
         </div>
@@ -233,10 +238,8 @@ export function AppShell() {
                   </div>
                   <div className="p-2">
                     <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col mb-2">
-                      <span className="text-[10px] font-bold uppercase text-emerald-700">{t.freePlan}</span>
-                      <span className="text-[10px] font-semibold text-emerald-600">
-                        {t.unlimited.replace('{used}', usedSites.toString()).replace('{max}', maxSites.toString())}
-                      </span>
+                      <span className="text-[10px] font-bold uppercase text-emerald-700">{planName}</span>
+                      <span className="text-[10px] font-semibold text-emerald-600">{quotaLabel}</span>
                     </div>
                     <button
                       onClick={handleLogout}

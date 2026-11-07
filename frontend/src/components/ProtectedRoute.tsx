@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { lang } = useParams();
-  const currentLang = lang || 'fr';
+  const currentLang = lang || 'de';
 
   if (loading) {
     return (
