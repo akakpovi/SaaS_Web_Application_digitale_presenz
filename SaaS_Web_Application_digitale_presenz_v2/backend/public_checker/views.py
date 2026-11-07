@@ -15,7 +15,7 @@ from rest_framework import permissions, status
 
 from core.security import validate_domain_for_scan, DomainValidationError, SSRFBlockedError
 from scans.models import Scan, CheckResult, HealthStatus
-from scans.services.scoring import PublicScorableResult, calculate_health_score
+from scans.services.scoring import CHECK_WEIGHTS, PublicScorableResult, calculate_health_score
 from scans.services.steps_builder import build_initial_steps, StepStatus
 from websites.models import Website
 from .models import PublicLead
@@ -77,6 +77,7 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
         check_data = {
             "status": cr.status,
             "score": cr.score,
+            "max_score": CHECK_WEIGHTS.get(cr.category),
             "message": cr.summary,
             "remediation": _build_rich_remediation(cr.category, cr.status)
         }

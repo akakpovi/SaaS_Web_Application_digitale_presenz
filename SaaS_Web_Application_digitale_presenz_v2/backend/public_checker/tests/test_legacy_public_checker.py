@@ -135,13 +135,20 @@ class PublicCheckerAPITests(APITestCase):
             score=20,
             summary="OK",
         )
+        CheckResult.objects.create(
+            scan=scan,
+            category=CheckResult.Category.EXPOSURE,
+            status="neutral",
+            score=None,
+            summary="No exposure findings",
+        )
         scan.health_score = 85
         scan.health_status = "healthy"
         scan.progress = 100
         scan.save(update_fields=["health_score", "health_status", "progress"])
         scan.transition_to(Scan.Status.COMPLETED)
 
-        response = self.client.get(f"/api/v1/public/check/{scan.id}/")
+        response = self.client.get(f"/api/v1/public/scan/{scan.id}/status/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["scan_id"], str(scan.id))
@@ -150,6 +157,9 @@ class PublicCheckerAPITests(APITestCase):
         self.assertEqual(response.data["summary"]["passed"], 1)
         self.assertIn("website", response.data["checks"])
         self.assertEqual(response.data["checks"]["website"]["score"], 20)
+        self.assertEqual(response.data["checks"]["website"]["max_score"], 20)
+        self.assertIn("exposure", response.data["checks"])
+        self.assertIsNone(response.data["checks"]["exposure"]["max_score"])
         self.assertEqual(response.data["progress"], 100)
 
     def test_poll_unknown_public_scan_returns_404(self) -> None:

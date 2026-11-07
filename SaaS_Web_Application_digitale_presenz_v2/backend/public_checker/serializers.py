@@ -39,6 +39,11 @@ class PublicCheckResultSerializer(serializers.Serializer):
         allow_null=True,
     )
 
+    max_score = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
+
     status = serializers.ChoiceField(
         choices=(
             "healthy",
