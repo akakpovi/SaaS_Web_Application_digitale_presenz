@@ -798,7 +798,7 @@ class ExternalCheckResultMappingTests(TestCase):
     def test_gobuster_paths_create_an_exposure_check_result(self):
         scanner = _external_scanner(
             "gobuster",
-            score=None,
+            score=8,
             status="neutral",
             details={
                 "scan_complete": True,
@@ -821,7 +821,7 @@ class ExternalCheckResultMappingTests(TestCase):
         result = CheckResult.objects.get(
             scan=scan, category=CheckResult.Category.EXPOSURE
         )
-        self.assertIsNone(result.score)
+        self.assertEqual(result.score, 8)
         self.assertEqual(result.technical_details["scanner"], "gobuster")
 
     def test_empty_external_result_creates_no_check_result(self):

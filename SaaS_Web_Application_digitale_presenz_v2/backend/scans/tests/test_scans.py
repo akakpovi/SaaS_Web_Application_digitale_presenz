@@ -22,7 +22,13 @@ from rest_framework_simplejwt.tokens import AccessToken
 from accounts.models import User
 from scans.models import CheckResult, HealthStatus, Scan
 from scans.serializers import CheckResultSerializer
-from scans.services.scoring import CHECK_WEIGHTS, HealthScore, calculate_health_score, recalculate_scan_health
+from scans.services.scoring import (
+    CHECK_WEIGHTS,
+    HEALTH_WEIGHTS,
+    HealthScore,
+    calculate_health_score,
+    recalculate_scan_health,
+)
 from websites.models import Website
 
 
@@ -144,8 +150,13 @@ class HealthScoreServiceTests(TestCase):
 
     # ── Weights ──
 
-    def test_weights_sum_to_100(self) -> None:
-        self.assertEqual(sum(CHECK_WEIGHTS.values()), 100)
+    def test_health_weights_sum_to_100(self) -> None:
+        self.assertEqual(sum(HEALTH_WEIGHTS.values()), 100)
+
+    def test_check_weights_include_security_scorecards(self) -> None:
+        self.assertEqual(sum(CHECK_WEIGHTS.values()), 130)
+        self.assertEqual(CHECK_WEIGHTS[CheckResult.Category.EXPOSURE], 10)
+        self.assertEqual(CHECK_WEIGHTS[CheckResult.Category.NUCLEI], 20)
 
     def test_weights_are_correct(self) -> None:
         self.assertEqual(CHECK_WEIGHTS[CheckResult.Category.WEBSITE], 20)
@@ -270,6 +281,13 @@ class HealthScoreServiceTests(TestCase):
         self.assertEqual(score2, score3)
 
     # ── Uptime ──
+
+    def test_security_scorecards_do_not_inflate_health_score(self) -> None:
+        self.add_result(CheckResult.Category.WEBSITE, 20, HealthStatus.HEALTHY)
+        self.add_result(CheckResult.Category.EXPOSURE, 10, HealthStatus.HEALTHY)
+        self.add_result(CheckResult.Category.NUCLEI, 20, HealthStatus.HEALTHY)
+        health = calculate_health_score(self.scan.check_results.all())
+        self.assertEqual(health.score, 20)
 
     def test_uptime_does_not_affect_weighted_score(self) -> None:
         self.add_result(CheckResult.Category.WEBSITE, 20, HealthStatus.HEALTHY)
@@ -425,10 +443,8 @@ class CheckResultSerializerTests(TestCase):
 
     def test_max_score_is_none_for_unbounded_categories(self) -> None:
         for category in (
-            CheckResult.Category.EXPOSURE,
             CheckResult.Category.UPTIME,
             CheckResult.Category.ZAP,
-            CheckResult.Category.NUCLEI,
         ):
             result = CheckResult(
                 scan=self.scan,
@@ -448,6 +464,23 @@ class CheckResultSerializerTests(TestCase):
             status=HealthStatus.HEALTHY,
         )
         self.assertEqual(CheckResultSerializer(ssl).data["max_score"], 20)
+
+    def test_max_score_is_10_for_exposure_and_20_for_nuclei(self) -> None:
+        expected = {
+            CheckResult.Category.EXPOSURE: 10,
+            CheckResult.Category.NUCLEI: 20,
+        }
+        for category, max_score in expected.items():
+            result = CheckResult(
+                scan=self.scan,
+                category=category,
+                score=max_score,
+                status=HealthStatus.HEALTHY,
+            )
+            with self.subTest(category=category):
+                self.assertEqual(
+                    CheckResultSerializer(result).data["max_score"], max_score
+                )
 
 
 # ═══════════════════════════════════════════════════

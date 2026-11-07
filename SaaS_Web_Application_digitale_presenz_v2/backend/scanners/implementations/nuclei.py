@@ -485,7 +485,15 @@ class NucleiScanner(BaseScanner):
         findings = self.normalize(
             parsed, preserve_matchers=(profile_name == "scenario_c")
         )
+        critical = [
+            item for item in parsed
+            if item.get("severity") == "critical"
+        ]
         high = [
+            item for item in parsed
+            if item.get("severity") == "high"
+        ]
+        high_or_critical = [
             item for item in parsed
             if item.get("severity") in ("high", "critical")
         ]
@@ -493,6 +501,21 @@ class NucleiScanner(BaseScanner):
             item for item in parsed
             if item.get("severity") == "medium"
         ]
+        low = [
+            item for item in parsed
+            if item.get("severity") == "low"
+        ]
+        # Nuclei is a 20-point scorecard. Critical/high findings dominate the
+        # penalty; medium and low findings are still visible without making
+        # the score meaningless on a noisy template catalog.
+        nuclei_score = max(
+            0,
+            20
+            - 10 * len(critical)
+            - 5 * len(high)
+            - 2 * len(medium)
+            - len(low),
+        )
         stats = self._stats_from_stderr(command_result.stderr)
         host_skipped = self._host_was_skipped(command_result.stderr)
 
@@ -600,7 +623,7 @@ class NucleiScanner(BaseScanner):
 
         if partial_reason or not complete:
             status = "warning"
-        elif high:
+        elif high_or_critical:
             status = "critical"
         elif medium:
             status = "warning"
@@ -625,18 +648,19 @@ class NucleiScanner(BaseScanner):
             if partial_reason
             else (
                 f"Nuclei found {len(parsed)} template match(es), "
-                f"{len(high)} high/critical"
+                f"{len(high_or_critical)} high/critical"
             )
         )
 
         return ScanOutcome(
             result=self._create_result(
-                score=None,
+                score=nuclei_score,
                 status=status,
                 message=message,
                 duration_ms=command_result.duration_ms,
                 findings_count=len(parsed),
-                high_severity_count=len(high),
+                critical_count=len(critical),
+                high_severity_count=len(high_or_critical),
                 exit_code=command_result.exit_code,
                 timed_out=command_result.timed_out,
                 memory_exceeded=command_result.memory_exceeded,

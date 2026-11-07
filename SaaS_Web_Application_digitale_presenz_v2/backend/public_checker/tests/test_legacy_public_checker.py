@@ -159,7 +159,7 @@ class PublicCheckerAPITests(APITestCase):
         self.assertEqual(response.data["checks"]["website"]["score"], 20)
         self.assertEqual(response.data["checks"]["website"]["max_score"], 20)
         self.assertIn("exposure", response.data["checks"])
-        self.assertIsNone(response.data["checks"]["exposure"]["max_score"])
+        self.assertEqual(response.data["checks"]["exposure"]["max_score"], 10)
         self.assertEqual(response.data["progress"], 100)
 
     def test_poll_unknown_public_scan_returns_404(self) -> None:

@@ -4,7 +4,24 @@ from typing import Iterable, Protocol
 from scans.models import CheckResult, HealthStatus, Scan
 
 
+#: Point budget of every scored CheckResult category.
+#: The historical health categories sum to 100; the two security categories
+#: have their own budgets and are reported without inflating that score.
 CHECK_WEIGHTS: dict[str, int] = {
+    CheckResult.Category.WEBSITE: 20,
+    CheckResult.Category.SSL: 20,
+    CheckResult.Category.DNS: 15,
+    CheckResult.Category.EMAIL_SECURITY: 15,
+    CheckResult.Category.SECURITY_HEADERS: 15,
+    CheckResult.Category.PERFORMANCE: 15,
+    CheckResult.Category.EXPOSURE: 10,
+    CheckResult.Category.NUCLEI: 20,
+}
+
+#: Categories that contribute to the 100-point site health score.
+#: Exposure and Nuclei are weighted security scorecards, but their findings
+#: remain reported separately so a classic scan cannot exceed 100 points.
+HEALTH_WEIGHTS: dict[str, int] = {
     CheckResult.Category.WEBSITE: 20,
     CheckResult.Category.SSL: 20,
     CheckResult.Category.DNS: 15,
@@ -43,8 +60,9 @@ def calculate_health_score(
     website=20, ssl=20, dns=15, email_security=15,
     security_headers=15, performance=15.
 
-    Uptime and the external security scanners (ZAP, Nuclei, exposure) are
-    deliberately excluded from the global score.
+    Exposure and Nuclei have their own 10- and 20-point scorecards, but they
+    remain outside this 100-point site health score. Uptime and ZAP are also
+    excluded.
 
     Missing weighted checks contribute zero once at least one
     weighted result exists.
@@ -52,7 +70,7 @@ def calculate_health_score(
     weighted_results = {
         result.category: result
         for result in results
-        if result.category in CHECK_WEIGHTS
+        if result.category in HEALTH_WEIGHTS
     }
 
     if not weighted_results:

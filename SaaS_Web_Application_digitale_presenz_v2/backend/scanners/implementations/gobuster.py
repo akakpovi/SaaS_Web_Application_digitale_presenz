@@ -356,6 +356,9 @@ class GobusterScanner(BaseScanner):
             for item in parsed
             if _canonical_path(item.get("path", "")) in _SENSITIVE_PATHS
         )
+        # Exposure is a 10-point scorecard: every publicly exposed sensitive
+        # path removes two points, down to zero.
+        exposure_score = max(0, 10 - 2 * sensitive_paths)
         passes = [
             {
                 "wordlist": self.wordlist,
@@ -388,6 +391,7 @@ class GobusterScanner(BaseScanner):
                 f"{len(parsed)} path(s) seen so far"
             ),
             status="neutral" if complete else "warning",
+            score=exposure_score,
             scan_complete=complete,
             partial_reason=reason,
             paths_found=len(parsed),
