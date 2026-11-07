@@ -30,10 +30,10 @@ class CheckResultSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
-    def get_max_score(self, obj: CheckResult) -> int:
+    def get_max_score(self, obj: CheckResult) -> int | None:
         from scans.services.scoring import CHECK_WEIGHTS
 
-        return CHECK_WEIGHTS.get(obj.category, 20)
+        return CHECK_WEIGHTS.get(obj.category)
 
 
 class ScanSerializer(serializers.ModelSerializer):

@@ -423,6 +423,32 @@ class CheckResultSerializerTests(TestCase):
         result = CheckResult(scan=self.scan, category=CheckResult.Category.DNS, score=15, status=HealthStatus.HEALTHY)
         self.assertEqual(CheckResultSerializer(result).data["max_score"], _W[CheckResult.Category.DNS])
 
+    def test_max_score_is_none_for_unbounded_categories(self) -> None:
+        for category in (
+            CheckResult.Category.EXPOSURE,
+            CheckResult.Category.UPTIME,
+            CheckResult.Category.ZAP,
+            CheckResult.Category.NUCLEI,
+        ):
+            result = CheckResult(
+                scan=self.scan,
+                category=category,
+                score=None,
+                status=HealthStatus.HEALTHY,
+            )
+            with self.subTest(category=category):
+                self.assertIsNone(
+                    CheckResultSerializer(result).data["max_score"]
+                )
+
+        ssl = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.SSL,
+            score=10,
+            status=HealthStatus.HEALTHY,
+        )
+        self.assertEqual(CheckResultSerializer(ssl).data["max_score"], 20)
+
 
 # ═══════════════════════════════════════════════════
 # API-level tests
