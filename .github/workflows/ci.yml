@@ -6,7 +6,32 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff check
+        run: ruff check SaaS_Web_Application_digitale_presenz_v2/backend
+        continue-on-error: true
+
+      - name: Ruff format check
+        run: ruff format --check SaaS_Web_Application_digitale_presenz_v2/backend
+        continue-on-error: true
+
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -122,3 +147,14 @@ jobs:
           # Blog articles are pre-rendered only when the headless CMS is
           # reachable at build time; the listing page always exists.
           test -f dist/blog/index.html
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build web and frontend images
+        run: docker compose build web frontend
