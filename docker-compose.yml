@@ -476,8 +476,8 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
     logging:
       driver: json-file
       options:
@@ -486,28 +486,13 @@ services:
 
   frontend:
     build:
-      context: ./SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
-      # The builder needs the loopback-published WordPress to pre-render the
-      # articles. BuildKit cannot join a Compose user network here; host
-      # networking is build-only and does not alter the running service.
-      network: host
-      # BuildKit only grants this when its own allow-list permits it, and
-      # `docker compose build` has no `--allow`. On the default builder that
-      # command therefore fails with "additional privileges requested: pass
-      # \"--allow=network.host\"" (even without this block). Rebuild through
-      # `bash scripts/build-frontend.sh`, which runs `docker buildx bake` on
-      # this same file with `--allow network.host`.
-      entitlements:
-        - network.host
+      context: ./frontend
+      dockerfile: Dockerfile
+      # NOTE: the root frontend/Dockerfile currently consumes only
+      # VITE_API_BASE_URL; these args must be wired before a production rebuild.
       args:
-        # Absolute canonical / sitemap / robots origin baked at build time.
         VITE_BASE_URL: ${VITE_BASE_URL:-https://localhost}
-        # Same-origin headless CMS: nginx proxies /cms/wp-json to WordPress.
-        # In production set this to the public CMS origin (or keep /cms and
-        # proxy it to the production WordPress instance).
         VITE_WP_API_URL: ${VITE_WP_API_URL:-/cms}
-        # Build-only CMS endpoint: the host-published WordPress on 127.0.0.1:8081.
-        # It is used by prerender.mjs, never by the browser bundle.
         PRERENDER_WP_API_URL: ${PRERENDER_WP_API_URL:-http://127.0.0.1:8081}
     depends_on:
       web:
