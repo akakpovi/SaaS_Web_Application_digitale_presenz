@@ -221,6 +221,11 @@ class NucleiScanner(BaseScanner):
                 status="neutral",
                 message="Nuclei not available — skipped",
                 recommendation="Install nuclei to enable template-based scanning.",
+                # A skipped run proves nothing about the target.  Without
+                # this flag the orchestrator's legacy fallback would treat
+                # the run as complete and could resolve older findings.
+                scan_complete=False,
+                partial_reason="unavailable",
             ),
             findings=[
                 NormalizedFinding(
@@ -454,6 +459,11 @@ class NucleiScanner(BaseScanner):
                     score=None,
                     status="warning",
                     message=f"Nuclei could not be started safely: {exc}",
+                    # The tool never ran: this is the exact case that used to
+                    # become a false "completed" journey.  The orchestrator
+                    # maps an explicit ``scan_complete=False`` to PARTIAL.
+                    scan_complete=False,
+                    partial_reason="sandbox_unavailable",
                 ),
                 findings=[
                     NormalizedFinding(

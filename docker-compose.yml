@@ -95,6 +95,19 @@ services:
       - scanner_archive_data:/app/scanner-archives
     restart: "no"
 
+  # The sandbox launches one-shot containers through the HOST Docker daemon
+  # (Docker-out-of-Docker).  A named volume would not work: the daemon cannot
+  # bind-mount a path that only exists inside the worker.  This one-shot
+  # creates the durable host directory and gives it the 1777 mode the
+  # unprivileged worker user needs.  /tmp is wiped at boot; /var/lib is not.
+  scanner-work-init:
+    image: alpine:3.20
+    user: "0:0"
+    command: ["sh", "-c", "install -d -m 1777 /work"]
+    volumes:
+      - /var/lib/presence-scanner-work:/work
+    restart: "no"
+
   celery-worker:
     build:
       context: ./SaaS_Web_Application_digitale_presenz_v2/backend
@@ -122,16 +135,22 @@ services:
       # Same absolute path on host and in the worker: Docker resolves bind
       # mounts on the host, so ZAP's temporary report directory must live in
       # a shared path.  Create it with: install -d -m 1777 /tmp/presence-scanner
-      TMPDIR: /tmp/presence-scanner
+      # Durable host path, shared with the host daemon and prepared as 1777
+      # by scanner-work-init.  Never use /tmp here: it is emptied at boot.
+      TMPDIR: /var/lib/presence-scanner-work
       # Explicit setting beats TEMP/TMPDIR, which silently falls back to
       # /tmp when this directory is not writable and then breaks the ZAP
       # bind mount.  Keep it in sync with the volume below.
-      SCANNER_SANDBOX_SHARED_WORK_DIR: /tmp/presence-scanner
-      # Scenario-C templates live in the repository; the Docker sandbox needs
-      # their host path (not the worker's /app view) for the read-only mount
-      # into the Nuclei container.  The canonical stack is started from the
-      # repository root, so ${PWD} is that absolute path.
-      SCANNER_NUCLEI_SCENARIO_TEMPLATES_PATH: ${PWD}/SaaS_Web_Application_digitale_presenz_v2/backend/scanners/templates
+      SCANNER_SANDBOX_SHARED_WORK_DIR: /var/lib/presence-scanner-work
+      # Scenario-C templates are baked into the dedicated Nuclei image
+      # (scanner-nuclei).  No host bind mount is needed: the sandbox talks to
+      # the host daemon, where a worker-only path does not exist.
+      SCANNER_NUCLEI_SCENARIO_TEMPLATES_PATH: ""
+      # The previous value pointed into a transient /tmp directory, so
+      # is_available() turned false after every reboot.  Stage 2 uses the
+      # image selection above; classic profiles keep Nuclei's default.
+      SCANNER_NUCLEI_TEMPLATES_PATH: ""
+      SCANNER_DOCKER_IMAGE_NUCLEI: presence-nuclei:2026-11-07
     # Allow the unprivileged `app` user to open the host Docker socket.
     # Default 984 matches this host; override DOCKER_GID with
     # `stat -c '%g' /var/run/docker.sock` on another machine.
@@ -147,7 +166,7 @@ services:
       # socket gives the worker root-equivalent power on the host: only enable
       # it on the dedicated scan worker, never on the public web container.
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/presence-scanner:/tmp/presence-scanner
+      - /var/lib/presence-scanner-work:/var/lib/presence-scanner-work
     depends_on:
       db:
         condition: service_healthy
@@ -156,6 +175,10 @@ services:
       # Prepares the archive volume ownership before the first scan.  Docker
       # creates named volumes as root; the worker cannot chown them itself.
       staticfiles:
+        condition: service_completed_successfully
+      # Creates /var/lib/presence-scanner-work and makes it world-writable
+      # before the worker starts; never depend on a manual chmod.
+      scanner-work-init:
         condition: service_completed_successfully
       # Materialise the scanner bridge before the worker can launch a
       # sandbox container on it.
@@ -260,6 +283,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Build-only: bakes the scenario-C templates into a Nuclei image so the
+  # sandbox needs no host bind mount.  Build it with
+  # `docker compose --profile tools build scanner-nuclei`.
+  scanner-nuclei:
+    build:
+      context: ./SaaS_Web_Application_digitale_presenz_v2/backend
+      dockerfile: scanners/docker/Dockerfile.nuclei
+    image: presence-nuclei:2026-11-07
+    entrypoint: ["nuclei"]
+    profiles: ["tools"]
 
   celery-beat:
     build:

@@ -534,6 +534,19 @@ class NucleiExecutionTests(SimpleTestCase):
         self.assertEqual(
             outcome.findings[0].check_code, "nuclei.sandbox_unavailable"
         )
+        # Regression: a sandbox failure must never look like a full run.
+        self.assertFalse(outcome.result.details["scan_complete"])
+        self.assertEqual(
+            outcome.result.details["partial_reason"], "sandbox_unavailable"
+        )
+
+    def test_unavailable_outcome_is_explicitly_incomplete(self):
+        with patch.object(NucleiScanner, "is_available", return_value=False):
+            outcome = self.scanner.execute("example.com", context=_context())
+
+        self.assertEqual(outcome.findings[0].check_code, "nuclei.unavailable")
+        self.assertFalse(outcome.result.details["scan_complete"])
+        self.assertEqual(outcome.result.details["partial_reason"], "unavailable")
 
     def test_target_validation_failure_is_a_finding(self):
         with patch(

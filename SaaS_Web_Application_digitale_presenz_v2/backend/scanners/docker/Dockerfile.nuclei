@@ -1,0 +1,19 @@
+# Dedicated Nuclei image for the Presence scenario-C profile.
+#
+# The official image ships the binary only.  The sandbox runs one-shot
+# containers through the HOST Docker daemon (Docker-out-of-Docker), so a bind
+# mount must exist on the host *and* be visible from the worker at the same
+# path.  Baking the selection here removes that coupling entirely: the adapter
+# runs Nuclei with -t /opt/scanner-templates/{selected,presence} and no mount.
+#
+# Build (context is the backend root):
+#   docker compose --profile tools build scanner-nuclei
+#
+# Bump the tag in docker-compose.yml and SCANNER_DOCKER_IMAGE_NUCLEI when the
+# template selection changes.
+
+FROM projectdiscovery/nuclei:latest
+
+COPY scanners/templates/selected/ /opt/scanner-templates/selected/
+COPY scanners/templates/presence/ /opt/scanner-templates/presence/
+COPY scanners/templates/LICENSE /opt/scanner-templates/LICENSE
