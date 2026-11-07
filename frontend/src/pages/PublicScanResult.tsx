@@ -428,14 +428,10 @@ export function PublicScanResult() {
                       <div>
                         <h3 className="font-bold text-slate-900">{CHECK_LABELS[key] || key.replace(/_/g, ' ')}</h3>
                         <p className="text-xs text-slate-500">
-                          {statusLabel} •{' '}
-                          {isUptime
-                            ? check.is_up !== false
-                              ? '🟢 Online'
-                              : '🔴 Offline'
-                            : check.score !== null
-                              ? `${check.score}/20 pts`
-                              : 'Non pondéré'}
+                          {statusLabel}
+                          {isUptime && ` • ${check.is_up !== false ? '🟢 Online' : '🔴 Offline'}`}
+                          {!isUptime && check.score !== null &&
+                            ` • ${check.score}${typeof check.max_score === 'number' ? `/${check.max_score}` : ''}`}
                         </p>
                       </div>
                     </div>

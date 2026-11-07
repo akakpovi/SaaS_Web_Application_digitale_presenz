@@ -13,6 +13,7 @@ export interface CheckResult {
   category: string;
   status: 'healthy' | 'warning' | 'critical' | 'neutral';
   score: number | null;
+  max_score: number | null;
   summary: string;
   recommendation: string;
   technical_details?: Record<string, any> | null;

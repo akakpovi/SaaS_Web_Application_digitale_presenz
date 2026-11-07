@@ -12,6 +12,8 @@ export interface CheckRemediation {
 export interface CheckItem {
   status: 'critical' | 'warning' | 'passed' | 'healthy' | 'good' | 'online' | 'unknown';
   score: number | null;
+  // The public endpoint currently omits max_score; render score-only when absent.
+  max_score?: number | null;
   message: string;
   // TODO BACKEND: Le champ remediation n'est pas encore retourné par l'API.
   // Fallback actuel : afficher le message brut comme correction.

@@ -95,11 +95,6 @@ export default function Onboarding() {
     performance: 'Performance',
   };
 
-  const CATEGORY_MAX: Record<string, number> = {
-    website: 20, ssl: 20, dns: 15,
-    email_security: 15, security_headers: 15, performance: 15,
-  };
-
   return (
     <div className="min-h-full bg-slate-50 flex flex-col">
       <SEO title="Getting started" description="Set up your Presence account" noIndex path="/onboarding" />
@@ -227,7 +222,7 @@ export default function Onboarding() {
                       </span>
                       {r.score !== null && (
                         <span className="text-sm font-semibold text-slate-800 tabular-nums">
-                          {r.score}/{CATEGORY_MAX[r.category] ?? '?'}
+                          {`${r.score}${typeof r.max_score === 'number' ? `/${r.max_score}` : ''}`}
                         </span>
                       )}
                     </div>

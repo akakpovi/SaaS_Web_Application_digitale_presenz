@@ -16,6 +16,7 @@ interface CheckItem {
   category: string;
   status: 'healthy' | 'warning' | 'critical' | 'neutral';
   score: number | null;
+  max_score: number | null;
   summary: string;
   recommendation?: string;
   technical_details?: Record<string, any>;
@@ -481,7 +482,7 @@ export function WebsiteDetails() {
                         </div>
                         {check.score !== null && (
                           <span className={`text-xs font-bold px-2 py-1 rounded-md ${getStatusBadgeColor(check.status)}`}>
-                            {check.score}/20
+                            {`${check.score}${typeof check.max_score === 'number' ? `/${check.max_score}` : ''}`}
                           </span>
                         )}
                       </div>
