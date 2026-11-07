@@ -746,7 +746,7 @@ def _external_scanner(
 
 
 class ExternalCheckResultMappingTests(TestCase):
-    """testssl and Gobuster feed the CheckResult bridge explicitly."""
+    """Gobuster feeds the bridge; testssl is findings-only."""
 
     def setUp(self):
         self.user = _user()
@@ -769,7 +769,7 @@ class ExternalCheckResultMappingTests(TestCase):
             ScanOrchestrator(scan.id).run()
         return scan
 
-    def test_testssl_findings_create_an_ssl_check_result(self):
+    def test_testssl_findings_do_not_create_an_ssl_check_result(self):
         scanner = _external_scanner(
             "testssl",
             score=15,
@@ -788,12 +788,11 @@ class ExternalCheckResultMappingTests(TestCase):
 
         scan = self._run(scanner, "testssl")
 
-        result = CheckResult.objects.get(
-            scan=scan, category=CheckResult.Category.SSL
+        self.assertFalse(
+            CheckResult.objects.filter(
+                scan=scan, category=CheckResult.Category.SSL
+            ).exists()
         )
-        self.assertEqual(result.score, 15)
-        self.assertEqual(result.summary, "testssl summary")
-        self.assertEqual(result.technical_details["scanner"], "testssl")
 
     def test_gobuster_paths_create_an_exposure_check_result(self):
         scanner = _external_scanner(

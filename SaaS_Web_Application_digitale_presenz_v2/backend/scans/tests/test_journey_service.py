@@ -113,22 +113,23 @@ class JourneyTestMixin:
 
 
 class JourneyStageProfileTests(SimpleTestCase):
-    def test_stage_one_runs_only_the_bounded_tls_scanner(self) -> None:
+    def test_stage_one_runs_certificate_check_then_deep_tls(self) -> None:
         steps = build_initial_steps("security", journey_stage=1)
-        self.assertEqual([step["key"] for step in steps], ["testssl"])
-        self.assertEqual(steps[0]["scanner"], "testssl")
-        self.assertNotIn("profile", steps[0])
+        self.assertEqual([step["key"] for step in steps], ["ssl", "testssl"])
+        self.assertEqual(steps[0]["scanner"], "ssl")
+        self.assertEqual(steps[1]["scanner"], "testssl")
+        self.assertNotIn("profile", steps[1])
 
     def test_stage_one_is_independent_from_the_scan_type(self) -> None:
         for scan_type in ("health", "security", "full"):
             steps = build_initial_steps(scan_type, journey_stage=1)
-            self.assertEqual([step["key"] for step in steps], ["testssl"])
+            self.assertEqual([step["key"] for step in steps], ["ssl", "testssl"])
 
     def test_get_steps_for_scan_selects_stage_one(self) -> None:
         scan = SimpleNamespace(scan_type="full", journey_stage=1)
         self.assertEqual(
             [step["key"] for step in get_steps_for_scan(scan)],
-            ["testssl"],
+            ["ssl", "testssl"],
         )
 
     def test_stage_two_is_unchanged(self) -> None:

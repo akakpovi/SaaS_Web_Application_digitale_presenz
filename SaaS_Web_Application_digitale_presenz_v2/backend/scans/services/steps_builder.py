@@ -56,16 +56,23 @@ _SECURITY_STEPS: list[dict[str, Any]] = [
 
 _FULL_STEPS: list[dict[str, Any]] = _HEALTH_STEPS + _SECURITY_STEPS
 
-#: Progressive journey stage 1: one fast, bounded TLS pass.  The budget for
-#: the whole stage is 150 s (``SCAN_JOURNEY_STAGE1_TIME_BUDGET_SECONDS``);
-#: testssl keeps its 120 s per-step timeout, so the adapter can still close
-#: its report before the orchestrator reaches the stage deadline.
+#: Progressive journey stage 1: the internal SSL certificate check owns the
+#: weighted SSL CheckResult, while testssl adds its deeper TLS findings.  The
+#: stage budget is 150 s (``SCAN_JOURNEY_STAGE1_TIME_BUDGET_SECONDS``); the
+#: certificate check is fast and testssl keeps its 120 s per-step timeout, so
+#: the adapter can still close its report before the stage deadline.
 _JOURNEY_STAGE1_STEPS: list[dict[str, Any]] = [
+    {
+        "key": "ssl",
+        "label": "SSL / TLS Certificate",
+        "scanner": "ssl",
+        "weight": 20,
+    },
     {
         "key": "testssl",
         "label": "TLS Deep Analysis (testssl.sh)",
         "scanner": "testssl",
-        "weight": 100,
+        "weight": 80,
     },
 ]
 
@@ -98,10 +105,10 @@ def build_initial_steps(
 ) -> list[dict[str, Any]]:
     """Return the initial steps list for a given scan type.
 
-    ``journey_stage=1`` selects the bounded TLS stage and ``journey_stage=2``
-    the scenario-C pipeline, regardless of the scan type.  Every other value,
-    including ``None``, keeps the historical behaviour exactly: classic scans
-    never see the journey profiles.
+    ``journey_stage=1`` selects the certificate + deep-TLS stage and
+    ``journey_stage=2`` the scenario-C pipeline, regardless of the scan type.
+    Every other value, including ``None``, keeps the historical behaviour
+    exactly: classic scans never see the journey profiles.
     """
     if journey_stage == 1:
         template = _JOURNEY_STAGE1_STEPS

@@ -1090,6 +1090,19 @@ class ScanOrchestrator:
 
         scanner_name = getattr(scanner, "name", "unknown")
 
+        # testssl is a findings-only enrichment.  Its severity score covers a
+        # much broader TLS surface than the historical SSL certificate check
+        # and must not overwrite the category owned by the internal scanner;
+        # otherwise health, full and journey scans disagree on the same site.
+        if scanner_name == "testssl":
+            logger.info(
+                "ScanOrchestrator: scanner 'testssl' is findings-only — "
+                "SSL CheckResult remains owned by the internal ssl scanner "
+                "for scan %d",
+                self.scan_id,
+            )
+            return
+
         # Map scanner name → CheckResult category (legacy adapters).
         _CATEGORY_MAP: dict[str, str] = {
             "website":          CheckResult.Category.WEBSITE,
@@ -1102,7 +1115,6 @@ class ScanOrchestrator:
             "uptime":           CheckResult.Category.UPTIME,
             "zap":              CheckResult.Category.ZAP,
             "nuclei":           CheckResult.Category.NUCLEI,
-            "testssl":          CheckResult.Category.SSL,
             "gobuster":         CheckResult.Category.EXPOSURE,
         }
 
