@@ -21,11 +21,12 @@ import {
 } from "react"
 import de from "./de.json"
 import en from "./en.json"
+import fr from "./fr.json"
 
-export type Locale = "de" | "en"
+export type Locale = "de" | "en" | "fr"
 
 export const DEFAULT_LOCALE: Locale = "de"
-export const LOCALES: readonly Locale[] = ["de", "en"] as const
+export const LOCALES: readonly Locale[] = ["de", "en", "fr"] as const
 
 /**
  * BCP-47 tags for `Intl`.
@@ -37,6 +38,7 @@ export const LOCALES: readonly Locale[] = ["de", "en"] as const
 export const LOCALE_TAGS: Record<Locale, string> = {
   de: "de-DE",
   en: "en-GB",
+  fr: "fr-FR",
 }
 
 /** Locale of the reference catalogue: every other catalogue mirrors its shape. */
@@ -44,7 +46,12 @@ export type Catalog = typeof en
 
 /** Typed against the English shape: a missing German key fails `tsc`. */
 const deCatalog: Catalog = de
-export const catalogs: Record<Locale, Catalog> = { de: deCatalog, en }
+const frCatalog: Catalog = fr
+export const catalogs: Record<Locale, Catalog> = {
+  de: deCatalog,
+  en,
+  fr: frCatalog,
+}
 
 const STORAGE_KEY = "presence-locale"
 
@@ -110,7 +117,7 @@ function reportMissing(locale: Locale, key: string) {
 /* ── Locale resolution ───────────────────────────────────────────────────── */
 
 export function isLocale(value: unknown): value is Locale {
-  return value === "de" || value === "en"
+  return value === "de" || value === "en" || value === "fr"
 }
 
 /**
@@ -132,11 +139,16 @@ export const VARIANT_PARAM = "lang"
  * crawlers have to trust.
  */
 export const EN_PREFIX = "/en"
+/** Prefix of the dedicated French site, mirroring FR_PREFIX in prerender.mjs. */
+export const FR_PREFIX = "/fr"
 
-/** Locale carried by the path (`/en/...`), or `null` on the bare German paths. */
+/** Locale carried by a localized path, or `null` on the bare German paths. */
 export function localeFromPath(pathname: string): Locale | null {
   if (pathname === EN_PREFIX || pathname.startsWith(`${EN_PREFIX}/`)) {
     return "en"
+  }
+  if (pathname === FR_PREFIX || pathname.startsWith(`${FR_PREFIX}/`)) {
+    return "fr"
   }
   return null
 }
@@ -150,7 +162,8 @@ export function localeFromPath(pathname: string): Locale | null {
  */
 export function localizedPath(path: string, locale: Locale): string {
   if (locale === DEFAULT_LOCALE) return path
-  return path === "/" ? EN_PREFIX : `${EN_PREFIX}${path}`
+  const prefix = locale === "en" ? EN_PREFIX : FR_PREFIX
+  return path === "/" ? prefix : `${prefix}${path}`
 }
 
 function readStoredLocale(): Locale | null {
@@ -209,7 +222,10 @@ function detectLocale(): Locale {
     typeof navigator === "undefined" ? "" : (navigator.language ?? ""),
   ].map((value) => value.toLowerCase())
 
-  if (candidates.some((value) => value.startsWith("en"))) return "en"
+  for (const value of candidates) {
+    if (value.startsWith("fr")) return "fr"
+    if (value.startsWith("en")) return "en"
+  }
   return DEFAULT_LOCALE
 }
 

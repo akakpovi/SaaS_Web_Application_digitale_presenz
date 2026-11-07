@@ -161,7 +161,7 @@ export interface RegisterRequest {
   full_name?: string
   password: string
   /** UI language of the sign-up, so account emails arrive translated. */
-  language?: "de" | "en"
+  language?: "de" | "en" | "fr"
 }
 
 export interface AuthResponse {

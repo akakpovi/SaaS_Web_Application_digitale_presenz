@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useLocation } from "react-router-dom"
 import {
+  LOCALES,
   alternateLinks,
   canonicalPath,
   localeFromPath,
@@ -22,6 +23,11 @@ const BASE_URL =
   (typeof window !== "undefined" ? window.location.origin : "")
 const SITE_NAME = "Presence"
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`
+const OG_LOCALES: Record<Locale, string> = {
+  de: "de_DE",
+  en: "en_GB",
+  fr: "fr_FR",
+}
 
 interface SEOProps {
   title: string
@@ -83,11 +89,7 @@ export default function SEO({
     : null
   // The variant this URL denotes. A page that is not bilingual publishes the
   // single language it is written in, whatever the visitor's preference is.
-  const variant: Locale = bilingual
-    ? (urlLocale ?? "de")
-    : htmlLang === "de"
-      ? "de"
-      : "en"
+  const variant: Locale = bilingual ? (urlLocale ?? "de") : htmlLang
   const alternates = alternateOverrides
     ? alternateOverrides.map(({ lang: code, path: alternatePath }) => ({
         hreflang: code,
@@ -143,13 +145,15 @@ export default function SEO({
           `LOCALE_TAGS` — exactly like the pre-rendered shell, so the static
           and the hydrated head agree. On `/en/...` the path is what denotes
           the variant; on a legacy `?lang=en` URL it is the parameter. */}
-      <meta property="og:locale" content={variant === "de" ? "de_DE" : "en_GB"} />
-      {bilingual && (
-        <meta
-          property="og:locale:alternate"
-          content={variant === "de" ? "en_GB" : "de_DE"}
-        />
-      )}
+      <meta property="og:locale" content={OG_LOCALES[variant]} />
+      {bilingual &&
+        LOCALES.filter((entry) => entry !== variant).map((entry) => (
+          <meta
+            key={entry}
+            property="og:locale:alternate"
+            content={OG_LOCALES[entry]}
+          />
+        ))}
 
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />

@@ -45,9 +45,12 @@ if (duplicates.length > 0) {
   process.exit(1)
 }
 
-/** URL anglaise d'une route publique, identique à `localizedPath()`. */
-function englishUrl(routePath) {
-  return routePath === "/" ? "/en" : `/en${routePath}`
+const LOCALES = ["de", "en", "fr"]
+/** URL localisée d'une route publique, identique à `localizedPath()`. */
+function localizedUrl(routePath, locale) {
+  if (locale === "de") return routePath
+  const prefix = locale === "en" ? "/en" : "/fr"
+  return routePath === "/" ? prefix : `${prefix}${routePath}`
 }
 
 const lines = [
@@ -68,8 +71,9 @@ const lines = [
 ]
 
 for (const routePath of paths) {
-  lines.push(`    "${routePath}|en" "${englishUrl(routePath)}";`)
-  lines.push(`    "${routePath}|de" "${routePath}";`)
+  for (const locale of LOCALES) {
+    lines.push(`    "${routePath}|${locale}" "${localizedUrl(routePath, locale)}";`)
+  }
 }
 lines.push("}")
 lines.push("")
@@ -85,10 +89,10 @@ lines.push('    default "";')
 // `~*` : `map` compare ses clés sans tenir compte de la casse, donc
 // `?lang=EN` est déjà redirigé. Sans ce drapeau, la query serait perdue
 // (`/en/pricing` au lieu de `/en/pricing?utm_source=…`).
-lines.push('    "~*^lang=(?:en|de)$"           "";')
-lines.push('    "~*^lang=(?:en|de)&(.+)$"      "?$1";')
-lines.push('    "~*^(.+)&lang=(?:en|de)&(.+)$" "?$1&$2";')
-lines.push('    "~*^(.+)&lang=(?:en|de)$"      "?$1";')
+lines.push('    "~*^lang=(?:en|de|fr)$"           "";')
+lines.push('    "~*^lang=(?:en|de|fr)&(.+)$"      "?$1";')
+lines.push('    "~*^(.+)&lang=(?:en|de|fr)&(.+)$" "?$1&$2";')
+lines.push('    "~*^(.+)&lang=(?:en|de|fr)$"      "?$1";')
 lines.push("}")
 lines.push("")
 
@@ -103,12 +107,12 @@ if (CHECK) {
     process.exit(1)
   }
   console.log(
-    `[locale-map] nginx.locale-map.conf matches src/seo/publicPaths.ts (${paths.length} routes, ${paths.length * 2} redirects).`,
+    `[locale-map] nginx.locale-map.conf matches src/seo/publicPaths.ts (${paths.length} routes, ${paths.length * LOCALES.length} redirects).`,
   )
   process.exit(0)
 }
 
 fs.writeFileSync(TARGET, content)
 console.log(
-  `[locale-map] wrote nginx.locale-map.conf: ${paths.length} public routes, ${paths.length * 2} 301 rules.`,
+  `[locale-map] wrote nginx.locale-map.conf: ${paths.length} public routes, ${paths.length * LOCALES.length} 301 rules.`,
 )

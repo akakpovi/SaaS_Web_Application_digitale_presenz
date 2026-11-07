@@ -46,5 +46,5 @@ COPY --from=builder /app/nginx.locale-map.conf /etc/nginx/conf.d/presence-locale
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]

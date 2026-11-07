@@ -15,7 +15,7 @@ import { PlanProvider } from "./contexts/PlanContext"
 import { UpgradeProvider } from "./components/UpgradePrompt"
 import RouteLocaleSync from "./components/RouteLocaleSync"
 import AnalyticsPageviews from "./components/AnalyticsPageviews"
-import { localizedPath } from "./i18n"
+import { LOCALES, localizedPath, type Locale } from "./i18n"
 import { PUBLIC_PATHS, type PublicPath } from "./seo/publicPaths"
 
 // Lazy-loaded page chunks
@@ -78,6 +78,22 @@ function LegacyReportRedirect() {
       replace
     />
   )
+}
+
+type LocaleEntry = { locale: Locale }
+
+/**
+ * Localized private entry points (`/fr/app/...`, `/fr/login`, `/de/login`).
+ * They carry the locale in `?lang=` and redirect to the canonical bare URL, so
+ * every existing in-app link and AuthGuard redirect keeps working unchanged.
+ */
+function LocaleEntryRedirect({ locale }: LocaleEntry) {
+  const { pathname, search, hash } = useLocation()
+  const target = pathname.replace(new RegExp(`^/${locale}(?=/|$)`), "") || "/"
+  const params = new URLSearchParams(search)
+  params.set("lang", locale)
+  const query = params.toString()
+  return <Navigate to={`${target}${query ? `?${query}` : ""}${hash}`} replace />
 }
 
 /** Keep the requested /settings/integrations URL working inside the app. */
@@ -146,11 +162,11 @@ function AppLayout() {
 /**
  * Public, indexable routes, declared once.
  *
- * The same table is mounted twice below: bare (German, the default locale) and
- * under `/en` (English), so a page can never exist in one language and be
- * missing from the other. Private and authentication screens stay out of it:
- * they are noindex, language-agnostic entry points that keep their single
- * existing URL.
+ * The same table is mounted once per locale below: bare (German, the default
+ * locale), under `/en` (English) and under `/fr` (French), so a page can never
+ * exist in one language and be missing from another. Private and
+ * authentication screens stay out of it: they are noindex entry points that
+ * redirect to their canonical bare URL while carrying the requested language.
  */
 const PUBLIC_ELEMENTS: Record<PublicPath, ReactNode> = {
   "/": <Landing />,
@@ -192,11 +208,26 @@ const PUBLIC_ELEMENTS: Record<PublicPath, ReactNode> = {
   "/tools/email-security-checker": <ToolPage tool="email-security-checker" />,
 }
 
-/** Mounted bare (German) and under `/en` (English) below. */
+/** Mounted once per locale (`de` bare, `en` `/en`, `fr` `/fr`) below. */
 const PUBLIC_ROUTES = PUBLIC_PATHS.map((path) => ({
   path,
   element: PUBLIC_ELEMENTS[path],
 }))
+
+/** Private entry points that also accept a localized prefix. */
+const PRIVATE_ENTRY_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/onboarding",
+  "/settings/integrations",
+  "/admin",
+  "/app/*",
+  "/report/*",
+  "/scan/*",
+] as const
 
 /**
  * Route tree without a router.
@@ -210,18 +241,30 @@ export function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-            {/* Public pages, mounted twice: bare (German, the default and the
-                historical URL) and under /en (English, its own canonical). */}
-            {PUBLIC_ROUTES.map(({ path, element }) => (
-              <Route key={`de:${path}`} path={path} element={element} />
-            ))}
-            {PUBLIC_ROUTES.map(({ path, element }) => (
-              <Route
-                key={`en:${path}`}
-                path={localizedPath(path, "en")}
-                element={element}
-              />
-            ))}
+            {/* Public pages, mounted once per locale: bare German, /en and
+                /fr, each with its own canonical URL. */}
+            {LOCALES.map((locale) =>
+              PUBLIC_ROUTES.map(({ path, element }) => (
+                <Route
+                  key={`${locale}:${path}`}
+                  path={localizedPath(path, locale)}
+                  element={element}
+                />
+              )),
+            )}
+
+            {/* Localized private entry points. The redirect keeps the locale
+                in ?lang=..., while in-app links remain on the canonical bare
+                /app/... URLs they already use. */}
+            {LOCALES.flatMap((locale) =>
+              PRIVATE_ENTRY_PATHS.map((path) => (
+                <Route
+                  key={`${locale}:${path}`}
+                  path={`/${locale}${path}`}
+                  element={<LocaleEntryRedirect locale={locale} />}
+                />
+              )),
+            )}
 
             {/* A CMS article exists in one language under its own slug; its
                 translation is another slug, never `/en/blog/<slug>`. */}

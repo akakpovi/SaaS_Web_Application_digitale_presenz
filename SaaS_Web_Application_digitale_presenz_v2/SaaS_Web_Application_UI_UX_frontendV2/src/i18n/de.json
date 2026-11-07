@@ -50,7 +50,8 @@
     "contact": "Kontakt",
     "languageLabel": "Sprache",
     "german": "Deutsch",
-    "english": "English"
+    "english": "English",
+    "french": "Französisch"
   },
   "websites": {
     "title": "Websites",
@@ -1192,7 +1193,9 @@
     "noResultYet": "Noch kein Ergebnis – starten Sie einen ersten Scan.",
     "noScanResult": "Noch kein Scan-Ergebnis",
     "noScanResultHint": "Führen Sie eine Prüfung aus, um die Auswertung für diese Website zu füllen.",
-    "runCheck": "Prüfung starten"
+    "runCheck": "Prüfung starten",
+    "scanning": "Prüfung läuft …",
+    "activating": "Aktivierung …"
   },
   "settings": {
     "title": "Einstellungen",
@@ -1425,6 +1428,12 @@
     "loadingPolicy": "Richtlinie wird geladen …",
     "findingsTitle": "Sicherheitsbefunde",
     "openCount": "{count} offen",
+    "runFullScan": "Vollständigen Scan starten",
+    "scanning": "Scan läuft …",
+    "includeResolved": "Behobene einbeziehen",
+    "openOnly": "Nur offene anzeigen",
+    "statusOpen": "Offen",
+    "statusResolved": "Behoben",
     "recommendationsTitle": "KI-Empfehlungen",
     "noCompletedScan": "Empfehlungen erscheinen nach einem abgeschlossenen Scan.",
     "noRecommendation": "Für diesen Scan ist noch keine Empfehlung gespeichert.",

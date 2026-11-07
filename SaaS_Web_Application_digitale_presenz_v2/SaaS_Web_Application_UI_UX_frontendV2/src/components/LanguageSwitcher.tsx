@@ -5,7 +5,7 @@ import { endpoints } from "../api/endpoints"
 import type { User } from "../api/types"
 
 /**
- * Visible DE/EN switcher.
+ * Visible DE/EN/FR switcher.
  *
  * The choice is stored on the device and, for a signed-in visitor, mirrored to
  * `/users/profile/` so transactional email and the in-app default follow the
@@ -36,6 +36,7 @@ export default function LanguageSwitcher({
   const options: { value: Locale; label: string }[] = [
     { value: "de", label: "DE" },
     { value: "en", label: "EN" },
+    { value: "fr", label: "FR" },
   ]
 
   const base =
@@ -57,7 +58,13 @@ export default function LanguageSwitcher({
             type="button"
             onClick={() => void select(value)}
             aria-pressed={active}
-            aria-label={value === "de" ? t("nav.german") : t("nav.english")}
+            aria-label={
+              value === "de"
+                ? t("nav.german")
+                : value === "en"
+                  ? t("nav.english")
+                  : t("nav.french")
+            }
             className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
               active
                 ? tone === "dark"

@@ -197,16 +197,19 @@ function cleanHead(html) {
  * the bare path (and `x-default`), every other locale its own parameter.
  */
 const DEFAULT_LOCALE = "de"
-const LOCALES = ["de", "en"]
+const LOCALES = ["de", "en", "fr"]
 /** Folder of the legacy English shells: served via ?lang=en, never addressable. */
 const VARIANT_DIR = "_i18n"
-/** Prefix of the dedicated English site, mirroring EN_PREFIX in src/i18n. */
+/** Prefixes of the dedicated localized sites, mirroring src/i18n. */
 const EN_PREFIX = "/en"
+const FR_PREFIX = "/fr"
+const OG_LOCALES = { de: "de_DE", en: "en_GB", fr: "fr_FR" }
 
-/** URL of one page in one language: bare for German, `/en...` for English. */
+/** URL of one page in one language: bare German, `/en...`, `/fr...`. */
 function localizedPath(routePath, locale) {
   if (locale === DEFAULT_LOCALE) return routePath
-  return routePath === "/" ? EN_PREFIX : `${EN_PREFIX}${routePath}`
+  const prefix = locale === "en" ? EN_PREFIX : FR_PREFIX
+  return routePath === "/" ? prefix : `${prefix}${routePath}`
 }
 
 /** Canonical URL of one variant: bare path by default, `/en...` for English. */
@@ -292,7 +295,7 @@ function renderHead({
   const ogImage = image?.startsWith("http")
     ? image
     : `${BASE_URL}${image || "/og-image.png"}`
-  const ogLocale = locale === "de" ? "de_DE" : "en_GB"
+  const ogLocale = OG_LOCALES[locale]
   const tags = [
     `<title ${HEAD_MARKER}>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" />`,
@@ -314,9 +317,7 @@ function renderHead({
     alternateLocales
       .map(
         (entry) =>
-          `<meta property="og:locale:alternate" content="${
-            entry === "de" ? "de_DE" : "en_GB"
-          }" />`,
+          `<meta property="og:locale:alternate" content="${OG_LOCALES[entry]}" />`,
       )
       .join("\n    "),
     `<meta property="og:type" content="${type}" />`,
@@ -622,12 +623,19 @@ const { posts, ok: postsLoaded } = await loadWpPosts()
  * reference pair in routes.json, the German fields are the `…De` siblings.
  */
 function routeCopy(route, locale) {
-  return locale === DEFAULT_LOCALE
-    ? {
-        title: route.titleDe || route.title,
-        description: route.descriptionDe || route.description,
-      }
-    : { title: route.title, description: route.description }
+  if (locale === DEFAULT_LOCALE) {
+    return {
+      title: route.titleDe || route.title,
+      description: route.descriptionDe || route.description,
+    }
+  }
+  if (locale === "fr") {
+    return {
+      title: route.titleFr || route.title,
+      description: route.descriptionFr || route.description,
+    }
+  }
+  return { title: route.title, description: route.description }
 }
 
 let ssgPages = 0
@@ -731,9 +739,10 @@ for (const route of routes) {
 
     if (route.noindex) {
       // Noindex screens are language-agnostic entry points: German keeps the
-      // bare path, English only the historical `?lang=en` shell in `_i18n/`
-      // (no redirect for them: `/en/login` does not exist). Mounting a second
-      // URL would add indexable surface nothing asks for.
+      // bare path, English only the historical `?lang=en` shell in `_i18n/`.
+      // French has no pre-rendered shell: `/fr/login` is redirected by the
+      // client router to `/login?lang=fr`, and nginx serves the SPA shell.
+      if (locale === "fr") continue
       writePage(
         route.path,
         locale,

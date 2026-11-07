@@ -65,7 +65,9 @@ function PriorityRow({ finding }: { finding: AssetSecurityFinding }) {
         </p>
       </div>
       <Badge variant={finding.status === "open" ? "warning" : "success"}>
-        {finding.status}
+        {finding.status === "open"
+          ? t("assetSecurity.statusOpen")
+          : t("assetSecurity.statusResolved")}
       </Badge>
     </li>
   )
@@ -267,7 +269,9 @@ export default function AssetSecurityPanel({
               ) : (
                 <RefreshCw size={14} />
               )}
-              {activeScan ? "Scanning…" : "Run full scan"}
+              {activeScan
+                ? t("assetSecurity.scanning")
+                : t("assetSecurity.runFullScan")}
             </Button>
           </div>
         </div>
@@ -325,7 +329,9 @@ export default function AssetSecurityPanel({
               variant={showResolved ? "secondary" : "ghost"}
               onClick={() => setShowResolved((value) => !value)}
             >
-              {showResolved ? "Open only" : "Include resolved"}
+              {showResolved
+                ? t("assetSecurity.openOnly")
+                : t("assetSecurity.includeResolved")}
             </Button>
             <Link
               to={advisorHref}

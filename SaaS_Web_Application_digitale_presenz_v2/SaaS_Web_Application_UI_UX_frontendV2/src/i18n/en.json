@@ -50,7 +50,8 @@
     "contact": "Contact",
     "languageLabel": "Language",
     "german": "Deutsch",
-    "english": "English"
+    "english": "English",
+    "french": "French"
   },
   "websites": {
     "title": "Websites",
@@ -1192,7 +1193,9 @@
     "noResultYet": "No result yet — run a first scan.",
     "noScanResult": "No scan result yet",
     "noScanResultHint": "Run a check to populate the health breakdown for this website.",
-    "runCheck": "Run check"
+    "runCheck": "Run check",
+    "scanning": "Scanning…",
+    "activating": "Activating…"
   },
   "settings": {
     "title": "Settings",
@@ -1425,6 +1428,12 @@
     "loadingPolicy": "Loading policy…",
     "findingsTitle": "Security findings",
     "openCount": "{count} open",
+    "runFullScan": "Run full scan",
+    "scanning": "Scanning…",
+    "includeResolved": "Include resolved",
+    "openOnly": "Open only",
+    "statusOpen": "Open",
+    "statusResolved": "Resolved",
     "recommendationsTitle": "AI recommendations",
     "noCompletedScan": "Recommendations appear after a completed scan.",
     "noRecommendation": "No recommendation is stored for this scan yet.",

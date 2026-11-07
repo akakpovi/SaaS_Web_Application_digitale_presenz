@@ -275,7 +275,9 @@ export default function WebsiteDetails() {
               size={14}
               className={starting || activeScan ? "animate-spin" : ""}
             />
-            {starting || activeScan ? "Scanning…" : "Run check"}
+            {starting || activeScan
+              ? t("websiteDetails.scanning")
+              : t("websiteDetails.runCheck")}
           </Button>
         </div>
       </div>
@@ -305,7 +307,9 @@ export default function WebsiteDetails() {
                 onClick={() => void activateMonitoring()}
                 disabled={activatingMonitoring}
               >
-                {activatingMonitoring ? "Activating…" : "Activate monitoring"}
+                {activatingMonitoring
+                  ? t("websiteDetails.activating")
+                  : t("monitoring.activateMonitoring")}
               </Button>
             </div>
           </Card>

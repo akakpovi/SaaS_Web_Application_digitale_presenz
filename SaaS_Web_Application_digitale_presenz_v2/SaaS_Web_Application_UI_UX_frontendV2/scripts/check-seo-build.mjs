@@ -111,9 +111,10 @@ const BASE_URL = (
 ).replace(/\/+$/, "")
 const IS_LOCAL = /localhost|127\.0\.0\.1/.test(BASE_URL)
 const DEFAULT_LOCALE = "de"
-const LOCALES = ["de", "en"]
-/** Prefix of the dedicated English site (mirrors src/i18n EN_PREFIX). */
+const LOCALES = ["de", "en", "fr"]
+/** Prefixes of the dedicated localized sites (mirrors src/i18n). */
 const EN_PREFIX = "/en"
+const FR_PREFIX = "/fr"
 /** Folder of the private `?lang=en` shells; must stay non-addressable. */
 const VARIANT_DIR = "_i18n"
 const VARIANT_QUERY = "?lang=en"
@@ -143,18 +144,26 @@ function copy(locale, key) {
 
 /** Title and description of one route in one language. */
 function routeCopy(route, locale) {
-  return locale === DEFAULT_LOCALE
-    ? {
-        title: route.titleDe || route.title,
-        description: route.descriptionDe || route.description,
-      }
-    : { title: route.title, description: route.description }
+  if (locale === DEFAULT_LOCALE) {
+    return {
+      title: route.titleDe || route.title,
+      description: route.descriptionDe || route.description,
+    }
+  }
+  if (locale === "fr") {
+    return {
+      title: route.titleFr || route.title,
+      description: route.descriptionFr || route.description,
+    }
+  }
+  return { title: route.title, description: route.description }
 }
 
-/** URL of one page in one language: bare for German, `/en...` for English. */
+/** URL of one page in one language: bare German, `/en...`, `/fr...`. */
 function localizedPath(routePath, locale) {
   if (locale === DEFAULT_LOCALE) return routePath
-  return routePath === "/" ? EN_PREFIX : `${EN_PREFIX}${routePath}`
+  const prefix = locale === "en" ? EN_PREFIX : FR_PREFIX
+  return routePath === "/" ? prefix : `${prefix}${routePath}`
 }
 
 /** Canonical file of one variant below `dist/` (also the URI nginx serves). */
@@ -212,7 +221,7 @@ function localeRedirectTarget(uri, lang) {
   // nginx `map` matches its string keys case-insensitively: `?lang=EN` already
   // redirects, so the model must lower-case too.
   const normalized = lang?.toLowerCase()
-  if (normalized !== "en" && normalized !== "de") return null
+  if (normalized !== "en" && normalized !== "de" && normalized !== "fr") return null
   return localizedPath(uri, normalized)
 }
 
@@ -226,12 +235,12 @@ function localeRedirectTarget(uri, lang) {
 function localeRedirectQuery(args) {
   if (!args) return ""
   // `~*` in the generated map: same case handling as nginx.
-  if (/^lang=(?:en|de)$/i.test(args)) return ""
-  let match = args.match(/^lang=(?:en|de)&(.+)$/i)
+  if (/^lang=(?:en|de|fr)$/i.test(args)) return ""
+  let match = args.match(/^lang=(?:en|de|fr)&(.+)$/i)
   if (match) return `?${match[1]}`
-  match = args.match(/^(.+)&lang=(?:en|de)&(.+)$/i)
+  match = args.match(/^(.+)&lang=(?:en|de|fr)&(.+)$/i)
   if (match) return `?${match[1]}&${match[2]}`
-  match = args.match(/^(.+)&lang=(?:en|de)$/i)
+  match = args.match(/^(.+)&lang=(?:en|de|fr)$/i)
   if (match) return `?${match[1]}`
   return ""
 }
@@ -294,6 +303,11 @@ function resolveUri(uriWithQuery) {
   if (uri.startsWith("/app/") || uri.startsWith("/report/") || uri.startsWith("/scan/")) {
     return exists(uri) ? uri : exists("/index.html") ? "/index.html" : "=404"
   }
+  // Localized private entry points are served by the SPA shell; React then
+  // redirects to the canonical bare URL with ?lang=de|en|fr.
+  if (/^\/(de|en|fr)\/(app(?:\/|$)|login$|register$|forgot-password$|reset-password$|verify-email$|onboarding$|settings\/integrations$|admin$|report\/|scan\/)/.test(uri)) {
+    return exists("/index.html") ? "/index.html" : "=404"
+  }
   const variant = lang === "en" ? `/${VARIANT_DIR}` : ""
   // `location /blog/` has no language variant: an article is written in one
   // language and its translations live on their own slugs.
@@ -353,6 +367,10 @@ for (const route of routes) {
       typeof route[`${field}De`] === "string" && route[`${field}De`].length > 10,
       `routes.json ${routePath}: German ${field} is missing or too short`,
     )
+    check(
+      typeof route[`${field}Fr`] === "string" && route[`${field}Fr`].length > 10,
+      `routes.json ${routePath}: French ${field} is missing or too short`,
+    )
   }
   // Metadata left in German for the English variant is invisible in a German
   // build (the shell only prints the German pair) but wrong the moment the
@@ -364,6 +382,14 @@ for (const route of routes) {
   check(
     route.description !== route.descriptionDe,
     `routes.json ${routePath}: English and German descriptions are identical (untranslated?)`,
+  )
+  check(
+    route.title !== route.titleFr,
+    `routes.json ${routePath}: English and French titles are identical (untranslated?)`,
+  )
+  check(
+    route.description !== route.descriptionFr,
+    `routes.json ${routePath}: English and French descriptions are identical (untranslated?)`,
   )
 }
 
@@ -378,7 +404,7 @@ for (const routePath of seen) {
 
 /* ── 3. pre-rendered HTML per route and per language, with the expected head ─ */
 
-const OG_LOCALES = { de: "de_DE", en: "en_GB" }
+const OG_LOCALES = { de: "de_DE", en: "en_GB", fr: "fr_FR" }
 /** Marker on the injected tags; see src/lib/prerenderedHead.ts. */
 const HEAD_MARKER = 'data-prerender-head="true"'
 
@@ -439,10 +465,16 @@ for (const route of routes) {
       html,
       /<meta property="og:locale:alternate" content="([^"]*)"/g,
     ).map(([value]) => value)
+    const expectedAlternateLocales = LOCALES.filter((entry) => entry !== locale)
+      .map((entry) => OG_LOCALES[entry])
+      .sort()
     check(
-      alternateLocales.length === 1 &&
-        alternateLocales[0] === OG_LOCALES[locale === "de" ? "en" : "de"],
-      `${where}: og:locale:alternate should be exactly the other language`,
+      alternateLocales.length === expectedAlternateLocales.length &&
+        alternateLocales
+          .slice()
+          .sort()
+          .every((value, index) => value === expectedAlternateLocales[index]),
+      `${where}: og:locale:alternate should be ${expectedAlternateLocales.join(", ")}`,
     )
 
     const canonical = first(html, /<link rel="canonical" href="([^"]*)"/)
@@ -523,101 +555,125 @@ const SSG_H1 = {
   "/": {
     de: "Ihre digitale Präsenz, jederzeit unter Kontrolle.",
     en: "Your digital presence, always under control.",
+    fr: "Votre présence numérique, toujours sous contrôle.",
   },
-  "/pricing": { de: "Einfache, transparente Preise", en: "Simple, transparent pricing" },
-  "/faq": { de: "Häufig gestellte Fragen", en: "Frequently asked questions" },
+  "/pricing": { de: "Einfache, transparente Preise", en: "Simple, transparent pricing", fr: "Des tarifs simples et transparents" },
+  "/faq": { de: "Häufig gestellte Fragen", en: "Frequently asked questions", fr: "Questions fréquemment posées" },
   "/blog": {
     de: "Leitfäden zur digitalen Präsenz für kleine Unternehmen",
     en: "Digital presence guides for small businesses",
+    fr: "Guides de présence numérique pour les petites entreprises",
   },
   "/about": {
     de: "Digitale Gesundheitsinfrastruktur für das moderne Web.",
     en: "Digital health infrastructure for the modern web.",
+    fr: "Infrastructure de santé numérique pour le Web moderne.",
   },
-  "/contact": { de: "Kontakt aufnehmen", en: "Get in touch" },
-  "/privacy": { de: "Datenschutzerklärung", en: "Privacy policy" },
-  "/terms": { de: "Allgemeine Geschäftsbedingungen", en: "Terms of service" },
-  "/impressum": { de: "Impressum", en: "Imprint" },
-  "/cookies": { de: "Cookies und Speicherung", en: "Cookies and storage" },
-  "/widerruf": { de: "Widerrufsrecht", en: "Right of withdrawal" },
+  "/contact": { de: "Kontakt aufnehmen", en: "Get in touch", fr: "Contactez-nous" },
+  "/privacy": { de: "Datenschutzerklärung", en: "Privacy policy", fr: "Politique de confidentialité" },
+  "/terms": { de: "Allgemeine Geschäftsbedingungen", en: "Terms of service", fr: "Conditions d'utilisation" },
+  "/impressum": { de: "Impressum", en: "Imprint", fr: "Mentions légales" },
+  "/cookies": { de: "Cookies und Speicherung", en: "Cookies and storage", fr: "Cookies et stockage" },
+  "/widerruf": { de: "Widerrufsrecht", en: "Right of withdrawal", fr: "Droit de rétractation" },
   "/solutions/small-business": {
     de: "Website-Monitoring für kleine Unternehmen",
     en: "Website monitoring built for small businesses",
+    fr: "Surveillance de sites web conçue pour les petites entreprises",
   },
   "/solutions/freelancers": {
     de: "Website-Monitoring für Selbstständige und Beratungen",
     en: "Website monitoring for freelancers and consultants",
+    fr: "Surveillance de sites web pour indépendants et consultants",
   },
   "/solutions/agencies": {
     de: "Website-Monitoring für Digitalagenturen",
     en: "Website monitoring for digital agencies",
+    fr: "Surveillance de sites web pour les agences digitales",
   },
   "/solutions/restaurants": {
     de: "Website-Monitoring für Restaurants und Cafés",
     en: "Website monitoring for restaurants and cafés",
+    fr: "Surveillance de sites web pour restaurants et cafés",
   },
   "/solutions/ecommerce": {
     de: "Website-Monitoring für E-Commerce-Unternehmen",
     en: "Website monitoring for e-commerce businesses",
+    fr: "Surveillance de sites web pour les entreprises de commerce électronique",
   },
   "/solutions/local-business": {
     de: "Website-Monitoring für lokale Unternehmen",
     en: "Website monitoring for local businesses",
+    fr: "Surveillance de sites web pour les entreprises locales",
   },
   "/features/website-monitoring": {
     de: "Website-Überwachung für kleine Unternehmen",
     en: "Website Monitoring for Small Businesses",
+    fr: "Surveillance de sites web pour les petites entreprises",
   },
   "/features/ssl-monitoring": {
     de: "SSL-Zertifikatsüberwachung",
     en: "SSL Certificate Monitoring",
+    fr: "Surveillance des certificats SSL",
   },
   "/features/dns-monitoring": {
     de: "DNS-Überwachung und Domain-Prüfung",
     en: "DNS Monitoring & Domain Health Checks",
+    fr: "Surveillance DNS et vérifications de l'état du domaine",
   },
   "/features/email-security": {
     de: "E-Mail-Sicherheit überwachen – SPF, DKIM und DMARC",
     en: "Email Security Monitoring — SPF, DKIM & DMARC",
+    fr: "Surveillance de la sécurité des e-mails – SPF, DKIM et DMARC",
   },
   "/features/uptime-monitoring": {
     de: "Uptime-Überwachung für Ihre Website",
     en: "Website Uptime Monitoring",
+    fr: "Surveillance de la disponibilité du site web",
   },
   "/features/website-performance": {
     de: "Performance-Überwachung für Ihre Website",
     en: "Website Performance Monitoring",
+    fr: "Surveillance des performances du site web",
   },
   "/features/security-headers": {
     de: "HTTP-Sicherheitsheader überwachen",
     en: "Website Security Headers Monitoring",
+    fr: "Surveillance des en-têtes de sécurité des sites web",
   },
   "/features/review-monitoring": {
     de: "Online-Bewertungen für kleine Unternehmen überwachen",
     en: "Online Review Monitoring for Small Businesses",
+    fr: "Surveillance des avis en ligne pour les petites entreprises",
   },
   "/tools/website-checker": {
     de: "Kostenloser Website-Gesundheitscheck",
     en: "Free Website Health Checker",
+    fr: "Vérificateur de santé de site web gratuit",
   },
   "/tools/ssl-checker": {
     de: "Kostenloser SSL-Zertifikat-Check",
     en: "Free SSL Certificate Checker",
+    fr: "Vérificateur de certificat SSL gratuit",
   },
   "/tools/dns-checker": {
     de: "Kostenloser DNS-Check",
     en: "Free DNS Checker",
+    fr: "Vérificateur DNS gratuit",
   },
   "/tools/email-security-checker": {
     de: "Kostenloser E-Mail-Sicherheitscheck",
     en: "Free Email Security Checker",
+    fr: "Vérificateur de sécurité des e-mails gratuit",
   },
 }
 
 function h1Text(html) {
   const headings = all(html, /<h1[^>]*>([\s\S]*?)<\/h1>/g)
   if (headings.length === 0) return null
-  return headings[0][0].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+  return decodeHtml(headings[0][0].replace(/<[^>]+>/g, " "))
+    .replace(/&#x27;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 function rootHtml(html) {
@@ -692,7 +748,10 @@ for (const route of routes) {
     if (routePath === "/pricing") {
       // Every tier and its real price, not just one card: a partial SSG that
       // dropped the table would still contain a single plan name.
-      for (const name of ["Free", "Pro", "Business", "Agency"]) {
+      const planNames = ["free", "pro", "business", "agency"]
+        .map((tier) => copy(locale, `pricing.tiers.${tier}.name`))
+        .filter(Boolean)
+      for (const name of planNames) {
         check(html.includes(name), `${where}: pricing page has no ${name} plan`)
       }
       for (const price of ["9", "29", "79"]) {
@@ -724,37 +783,48 @@ for (const route of routes) {
         subsections >= 5,
         `${where}: feature page has only ${subsections} <h2> sections — looks like a shell`,
       )
+      const faqTitle = copy(locale, "features.shared.faqTitle")
       check(
-        html.includes(locale === "de" ? "Häufige Fragen" : "Frequently asked questions"),
+        Boolean(faqTitle) && html.includes(faqTitle),
         `${where}: feature page has no FAQ section`,
       )
     }
     if (routePath === "/privacy") {
+      const controllerTitle = copy(locale, "legal.privacyControllerTitle")
       check(
-        html.includes(locale === "de" ? "Verantwortlicher" : "Controller"),
+        Boolean(controllerTitle) && html.includes(controllerTitle),
         `${where}: privacy page has no controller section`,
       )
+      const lawfulTitle = copy(locale, "legal.privacyLawfulTitle")
       check(
-        html.includes(locale === "de" ? "Rechtsgrundlagen" : "Legal bases"),
+        Boolean(lawfulTitle) && html.includes(lawfulTitle),
         `${where}: privacy page has no legal-bases section`,
       )
     }
     if (routePath === "/terms") {
+      const terminationTitle = copy(locale, "legal.termsTermTitle")
       check(
-        html.includes(locale === "de" ? "Kündigung" : "cancellation"),
+        Boolean(terminationTitle) && html.includes(terminationTitle),
         `${where}: terms page has no termination section`,
       )
       check(html.includes("Paddle"), `${where}: terms page does not mention the payment provider`)
     }
     if (routePath === "/privacy" || routePath === "/terms" || routePath === "/impressum") {
+      // Privacy/terms carry the legal-review banner; the imprint carries the
+      // provider-data completion banner. Both are visible draft notices.
+      const draftNotices = [
+        copy(locale, "legal.reviewNoticeTitle"),
+        copy(locale, "legal.legalNoticeTitle"),
+      ].filter(Boolean)
       check(
-        /Arbeitsentwurf|Working draft|Diese Seite muss vor dem Livegang|This page must be completed/.test(html),
+        draftNotices.some((notice) => html.includes(notice)),
         `${where}: legal page has no visible draft notice`,
       )
     }
     if (routePath === "/") {
+      const ctaCopy = copy(locale, "landing.noCard")
       check(
-        html.includes(locale === "de" ? "Keine Kreditkarte erforderlich" : "No credit card required"),
+        Boolean(ctaCopy) && html.includes(ctaCopy),
         `${where}: landing page is missing its call-to-action copy`,
       )
     }
@@ -776,10 +846,13 @@ for (const route of routes) {
           const slugs = data.posts.map((post) => post.slug)
           if (locale === "de") {
             check(slugs.includes("de-was-ist-website-monitoring"), `${where}: German blog misses its German article`)
-          } else {
+          } else if (locale === "en") {
             check(slugs.includes("what-is-dmarc"), `${where}: English blog misses its English article`)
             check(!slugs.some((slug) => slug.startsWith("de-")), `${where}: English blog lists a German slug`)
           }
+          // French CMS has no published articles yet: the empty, localized
+          // index is the valid page. The `post.lang === locale` check above
+          // already guards the language once articles are published.
         } catch (error) {
           check(false, `${where}: blog data is not valid JSON (${error.message})`)
         }
