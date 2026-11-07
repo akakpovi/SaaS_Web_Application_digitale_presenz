@@ -716,3 +716,144 @@ class CheckResultDelegationTests(TestCase):
 
         runs = {run.scanner: run for run in ScannerRun.objects.filter(scan=scan)}
         self.assertEqual(runs["lighthouse"].status, "failed")
+
+
+def _external_scanner(
+    name: str,
+    *,
+    score: int | None,
+    status: str,
+    details: dict,
+    findings: list[NormalizedFinding],
+) -> MagicMock:
+    """Mock external adapter that returns one ScanOutcome."""
+    scanner = MagicMock()
+    scanner.name = name
+    scanner.scanner_type = ScannerType.CLI
+    scanner.check_result_category = None
+    scanner.timeout = 120
+    scanner.is_available.return_value = True
+    scanner.execute.return_value = ScanOutcome(
+        result=ScanResult(
+            score=score,
+            status=status,
+            message=f"{name} summary",
+            details=details,
+        ),
+        findings=findings,
+    )
+    return scanner
+
+
+class ExternalCheckResultMappingTests(TestCase):
+    """testssl and Gobuster feed the CheckResult bridge explicitly."""
+
+    def setUp(self):
+        self.user = _user()
+        self.website = _website(self.user)
+
+    def _run(self, scanner: MagicMock, key: str) -> Scan:
+        scan = Scan.objects.create(
+            website=self.website, status=Scan.Status.QUEUED
+        )
+        with patch("scanners.registry.ScannerRegistry") as mock_registry, patch(
+            "scans.services.steps_builder.build_initial_steps",
+            return_value=[_step(key, key)],
+        ), patch(
+            "scanners.security.target_validator.validate_target",
+            return_value=_target(),
+        ), patch(
+            "scans.services.scoring.recalculate_scan_health"
+        ):
+            mock_registry.get.return_value = scanner
+            ScanOrchestrator(scan.id).run()
+        return scan
+
+    def test_testssl_findings_create_an_ssl_check_result(self):
+        scanner = _external_scanner(
+            "testssl",
+            score=15,
+            status="critical",
+            details={"scan_complete": True, "total_checks": 2},
+            findings=[
+                NormalizedFinding(
+                    check_code="testssl.TLS1_0",
+                    category="ssl",
+                    severity=Severity.HIGH,
+                    status=FindingStatus.FAIL,
+                    title="TLS 1.0 offered",
+                )
+            ],
+        )
+
+        scan = self._run(scanner, "testssl")
+
+        result = CheckResult.objects.get(
+            scan=scan, category=CheckResult.Category.SSL
+        )
+        self.assertEqual(result.score, 15)
+        self.assertEqual(result.summary, "testssl summary")
+        self.assertEqual(result.technical_details["scanner"], "testssl")
+
+    def test_gobuster_paths_create_an_exposure_check_result(self):
+        scanner = _external_scanner(
+            "gobuster",
+            score=None,
+            status="neutral",
+            details={
+                "scan_complete": True,
+                "paths_found": 1,
+                "sensitive_paths": 1,
+            },
+            findings=[
+                NormalizedFinding(
+                    check_code="gobuster.path.admin",
+                    category="security",
+                    severity=Severity.HIGH,
+                    status=FindingStatus.FAIL,
+                    title="Directory/file found: /admin",
+                )
+            ],
+        )
+
+        scan = self._run(scanner, "gobuster")
+
+        result = CheckResult.objects.get(
+            scan=scan, category=CheckResult.Category.EXPOSURE
+        )
+        self.assertIsNone(result.score)
+        self.assertEqual(result.technical_details["scanner"], "gobuster")
+
+    def test_empty_external_result_creates_no_check_result(self):
+        scanner = _external_scanner(
+            "testssl",
+            score=20,
+            status="neutral",
+            details={"scan_complete": True},
+            findings=[],
+        )
+
+        scan = self._run(scanner, "testssl")
+
+        self.assertFalse(CheckResult.objects.filter(scan=scan).exists())
+
+    def test_incomplete_external_result_creates_no_check_result(self):
+        scanner = _external_scanner(
+            "gobuster",
+            score=None,
+            status="warning",
+            details={"scan_complete": False},
+            findings=[
+                NormalizedFinding(
+                    check_code="gobuster.path.admin",
+                    category="security",
+                    severity=Severity.HIGH,
+                    status=FindingStatus.FAIL,
+                    title="Directory/file found: /admin",
+                )
+            ],
+        )
+
+        scan = self._run(scanner, "gobuster")
+
+        self.assertFalse(CheckResult.objects.filter(scan=scan).exists())

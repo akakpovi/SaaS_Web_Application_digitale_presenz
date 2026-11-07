@@ -317,6 +317,7 @@ def build_outcome(
     findings: list[NormalizedFinding],
     message: str,
     status: str = "neutral",
+    score: int | None = None,
     recommendation: str = "",
     scan_complete: bool = True,
     partial_reason: str = "",
@@ -354,7 +355,7 @@ def build_outcome(
         details.setdefault("max_output_bytes", run.max_output_bytes)
 
     result = ScanResult(
-        score=None,
+        score=score,
         status=status,
         message=message,
         details=details,

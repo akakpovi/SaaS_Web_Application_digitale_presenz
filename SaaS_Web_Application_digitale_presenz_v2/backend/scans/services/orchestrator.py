@@ -480,7 +480,9 @@ class ScanOrchestrator:
                 )
 
                 # Persist CheckResult (backward compat with health score engine).
-                self._persist_check_result(scan, scanner, scan_result)
+                self._persist_check_result(
+                    scan, scanner, scan_result, findings=findings
+                )
                 # The result was persisted, so it is usable even when the
                 # scanner later reports an incomplete run (timeout/partial).
                 step["result_usable"] = True
@@ -1066,7 +1068,11 @@ class ScanOrchestrator:
         )
 
     def _persist_check_result(
-        self, scan: Any, scanner: Any, scan_result: Any
+        self,
+        scan: Any,
+        scanner: Any,
+        scan_result: Any,
+        findings: list[Any] | None = None,
     ) -> None:
         """Create/update a CheckResult from a ScanResult.
 
@@ -1096,6 +1102,8 @@ class ScanOrchestrator:
             "uptime":           CheckResult.Category.UPTIME,
             "zap":              CheckResult.Category.ZAP,
             "nuclei":           CheckResult.Category.NUCLEI,
+            "testssl":          CheckResult.Category.SSL,
+            "gobuster":         CheckResult.Category.EXPOSURE,
         }
 
         declared = getattr(scanner, "check_result_category", None)
@@ -1125,6 +1133,27 @@ class ScanOrchestrator:
                 self.scan_id,
             )
             return
+
+        # External discovery tools only produce a CheckResult when they
+        # actually found something.  An empty or partial run must not
+        # overwrite the health bridge with a synthetic score.
+        if scanner_name in {"testssl", "gobuster"} and findings is not None:
+            if not findings:
+                logger.info(
+                    "ScanOrchestrator: scanner '%s' returned no findings — "
+                    "no CheckResult persisted for scan %d",
+                    scanner_name,
+                    self.scan_id,
+                )
+                return
+            if (scan_result.details or {}).get("scan_complete") is False:
+                logger.info(
+                    "ScanOrchestrator: scanner '%s' did not complete — "
+                    "no CheckResult persisted for scan %d",
+                    scanner_name,
+                    self.scan_id,
+                )
+                return
 
         # Uptime and external security results are not part of the weighted
         # health score (monitoring/security data only, reported separately).

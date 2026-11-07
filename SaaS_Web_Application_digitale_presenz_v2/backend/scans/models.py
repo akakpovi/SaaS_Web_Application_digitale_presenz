@@ -301,6 +301,7 @@ class CheckResult(models.Model):
         UPTIME = "uptime", "Uptime"
         ZAP = "zap", "OWASP ZAP"
         NUCLEI = "nuclei", "Nuclei"
+        EXPOSURE = "exposure", "Exposure"
 
     scan = models.ForeignKey(Scan, on_delete=models.CASCADE, related_name="check_results")
     category = models.CharField(max_length=32, choices=Category.choices)

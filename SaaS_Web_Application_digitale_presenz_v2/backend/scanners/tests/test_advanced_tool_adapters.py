@@ -578,6 +578,16 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         self.assertEqual(high.severity, "high")
         self.assertEqual(high.status, FindingStatus.FAIL)
 
+    def test_testssl_outcome_has_a_bounded_ssl_score_and_severity_counts(self):
+        outcome, _ = _execute(
+            testssl_scanner, _run(stdout=TESTSSL_JSON, stderr="testssl done")
+        )
+        self.assertEqual(outcome.result.score, 15)
+        self.assertEqual(outcome.result.details["ssl_score"], 15)
+        self.assertEqual(
+            outcome.result.details["severity_counts"], {"info": 1, "high": 1}
+        )
+
     def test_testssl_sectioned_report_yields_identified_checks(self):
         """The real pretty-JSON shape nests checks; none may end up nameless."""
         from scanners.parsers.testssl import parse_testssl_json
@@ -634,6 +644,11 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         self.assertEqual(admin.severity, "high")
         self.assertEqual(admin.status, FindingStatus.FAIL)
         self.assertEqual(admin.evidence["status_code"], 301)
+
+    def test_gobuster_summary_counts_sensitive_paths(self):
+        outcome, _ = _execute(gobuster_scanner, _run(stdout=GOBUSTER_TEXT))
+        self.assertEqual(outcome.result.details["sensitive_paths"], 2)
+        self.assertIn("2 sensitive", outcome.result.message)
 
     def test_gobuster_garbage_lines_are_ignored(self):
         output = (

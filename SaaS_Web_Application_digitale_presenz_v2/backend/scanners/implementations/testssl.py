@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+from collections import Counter
 from dataclasses import replace
 from typing import Any
 
@@ -39,6 +40,15 @@ from scanners.parsers.testssl import parse_testssl_json
 from scanners.security.target_validator import validate_target
 
 logger = logging.getLogger(__name__)
+
+#: Deductions applied to the 20-point SSL category.  A testssl finding is
+#: counted once after normalisation (the parser may repeat a check per IP).
+_SSL_SEVERITY_PENALTY = {
+    "critical": 10,
+    "high": 5,
+    "medium": 2,
+    "low": 1,
+}
 
 
 class TestSSLScanner(BaseScanner):
@@ -254,10 +264,17 @@ class TestSSLScanner(BaseScanner):
             complete, reason = False, "unparsable_report"
         parsed = parse_testssl_json(report)
         high_sev = [p for p in parsed if p.get("severity") in ("high", "critical")]
+        findings = self.normalize(parsed)
+        severity_counts = Counter(finding.severity for finding in findings)
+        penalty = sum(
+            _SSL_SEVERITY_PENALTY.get(severity, 0) * count
+            for severity, count in severity_counts.items()
+        )
+        ssl_score = max(0, 20 - penalty)
         return build_outcome(
             self,
             run=run,
-            findings=self.normalize(parsed),
+            findings=findings,
             message=(
                 f"testssl.sh found {len(parsed)} check(s), "
                 f"{len(high_sev)} high/critical"
@@ -269,10 +286,13 @@ class TestSSLScanner(BaseScanner):
                 if complete
                 else "warning"
             ),
+            score=ssl_score,
             scan_complete=complete,
             partial_reason=reason,
             total_checks=len(parsed),
             high_severity_count=len(high_sev),
+            severity_counts=dict(severity_counts),
+            ssl_score=ssl_score,
             raw_report=report or None,
             raw_report_format="testssl-json",
             raw_report_meta={"checks": len(parsed)},

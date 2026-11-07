@@ -351,6 +351,11 @@ class GobusterScanner(BaseScanner):
             reason = reason or extra_reason
 
         findings = self.normalize(parsed)
+        sensitive_paths = sum(
+            1
+            for item in parsed
+            if _canonical_path(item.get("path", "")) in _SENSITIVE_PATHS
+        )
         passes = [
             {
                 "wordlist": self.wordlist,
@@ -376,7 +381,8 @@ class GobusterScanner(BaseScanner):
             run=run,
             findings=findings,
             message=(
-                f"Gobuster found {len(parsed)} path(s)"
+                f"Gobuster found {len(parsed)} path(s), "
+                f"{sensitive_paths} sensitive"
                 if complete
                 else f"Gobuster scan incomplete ({reason}): "
                 f"{len(parsed)} path(s) seen so far"
@@ -385,6 +391,7 @@ class GobusterScanner(BaseScanner):
             scan_complete=complete,
             partial_reason=reason,
             paths_found=len(parsed),
+            sensitive_paths=sensitive_paths,
             wordlist=self.wordlist,
             extra_wordlist=extra_wordlist or None,
             passes=passes,
