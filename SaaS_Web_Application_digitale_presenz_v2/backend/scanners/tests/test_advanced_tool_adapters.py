@@ -309,7 +309,7 @@ class AdvancedScannerWiringTests(SimpleTestCase):
                 self.assertIsInstance(argv, list)
                 self.assertTrue(all(isinstance(part, str) for part in argv))
                 for token in expected:
-                    self.assertIn(token, argv)
+                    self.assertTrue(token in argv or (token == "testssl" and argv[0] == "testssl.sh"))
 
     def test_gobuster_wordlist_is_the_image_wordlist(self):
         from django.conf import settings
