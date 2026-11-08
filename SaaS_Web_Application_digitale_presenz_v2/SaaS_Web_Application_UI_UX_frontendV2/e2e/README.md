@@ -55,8 +55,25 @@ Useful environment variables:
 | `E2E_BASE_URL` | `http://localhost:5173` | origin under test |
 | `MAILPIT_URL` | `http://localhost:8025` | Mailpit HTTP API |
 | `E2E_SKIP_DOCKER_SETUP` | unset | do not touch Docker (remote stack, no cleanup) |
+| `E2E_EMAIL` | unset | existing account for the French private-screen checks |
+| `E2E_PASSWORD` | unset | password for `E2E_EMAIL`; never committed |
+| `E2E_WEBSITE_ID` | first listed website | optional site used by the French detail check |
 
 Failed runs keep a trace and a screenshot in `test-results/` (gitignored).
+
+### French private-screen checks
+
+`i18n-french.spec.ts` always checks the French public pages and login. Its
+dashboard, website-detail and settings checks use an existing account and are
+skipped when `E2E_EMAIL`/`E2E_PASSWORD` are absent. Run them with:
+
+```bash
+E2E_EMAIL='...' E2E_PASSWORD='...' E2E_WEBSITE_ID=38 \
+  pnpm exec playwright test e2e/i18n-french.spec.ts --reporter=list
+```
+
+Do not put the password in a tracked file. CI passes the values from the
+`E2E_EMAIL`, `E2E_PASSWORD` and optional `E2E_WEBSITE_ID` repository secrets.
 
 ## Test data hygiene
 
