@@ -574,7 +574,8 @@
     "commandMenuSearch": "Seiten und Aktionen suchen …",
     "commandMenuOpen": "öffnen",
     "commandMenuClose": "schließen",
-    "planBadgePro": "Pro"
+    "planBadgePro": "Pro",
+    "userFallback": "Benutzer"
   },
   "status": {
     "completed": "Abgeschlossen",
@@ -1195,7 +1196,12 @@
     "noScanResultHint": "Führen Sie eine Prüfung aus, um die Auswertung für diese Website zu füllen.",
     "runCheck": "Prüfung starten",
     "scanning": "Prüfung läuft …",
-    "activating": "Aktivierung …"
+    "activating": "Aktivierung …",
+    "noSummary": "Keine Zusammenfassung gemeldet.",
+    "monitoringActivated": "Kontinuierliche Überwachung aktiviert. Die erste geplante Prüfung läuft jetzt.",
+    "scanQueued": "Scan #{id} in die Warteschlange gestellt.",
+    "invalidId": "Ungültige Website-ID.",
+    "websiteNotFound": "Website nicht gefunden."
   },
   "settings": {
     "title": "Einstellungen",
@@ -1247,7 +1253,10 @@
       "fullName": "Vollständiger Name",
       "email": "E-Mail-Adresse",
       "readOnly": "Name, E-Mail-Adresse oder Profilbild können noch nicht geändert werden: Die Konto-API ist schreibgeschützt.",
-      "loadingProfile": "Profil wird geladen…"
+      "loadingProfile": "Profil wird geladen…",
+      "nameNotSet": "Name nicht festgelegt",
+      "emailVerified": "E-Mail bestätigt",
+      "emailNotVerified": "E-Mail nicht bestätigt"
     },
     "retry": "Erneut versuchen",
     "saving": "Wird gespeichert…",
@@ -1259,6 +1268,22 @@
       "country": "Land",
       "timezone": "Zeitzone",
       "notSet": "Nicht festgelegt",
+      "industries": {
+        "restaurant": "Restaurant / Café",
+        "retail": "Einzelhandel",
+        "hotel": "Hotel",
+        "autoRepair": "Autowerkstatt",
+        "beauty": "Beauty",
+        "agency": "Agentur",
+        "other": "Sonstiges"
+      },
+      "countries": {
+        "DE": "Deutschland",
+        "FR": "Frankreich",
+        "AT": "Österreich",
+        "CH": "Schweiz",
+        "OTHER": "Sonstiges"
+      },
       "save": "Änderungen speichern"
     },
     "notifications": {
@@ -1281,6 +1306,51 @@
       "channelNamePlaceholder": "Betriebsteam",
       "channelUrl": "Webhook-URL",
       "channelUrlPlaceholder": "https://hooks.slack.com/services/…",
+      "types": {
+        "websiteUnavailable": {
+          "label": "Website nicht erreichbar",
+          "desc": "Benachrichtigt, wenn Ihre Website offline geht"
+        },
+        "sslExpiry": {
+          "label": "SSL-Zertifikat läuft ab",
+          "desc": "Benachrichtigt vor Ablauf des Zertifikats"
+        },
+        "sslInvalid": {
+          "label": "Ungültiges SSL-Zertifikat",
+          "desc": "Benachrichtigt, wenn das Zertifikat nicht mehr gültig ist"
+        },
+        "dnsProblems": {
+          "label": "DNS-Konfigurationsprobleme",
+          "desc": "Benachrichtigt, wenn DNS-Einträge ausfallen"
+        },
+        "emailSecurity": {
+          "label": "Probleme mit der E-Mail-Sicherheit",
+          "desc": "Probleme mit SPF, DKIM und DMARC"
+        },
+        "securityHeaders": {
+          "label": "Sicherheits-Header",
+          "desc": "Fehlende oder geschwächte HTTP-Sicherheits-Header"
+        },
+        "performance": {
+          "label": "Performance",
+          "desc": "Langsame Antwortzeit oder schwere Seiten"
+        },
+        "scoreDrop": {
+          "label": "Wertverlust",
+          "desc": "Der Gesundheitswert fällt unter seinen Schwellenwert"
+        },
+        "scanFailed": {
+          "label": "Scan fehlgeschlagen",
+          "desc": "Ein geplanter Scan konnte nicht abgeschlossen werden"
+        }
+      },
+      "usage": "{used} von {max} verwendet.",
+      "accountEmail": "E-Mail-Adresse des Kontos",
+      "test": "Testen",
+      "sendingTest": "Wird gesendet …",
+      "testAria": "Testbenachrichtigung über {name} senden",
+      "deleteAria": "{name} löschen",
+      "webhookHelper": "Eingehender Webhook zur Zustellung der Warnung.",
       "adding": "Wird hinzugefügt…",
       "add": "Kanal hinzufügen",
       "enabled": "aktiviert",
@@ -1289,7 +1359,9 @@
     "appearance": {
       "title": "Darstellung",
       "hint": "Wählen Sie, wie Presence auf Ihrem Gerät aussieht.",
-      "saved": "Ihre Auswahl wird automatisch gespeichert."
+      "saved": "Ihre Auswahl wird automatisch gespeichert.",
+      "light": "Hell",
+      "dark": "Dunkel"
     },
     "pwa": {
       "title": "Progressive Web-App",
@@ -1300,7 +1372,12 @@
       "linking": "Wird verknüpft…",
       "enable": "In diesem Browser aktivieren",
       "sending": "Wird gesendet…",
-      "sendTest": "Test-Push senden"
+      "sendTest": "Test-Push senden",
+      "installed": "Läuft als installierte App",
+      "browser": "Läuft im Browser",
+      "installedHint": "Dieses Fenster wurde aus der installierten App gestartet.",
+      "browserHint": "Verwenden Sie die Aktion Installieren / Zum Startbildschirm hinzufügen Ihres Browsers, um Presence zu installieren.",
+      "unsupported": "von diesem Browser nicht unterstützt"
     },
     "languageRegion": {
       "title": "Sprache & Region",
@@ -1318,6 +1395,8 @@
       "keyName": "Schlüsselname",
       "keyNamePlaceholder": "CI-Pipeline",
       "copyNow": "Diesen Schlüssel jetzt kopieren",
+      "defaultKey": "Standardschlüssel",
+      "keyHelper": "Eine Bezeichnung, um die Integration später wiederzuerkennen.",
       "copy": "Kopieren",
       "included": "Inklusive",
       "pro": "Pro",
@@ -1335,6 +1414,12 @@
       "active": "Aktiv",
       "included": "In Ihrem Tarif enthalten:",
       "upgradeBusiness": "Auf Business upgraden",
+      "featureWebsites": "10 Websites",
+      "featureMonitoring": "Automatische stündliche Überwachung",
+      "featureAlerts": "E-Mail- und Push-Warnungen",
+      "featureReports": "PDF-Berichte",
+      "featureHistory": "Verlauf der Bewertung",
+      "featureChecks": "Erweiterte Prüfungen",
       "cancel": "Abonnement kündigen"
     },
     "privacy": {
@@ -1345,9 +1430,10 @@
       "deleteTitle": "Mein Konto löschen",
       "deleteHint": "Dies löscht Ihr Konto und alle zugehörigen Daten dauerhaft: Websites, Scans, Prüfergebnisse, Befunde, Warnungen, Benachrichtigungskanäle und Berichte. Es kann nicht rückgängig gemacht werden. (DSGVO Art. 17)",
       "confirmPassword": "Passwort bestätigen",
-      "typeDelete": "\"DELETE\" zur Bestätigung eingeben",
+      "typeDelete": "Geben Sie {word} ein, um zu bestätigen",
       "deleting": "Wird gelöscht…",
-      "deleteButton": "Mein Konto endgültig löschen"
+      "deleteButton": "Mein Konto endgültig löschen",
+      "deleteWord": "LÖSCHEN"
     },
     "sectionUnavailableTitle": "{section}-Einstellungen",
     "sectionUnavailableHint": "Dieser Bereich ist in der vollständigen Anwendung verfügbar."
@@ -1586,7 +1672,12 @@
     "noScoredScan": "In diesem Zeitraum wurde kein bewerteter Scan erfasst.",
     "history": "Berichtsverlauf",
     "pointsShort": "{count} Pkt.",
-    "downloadFor": "Bericht herunterladen für {period}"
+    "downloadFor": "Bericht herunterladen für {period}",
+    "noCompletedScan": "Für diesen Berichtszeitraum existiert kein abgeschlossener Scan.",
+    "pdfRendererError": "Der PDF-Generator hat eine Antwort zurückgegeben, die kein PDF ist. Prüfen Sie die Serverprotokolle für WeasyPrint.",
+    "preparing": "Wird vorbereitet …",
+    "downloadPdf": "PDF herunterladen",
+    "websiteFallback": "Website {id}"
   },
   "socialAudit": {
     "title": "Audit-Protokolle",
@@ -1731,7 +1822,13 @@
     "discoveryFoundOne": "Suche abgeschlossen: {count} Bewertung gefunden.",
     "discoveryFound": "Suche abgeschlossen: {count} Bewertungen gefunden.",
     "discoveryFoundNone": "Suche abgeschlossen: Für diese Website wurde keine öffentliche Bewertung gefunden.",
-    "csvHint": "CSV-Spalten: author (oder author_name/name), rating, text (oder content), optional external_id und review_date (ISO)."
+    "csvHint": "CSV-Spalten: author (oder author_name/name), rating, text (oder content), optional external_id und review_date (ISO).",
+    "noWebsiteForSource": "Fügen Sie eine Website hinzu, bevor Sie eine Bewertungsquelle erstellen.",
+    "chooseFile": "Wählen Sie eine Bewertungsquelle und eine CSV- oder JSON-Datei.",
+    "creatingSource": "Wird erstellt …",
+    "createSource": "Quelle erstellen",
+    "sentimentQueued": "Stimmungsanalyse in die Warteschlange gestellt.",
+    "reviewApproved": "Bewertung genehmigt."
   },
   "growth": {
     "title": "Wachstum & Sicherheit",
@@ -1831,7 +1928,12 @@
     "typeWordSuffix": "zur Bestätigung ein",
     "typeToConfirmAria": "Geben Sie {word} zur Bestätigung ein",
     "disconnecting": "Wird getrennt …",
-    "disconnectAccount": "Konto trennen"
+    "disconnectAccount": "Konto trennen",
+    "toastNoOrganization": "Für diese Aktion ist keine Organisation verfügbar.",
+    "toastRoleConnect": "Ihre Organisationsrolle erlaubt das Verbinden sozialer Konten nicht.",
+    "toastHttpsRequired": "Die Autorisierungs-URL muss HTTPS verwenden.",
+    "toastRoleDisconnect": "Nur Eigentümer und Administratoren können soziale Konten trennen.",
+    "toastDisconnected": "LinkedIn-Konto getrennt."
   },
   "about": {
     "metaTitle": "Über Presence | Website-Monitoring für kleine Unternehmen",

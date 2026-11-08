@@ -30,6 +30,7 @@ import type {
   UserProfile,
 } from "../api/types"
 import { useFormat } from "../lib/useFormat"
+import type { MessageKey } from "../i18n"
 import { Copy, KeyRound, Moon, Plus, Sun, Trash2 } from "lucide-react"
 
 /** The VAPID key is base64url; PushManager.subscribe expects raw bytes. */
@@ -70,22 +71,28 @@ const SECTION_KEYS = {
 
 type SectionName = keyof typeof SECTION_KEYS
 
-const INDUSTRIES: { value: UserProfile["business_industry"]; label: string }[] = [
-  { value: "restaurant", label: "Restaurant / Café" },
-  { value: "retail", label: "Retail" },
-  { value: "hotel", label: "Hotel" },
-  { value: "auto_repair", label: "Auto Repair" },
-  { value: "beauty", label: "Beauty" },
-  { value: "agency", label: "Agency" },
-  { value: "other", label: "Other" },
+const INDUSTRIES: {
+  value: UserProfile["business_industry"]
+  labelKey: MessageKey
+}[] = [
+  { value: "restaurant", labelKey: "settings.business.industries.restaurant" },
+  { value: "retail", labelKey: "settings.business.industries.retail" },
+  { value: "hotel", labelKey: "settings.business.industries.hotel" },
+  { value: "auto_repair", labelKey: "settings.business.industries.autoRepair" },
+  { value: "beauty", labelKey: "settings.business.industries.beauty" },
+  { value: "agency", labelKey: "settings.business.industries.agency" },
+  { value: "other", labelKey: "settings.business.industries.other" },
 ]
 
-const COUNTRIES: { value: UserProfile["business_country"]; label: string }[] = [
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "AT", label: "Austria" },
-  { value: "CH", label: "Switzerland" },
-  { value: "OTHER", label: "Other" },
+const COUNTRIES: {
+  value: UserProfile["business_country"]
+  labelKey: MessageKey
+}[] = [
+  { value: "DE", labelKey: "settings.business.countries.DE" },
+  { value: "FR", labelKey: "settings.business.countries.FR" },
+  { value: "AT", labelKey: "settings.business.countries.AT" },
+  { value: "CH", labelKey: "settings.business.countries.CH" },
+  { value: "OTHER", labelKey: "settings.business.countries.OTHER" },
 ]
 
 const TIMEZONES: UserProfile["timezone"][] = [
@@ -117,6 +124,7 @@ export default function Settings() {
   const { logout, user } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
+  const deleteWord = t("settings.privacy.deleteWord")
 
   // GDPR — Art. 15/20 export and Art. 17 erasure
   const [exporting, setExporting] = useState(false)
@@ -195,7 +203,7 @@ export default function Settings() {
     setCreatingKey(true)
     try {
       const created = await api.post<ApiKey>(endpoints.apiKeys.list, {
-        name: keyName.trim() || "Default key",
+        name: keyName.trim() || t("settings.api.defaultKey"),
       })
       setFreshKey(created.api_key ?? null)
       setKeyName("")
@@ -261,7 +269,7 @@ export default function Settings() {
   }
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "DELETE") {
+    if (deleteConfirm !== deleteWord) {
       showToast(t("settings.toast.typeDelete"), "error")
       return
     }
@@ -512,7 +520,7 @@ export default function Settings() {
                     </div>
                     <div>
                       <p className="font-semibold text-slate-900">
-                        {user.full_name || "Name not set"}
+                        {user.full_name || t("settings.account.nameNotSet")}
                       </p>
                       <p className="text-sm text-slate-500">{user.email}</p>
                     </div>
@@ -524,8 +532,8 @@ export default function Settings() {
                       }`}
                     >
                       {user.is_email_verified
-                        ? "Email verified"
-                        : "Email not verified"}
+                        ? t("settings.account.emailVerified")
+                        : t("settings.account.emailNotVerified")}
                     </span>
                   </div>
                   <div className="grid gap-4">
@@ -622,7 +630,7 @@ export default function Settings() {
                       <option value="">{t("settings.business.notSet")}</option>
                       {INDUSTRIES.map((item) => (
                         <option key={item.value} value={item.value}>
-                          {item.label}
+                          {t(item.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -650,7 +658,7 @@ export default function Settings() {
                       <option value="">{t("settings.business.notSet")}</option>
                       {COUNTRIES.map((item) => (
                         <option key={item.value} value={item.value}>
-                          {item.label}
+                          {t(item.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -704,51 +712,51 @@ export default function Settings() {
                     [
                       {
                         key: "website_offline_enabled",
-                        label: "Website unavailable",
-                        desc: "Notify when your website goes offline",
+                        labelKey: "settings.notifications.types.websiteUnavailable.label",
+                        descKey: "settings.notifications.types.websiteUnavailable.desc",
                       },
                       {
                         key: "ssl_expiring_enabled",
-                        label: "SSL certificate expiry",
-                        desc: "Notify before the certificate expires",
+                        labelKey: "settings.notifications.types.sslExpiry.label",
+                        descKey: "settings.notifications.types.sslExpiry.desc",
                       },
                       {
                         key: "ssl_invalid_enabled",
-                        label: "Invalid SSL certificate",
-                        desc: "Notify when the certificate stops validating",
+                        labelKey: "settings.notifications.types.sslInvalid.label",
+                        descKey: "settings.notifications.types.sslInvalid.desc",
                       },
                       {
                         key: "dns_problem_enabled",
-                        label: "DNS configuration problems",
-                        desc: "Notify when DNS records break",
+                        labelKey: "settings.notifications.types.dnsProblems.label",
+                        descKey: "settings.notifications.types.dnsProblems.desc",
                       },
                       {
                         key: "email_security_enabled",
-                        label: "Email security issues",
-                        desc: "SPF, DKIM and DMARC problems",
+                        labelKey: "settings.notifications.types.emailSecurity.label",
+                        descKey: "settings.notifications.types.emailSecurity.desc",
                       },
                       {
                         key: "security_headers_enabled",
-                        label: "Security headers",
-                        desc: "Missing or weakened HTTP security headers",
+                        labelKey: "settings.notifications.types.securityHeaders.label",
+                        descKey: "settings.notifications.types.securityHeaders.desc",
                       },
                       {
                         key: "performance_enabled",
-                        label: "Performance",
-                        desc: "Slow response time or heavy pages",
+                        labelKey: "settings.notifications.types.performance.label",
+                        descKey: "settings.notifications.types.performance.desc",
                       },
                       {
                         key: "score_drop_enabled",
-                        label: "Score drop",
-                        desc: "Health score falls below its threshold",
+                        labelKey: "settings.notifications.types.scoreDrop.label",
+                        descKey: "settings.notifications.types.scoreDrop.desc",
                       },
                       {
                         key: "scan_failed_enabled",
-                        label: "Scan failed",
-                        desc: "A scheduled scan could not complete",
+                        labelKey: "settings.notifications.types.scanFailed.label",
+                        descKey: "settings.notifications.types.scanFailed.desc",
                       },
                     ] as const
-                  ).map(({ key, label, desc }) => {
+                  ).map(({ key, labelKey, descKey }) => {
                     const checked = Boolean(
                       prefs.data?.[key as keyof AlertPreferences],
                     )
@@ -759,9 +767,9 @@ export default function Settings() {
                       >
                         <div>
                           <p className="text-sm font-medium text-slate-800">
-                            {label}
+                            {t(labelKey)}
                           </p>
-                          <p className="text-xs text-slate-500">{desc}</p>
+                          <p className="text-xs text-slate-500">{t(descKey)}</p>
                         </div>
                         <Toggle
                           checked={checked}
@@ -811,7 +819,10 @@ export default function Settings() {
                     <p className="text-sm text-slate-500 mt-1">
                       {t("settings.notifications.channelsHint")}
                       {plan.limits && plan.usage
-                        ? ` ${plan.usage.alert_channels} of ${plan.limits.max_alert_channels} used.`
+                        ? t("settings.notifications.usage", {
+                            used: plan.usage.alert_channels,
+                            max: plan.limits.max_alert_channels,
+                          })
                         : ""}
                     </p>
                   </div>
@@ -843,7 +854,7 @@ export default function Settings() {
                               {typeof channel.config.webhook_url === "string"
                                 ? channel.config.webhook_url
                                 : channel.channel_type === "email"
-                                  ? "Account e-mail address"
+                                  ? t("settings.notifications.accountEmail")
                                   : "—"}
                             </p>
                           </div>
@@ -861,17 +872,21 @@ export default function Settings() {
                             onClick={() => void testChannel(channel)}
                             disabled={testingChannel === channel.id}
                             className="flex-shrink-0 rounded-lg border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                            aria-label={`Send a test notification via ${channel.name}`}
+                            aria-label={t("settings.notifications.testAria", {
+                              name: channel.name,
+                            })}
                           >
                             {testingChannel === channel.id
-                              ? "Sending…"
-                              : "Test"}
+                              ? t("settings.notifications.sendingTest")
+                              : t("settings.notifications.test")}
                           </button>
                           <button
                             type="button"
                             onClick={() => void handleDeleteChannel(channel)}
                             className="flex-shrink-0 text-slate-400 transition-colors hover:text-red-600"
-                            aria-label={`Delete ${channel.name}`}
+                            aria-label={t("settings.notifications.deleteAria", {
+                              name: channel.name,
+                            })}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -912,7 +927,7 @@ export default function Settings() {
                             placeholder={t("settings.notifications.channelUrlPlaceholder")}
                             value={channelUrl}
                             onChange={setChannelUrl}
-                            helper="Incoming webhook used to deliver the alert."
+                            helper={t("settings.notifications.webhookHelper")}
                           />
                         </div>
                       )}
@@ -940,9 +955,9 @@ export default function Settings() {
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {([
-                  { value: "light", label: "Light", icon: Sun },
-                  { value: "dark", label: "Dark", icon: Moon },
-                ] as const).map(({ value, label, icon: Icon }) => (
+                  { value: "light", labelKey: "settings.appearance.light", icon: Sun },
+                  { value: "dark", labelKey: "settings.appearance.dark", icon: Moon },
+                ] as const).map(({ value, labelKey, icon: Icon }) => (
                   <button
                     key={value}
                     onClick={() => setTheme(value)}
@@ -953,7 +968,7 @@ export default function Settings() {
                     }`}
                   >
                     <Icon size={20} />
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -987,8 +1002,8 @@ export default function Settings() {
                     }`}
                   >
                     {pwa.installed
-                      ? "Running as an installed app"
-                      : "Running in the browser"}
+                      ? t("settings.pwa.installed")
+                      : t("settings.pwa.browser")}
                   </p>
                   <p
                     className={`text-xs ${
@@ -996,8 +1011,8 @@ export default function Settings() {
                     }`}
                   >
                     {pwa.installed
-                      ? "This window was launched from the installed app."
-                      : "Use your browser's Install / Add to home screen action to install Presence."}
+                      ? t("settings.pwa.installedHint")
+                      : t("settings.pwa.browserHint")}
                   </p>
                 </div>
               </div>
@@ -1015,7 +1030,7 @@ export default function Settings() {
                       {t("settings.pwa.permission")}{" "}
                       <span className="font-medium text-slate-600">
                         {pwa.push === "unsupported"
-                          ? "not supported by this browser"
+                          ? t("settings.pwa.unsupported")
                           : pwa.push}
                       </span>
                     </p>
@@ -1149,7 +1164,7 @@ export default function Settings() {
                         placeholder={t("settings.api.keyNamePlaceholder")}
                         value={keyName}
                         onChange={setKeyName}
-                        helper="A label to recognise the integration later."
+                        helper={t("settings.api.keyHelper")}
                       />
                     </div>
                     <Button
@@ -1281,18 +1296,18 @@ export default function Settings() {
                   {t("settings.subscription.included")}
                 </p>
                 {[
-                  "10 websites",
-                  "Automatic hourly monitoring",
-                  "Email & push alerts",
-                  "PDF reports",
-                  "Score history",
-                  "Advanced checks",
-                ].map((f) => (
+                  { key: "websites", label: t("settings.subscription.featureWebsites") },
+                  { key: "monitoring", label: t("settings.subscription.featureMonitoring") },
+                  { key: "alerts", label: t("settings.subscription.featureAlerts") },
+                  { key: "reports", label: t("settings.subscription.featureReports") },
+                  { key: "history", label: t("settings.subscription.featureHistory") },
+                  { key: "checks", label: t("settings.subscription.featureChecks") },
+                ].map(({ key, label }) => (
                   <div
-                    key={f}
+                    key={key}
                     className="flex items-center gap-2 text-sm text-slate-600"
                   >
-                    <span className="text-emerald-500">✓</span> {f}
+                    <span className="text-emerald-500">✓</span> {label}
                   </div>
                 ))}
               </div>
@@ -1341,8 +1356,8 @@ export default function Settings() {
                     onChange={setDeletePassword}
                   />
                   <Input
-                    label={t("settings.privacy.typeDelete")}
-                    placeholder="DELETE"
+                    label={t("settings.privacy.typeDelete", { word: deleteWord })}
+                    placeholder={deleteWord}
                     value={deleteConfirm}
                     onChange={setDeleteConfirm}
                   />
@@ -1351,7 +1366,7 @@ export default function Settings() {
                   variant="danger"
                   onClick={handleDeleteAccount}
                   disabled={
-                    deleting || deleteConfirm !== "DELETE" || !deletePassword
+                    deleting || deleteConfirm !== deleteWord || !deletePassword
                   }
                 >
                   {deleting ? t("settings.privacy.deleting") : t("settings.privacy.deleteButton")}
@@ -1366,6 +1381,8 @@ export default function Settings() {
             "Notifications",
             "Appearance",
             "PWA",
+            "API access",
+            "Integrations",
             "Language",
             "Subscription",
             "Privacy & data",
@@ -1373,7 +1390,9 @@ export default function Settings() {
             <Card className="p-12 text-center">
               <p className="text-4xl mb-3">🔧</p>
               <p className="font-semibold text-slate-900 mb-1">
-                {t("settings.sectionUnavailableTitle", { section })}
+                {t("settings.sectionUnavailableTitle", {
+                  section: t(SECTION_KEYS[section as SectionName]),
+                })}
               </p>
               <p className="text-sm text-slate-500">
                 {t("settings.sectionUnavailableHint")}

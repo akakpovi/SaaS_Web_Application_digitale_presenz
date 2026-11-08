@@ -116,7 +116,7 @@ export default function Reports() {
     // instead of a 403 from the PDF endpoint.
     if (!guard("reports.pdf")) return
     if (!report.latest_scan_id) {
-      setDownloadError("No completed scan exists for this report period.")
+      setDownloadError(t("reports.noCompletedScan"))
       return
     }
     setDownloading(report.id)
@@ -124,9 +124,7 @@ export default function Reports() {
     try {
       const blob = await api.download(endpoints.reports.pdf(report.latest_scan_id))
       if (!blob.type.includes("application/pdf")) {
-        throw new Error(
-          "The PDF renderer returned a non-PDF response. Check the server logs for WeasyPrint.",
-        )
+        throw new Error(t("reports.pdfRendererError"))
       }
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement("a")
@@ -178,7 +176,8 @@ export default function Reports() {
                 const report = reports.data.find((row) => row.website_id === id)
                 return (
                   <option key={id} value={id}>
-                    {report?.website_domain ?? `Website ${id}`}
+                    {report?.website_domain ??
+                      t("reports.websiteFallback", { id })}
                   </option>
                 )
               })}
@@ -258,7 +257,9 @@ export default function Reports() {
                     onClick={() => void download(current)}
                   >
                     <Download size={14} />
-                    {downloading === current.id ? "Preparing…" : "Download PDF"}
+                    {downloading === current.id
+                      ? t("reports.preparing")
+                      : t("reports.downloadPdf")}
                   </Button>
                 </div>
               </div>

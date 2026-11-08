@@ -343,7 +343,7 @@ export function AppShell({
                     darkCls ? "text-slate-200" : "text-slate-900"
                   }`}
                 >
-                  {user?.full_name || user?.email || "User"}
+                  {user?.full_name || user?.email || t("app.userFallback")}
                 </p>
                 <p
                   className={`text-xs truncate ${
@@ -472,7 +472,7 @@ export function AppShell({
                     darkCls ? "text-slate-200" : "text-slate-900"
                   }`}
                 >
-                  {user?.full_name || user?.email || "User"}
+                  {user?.full_name || user?.email || t("app.userFallback")}
                 </p>
                 <p className="text-[10px] text-slate-500">
                   {user?.is_email_verified

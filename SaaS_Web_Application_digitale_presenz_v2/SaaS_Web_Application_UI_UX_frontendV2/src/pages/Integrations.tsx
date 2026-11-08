@@ -43,9 +43,6 @@ const DELETE_ROLES: OrganizationRole[] = ["owner", "admin"]
 const AUDIT_ROLES: OrganizationRole[] = ["owner", "admin"]
 const DISCONNECT_CONFIRMATION = "DISCONNECT"
 
-const CONNECTIONS_TAB = "Connections"
-const AUDIT_TAB = "Audit logs"
-
 type TabValue = "connections" | "audit"
 
 type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string
@@ -140,14 +137,11 @@ export default function Integrations() {
 
   const connectLinkedIn = async () => {
     if (!selected) {
-      showToast("No organization is available for this action.", "error")
+      showToast(t("integrations.toastNoOrganization"), "error")
       return
     }
     if (!canWrite) {
-      showToast(
-        "Your organization role does not allow connecting social accounts.",
-        "error",
-      )
+      showToast(t("integrations.toastRoleConnect"), "error")
       return
     }
 
@@ -162,7 +156,7 @@ export default function Integrations() {
       // insecure redirect.
       const target = new URL(authorization.authorization_url)
       if (target.protocol !== "https:") {
-        throw new Error("The authorization URL must use HTTPS.")
+        throw new Error(t("integrations.toastHttpsRequired"))
       }
 
       window.location.assign(target.toString())
@@ -174,10 +168,7 @@ export default function Integrations() {
 
   const openDisconnectDialog = (connection: OAuthConnection) => {
     if (!canDelete) {
-      showToast(
-        "Only owners and administrators can disconnect social accounts.",
-        "error",
-      )
+      showToast(t("integrations.toastRoleDisconnect"), "error")
       return
     }
     setDisconnectTarget(connection)
@@ -196,7 +187,7 @@ export default function Integrations() {
           disconnectTarget.id,
         ),
       )
-      showToast("LinkedIn account disconnected.", "success")
+      showToast(t("integrations.toastDisconnected"), "success")
       setDisconnectTarget(null)
       setDisconnectConfirm("")
       await connections.refetch()

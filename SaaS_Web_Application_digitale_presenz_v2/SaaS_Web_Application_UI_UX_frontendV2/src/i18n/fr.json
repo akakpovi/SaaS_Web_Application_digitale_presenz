@@ -574,7 +574,8 @@
     "commandMenuSearch": "Pages de recherche, actions...",
     "commandMenuOpen": "ouvert",
     "commandMenuClose": "fermer",
-    "planBadgePro": "Pro"
+    "planBadgePro": "Pro",
+    "userFallback": "Utilisateur"
   },
   "status": {
     "completed": "Terminée",
@@ -1195,7 +1196,12 @@
     "noScanResultHint": "Exécutez une vérification pour renseigner la répartition de l’état de ce site web.",
     "runCheck": "Exécuter une vérification",
     "scanning": "Analyse en cours…",
-    "activating": "Activation…"
+    "activating": "Activation…",
+    "noSummary": "Aucun résumé fourni.",
+    "monitoringActivated": "Surveillance continue activée. Le premier contrôle planifié s'exécute maintenant.",
+    "scanQueued": "Analyse n°{id} mise en file d'attente.",
+    "invalidId": "Identifiant de site web invalide.",
+    "websiteNotFound": "Site web introuvable."
   },
   "settings": {
     "title": "Paramètres",
@@ -1247,7 +1253,10 @@
       "fullName": "Nom complet",
       "email": "Adresse e-mail",
       "readOnly": "La modification de votre nom, de votre e-mail ou de votre photo de profil n'est pas encore disponible : l'API du compte est en lecture seule.",
-      "loadingProfile": "Chargement de votre profil…"
+      "loadingProfile": "Chargement de votre profil…",
+      "nameNotSet": "Nom non défini",
+      "emailVerified": "E-mail vérifié",
+      "emailNotVerified": "E-mail non vérifié"
     },
     "retry": "Réessayer",
     "saving": "Enregistrement…",
@@ -1259,6 +1268,22 @@
       "country": "Pays",
       "timezone": "Fuseau horaire",
       "notSet": "Non défini",
+      "industries": {
+        "restaurant": "Restaurant / Café",
+        "retail": "Commerce de détail",
+        "hotel": "Hôtel",
+        "autoRepair": "Réparation automobile",
+        "beauty": "Beauté",
+        "agency": "Agence",
+        "other": "Autre"
+      },
+      "countries": {
+        "DE": "Allemagne",
+        "FR": "France",
+        "AT": "Autriche",
+        "CH": "Suisse",
+        "OTHER": "Autre"
+      },
       "save": "Enregistrer les modifications"
     },
     "notifications": {
@@ -1281,6 +1306,51 @@
       "channelNamePlaceholder": "Équipe des opérations",
       "channelUrl": "URL du webhook",
       "channelUrlPlaceholder": "https://hooks.slack.com/services/…",
+      "types": {
+        "websiteUnavailable": {
+          "label": "Site indisponible",
+          "desc": "Prévient lorsque votre site web passe hors ligne"
+        },
+        "sslExpiry": {
+          "label": "Expiration du certificat SSL",
+          "desc": "Prévient avant l'expiration du certificat"
+        },
+        "sslInvalid": {
+          "label": "Certificat SSL invalide",
+          "desc": "Prévient lorsque le certificat cesse d'être valide"
+        },
+        "dnsProblems": {
+          "label": "Problèmes de configuration DNS",
+          "desc": "Prévient lorsque les enregistrements DNS sont défaillants"
+        },
+        "emailSecurity": {
+          "label": "Problèmes de sécurité des e-mails",
+          "desc": "Problèmes SPF, DKIM et DMARC"
+        },
+        "securityHeaders": {
+          "label": "En-têtes de sécurité",
+          "desc": "En-têtes de sécurité HTTP manquants ou affaiblis"
+        },
+        "performance": {
+          "label": "Performances",
+          "desc": "Temps de réponse lent ou pages lourdes"
+        },
+        "scoreDrop": {
+          "label": "Baisse du score",
+          "desc": "Le score de santé passe sous son seuil"
+        },
+        "scanFailed": {
+          "label": "Échec de l'analyse",
+          "desc": "Une analyse planifiée n'a pas pu se terminer"
+        }
+      },
+      "usage": "{used} sur {max} utilisés.",
+      "accountEmail": "Adresse e-mail du compte",
+      "test": "Tester",
+      "sendingTest": "Envoi…",
+      "testAria": "Envoyer une notification de test via {name}",
+      "deleteAria": "Supprimer {name}",
+      "webhookHelper": "Webhook entrant utilisé pour livrer l'alerte.",
       "adding": "Ajout…",
       "add": "Ajouter une chaîne",
       "enabled": "activé",
@@ -1289,7 +1359,9 @@
     "appearance": {
       "title": "Apparence",
       "hint": "Choisissez l'apparence de Presence sur votre appareil.",
-      "saved": "Votre préférence est enregistrée automatiquement."
+      "saved": "Votre préférence est enregistrée automatiquement.",
+      "light": "Clair",
+      "dark": "Sombre"
     },
     "pwa": {
       "title": "Application Web progressive",
@@ -1300,7 +1372,12 @@
       "linking": "Lier…",
       "enable": "Activer sur ce navigateur",
       "sending": "Envoi…",
-      "sendTest": "Envoyer un test push"
+      "sendTest": "Envoyer un test push",
+      "installed": "Fonctionne comme application installée",
+      "browser": "Fonctionne dans le navigateur",
+      "installedHint": "Cette fenêtre a été lancée depuis l'application installée.",
+      "browserHint": "Utilisez l'action Installer / Ajouter à l'écran d'accueil de votre navigateur pour installer Presence.",
+      "unsupported": "non prise en charge par ce navigateur"
     },
     "languageRegion": {
       "title": "Langue et région",
@@ -1318,6 +1395,8 @@
       "keyName": "Nom de la clé",
       "keyNamePlaceholder": "Pipeline CI",
       "copyNow": "Copiez cette clé maintenant",
+      "defaultKey": "Clé par défaut",
+      "keyHelper": "Un libellé pour reconnaître l'intégration plus tard.",
       "copy": "Copier",
       "included": "Inclus",
       "pro": "Pro",
@@ -1335,6 +1414,12 @@
       "active": "Actif",
       "included": "Inclus dans votre forfait :",
       "upgradeBusiness": "Changement de forfait vers Business",
+      "featureWebsites": "10 sites web",
+      "featureMonitoring": "Surveillance horaire automatique",
+      "featureAlerts": "Alertes e-mail et push",
+      "featureReports": "Rapports PDF",
+      "featureHistory": "Historique des scores",
+      "featureChecks": "Contrôles avancés",
       "cancel": "Annuler l'abonnement"
     },
     "privacy": {
@@ -1345,9 +1430,10 @@
       "deleteTitle": "Supprimer mon compte",
       "deleteHint": "Cela efface définitivement votre compte et tout ce qui y est attaché : sites web, analyses, résultats de vérification, conclusions, alertes, canaux de notification et rapports. Cela ne peut pas être annulé. (RGPD art. 17)",
       "confirmPassword": "Confirmez votre mot de passe",
-      "typeDelete": "Tapez \"SUPPRIMER\" pour confirmer",
+      "typeDelete": "Tapez « {word} » pour confirmer",
       "deleting": "Suppression…",
-      "deleteButton": "Supprimer définitivement mon compte"
+      "deleteButton": "Supprimer définitivement mon compte",
+      "deleteWord": "SUPPRIMER"
     },
     "sectionUnavailableTitle": "Paramètres {section}",
     "sectionUnavailableHint": "Cette section est disponible dans l'application complète."
@@ -1586,7 +1672,12 @@
     "noScoredScan": "Aucun scan noté enregistré au cours de cette période.",
     "history": "Historique du rapport",
     "pointsShort": "{count} points",
-    "downloadFor": "Télécharger le rapport pour {period}"
+    "downloadFor": "Télécharger le rapport pour {period}",
+    "noCompletedScan": "Aucune analyse terminée n'existe pour cette période de rapport.",
+    "pdfRendererError": "Le générateur PDF a renvoyé une réponse qui n'est pas un PDF. Vérifiez les journaux du serveur pour WeasyPrint.",
+    "preparing": "Préparation…",
+    "downloadPdf": "Télécharger le PDF",
+    "websiteFallback": "Site web {id}"
   },
   "socialAudit": {
     "title": "Journaux d'audit",
@@ -1731,7 +1822,13 @@
     "discoveryFoundOne": "Découverte terminée : {count} avis trouvé.",
     "discoveryFound": "Découverte terminée : {count} avis trouvés.",
     "discoveryFoundNone": "Découverte terminée : aucun avis public trouvé pour ce site.",
-    "csvHint": "Colonnes CSV : auteur (ou nom_auteur/nom), note, texte (ou contenu), external_id et review_date (ISO) facultatifs."
+    "csvHint": "Colonnes CSV : auteur (ou nom_auteur/nom), note, texte (ou contenu), external_id et review_date (ISO) facultatifs.",
+    "noWebsiteForSource": "Ajoutez un site web avant de créer une source d'avis.",
+    "chooseFile": "Choisissez une source d'avis et un fichier CSV ou JSON.",
+    "creatingSource": "Création…",
+    "createSource": "Créer une source",
+    "sentimentQueued": "Analyse des sentiments mise en file d'attente.",
+    "reviewApproved": "Avis approuvé."
   },
   "growth": {
     "title": "Croissance et sécurité",
@@ -1831,7 +1928,12 @@
     "typeWordSuffix": "pour confirmer",
     "typeToConfirmAria": "Tapez {word} pour confirmer",
     "disconnecting": "Déconnexion…",
-    "disconnectAccount": "Déconnecter le compte"
+    "disconnectAccount": "Déconnecter le compte",
+    "toastNoOrganization": "Aucune organisation n'est disponible pour cette action.",
+    "toastRoleConnect": "Votre rôle dans l'organisation ne permet pas de connecter des comptes sociaux.",
+    "toastHttpsRequired": "L'URL d'autorisation doit utiliser HTTPS.",
+    "toastRoleDisconnect": "Seuls les propriétaires et les administrateurs peuvent déconnecter des comptes sociaux.",
+    "toastDisconnected": "Compte LinkedIn déconnecté."
   },
   "about": {
     "metaTitle": "À propos de Presence | Surveillance de sites web pour les petites entreprises",

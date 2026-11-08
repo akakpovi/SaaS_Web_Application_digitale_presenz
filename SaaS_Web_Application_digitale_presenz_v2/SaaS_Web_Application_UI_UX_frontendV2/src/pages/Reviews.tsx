@@ -312,7 +312,7 @@ function ReviewImportModal({
 
   const createSource = async () => {
     if (!effectiveWebsiteId) {
-      setError("Add a website before creating a review source.")
+      setError(t("reviews.noWebsiteForSource"))
       return
     }
     setCreatingSource(true)
@@ -337,7 +337,7 @@ function ReviewImportModal({
   const upload = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!effectiveSourceId || !file) {
-      setError("Choose a review source and a CSV or JSON file.")
+      setError(t("reviews.chooseFile"))
       return
     }
     setUploading(true)
@@ -448,7 +448,9 @@ function ReviewImportModal({
                     disabled={creatingSource || !effectiveWebsiteId}
                     onClick={() => void createSource()}
                   >
-                    {creatingSource ? "Creating…" : "Create source"}
+                    {creatingSource
+                      ? t("reviews.creatingSource")
+                      : t("reviews.createSource")}
                   </Button>
                 </div>
               ) : (
@@ -555,7 +557,7 @@ export default function Reviews() {
     setAnalyzingId(review.id)
     try {
       await api.post(endpoints.reviews.analyzeSentiment(review.id))
-      showToast("Sentiment analysis queued.", "success")
+      showToast(t("reviews.sentimentQueued"), "success")
       // The Celery task writes the new sentiment shortly after the 202.
       window.setTimeout(() => {
         reviews.refetch()
@@ -572,7 +574,7 @@ export default function Reviews() {
     setApprovingId(review.id)
     try {
       await api.post(endpoints.reviews.approve(review.id))
-      showToast("Review approved.", "success")
+      showToast(t("reviews.reviewApproved"), "success")
       reviews.refetch()
       summary.refetch()
     } catch (err) {

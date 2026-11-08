@@ -46,7 +46,7 @@ function SectionCard({ section }: { section: CheckResult }) {
           </div>
           {!open && (
             <p className="text-sm text-slate-500 mt-1 truncate">
-              {section.summary || "No summary reported."}
+              {section.summary || t("websiteDetails.noSummary")}
             </p>
           )}
         </div>
@@ -77,7 +77,7 @@ function SectionCard({ section }: { section: CheckResult }) {
       {open && (
         <div className="px-5 pb-5 border-t border-slate-100 pt-4">
           <p className="text-sm text-slate-700 mb-3">
-            {section.summary || "No summary reported."}
+            {section.summary || t("websiteDetails.noSummary")}
           </p>
           {section.recommendation && (
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4">
@@ -165,10 +165,7 @@ export default function WebsiteDetails() {
     setActivatingMonitoring(true)
     try {
       await api.patch(endpoints.monitoring.detail(websiteId), { enabled: true })
-      showToast(
-        "Continuous monitoring activated. The first scheduled check runs now.",
-        "success",
-      )
+      showToast(t("websiteDetails.monitoringActivated"), "success")
       monitoring.refetch()
       // The security panel keeps its own copy of the monitoring policy; without
       // this it kept displaying "monitoring paused" right after activation.
@@ -186,7 +183,7 @@ export default function WebsiteDetails() {
     setStarting(true)
     try {
       const scan = await api.post<Scan>(endpoints.websites.scan(websiteId))
-      showToast(`Scan #${scan.id} queued.`, "success")
+      showToast(t("websiteDetails.scanQueued", { id: scan.id }), "success")
       setRefreshKey((key) => key + 1)
       refreshPlan()
     } catch (err) {
@@ -198,7 +195,7 @@ export default function WebsiteDetails() {
   if (!Number.isFinite(websiteId)) {
     return (
       <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-        <ErrorBlock message="Invalid website id." />
+        <ErrorBlock message={t("websiteDetails.invalidId")} />
       </div>
     )
   }
@@ -221,7 +218,7 @@ export default function WebsiteDetails() {
           <ArrowLeft size={14} /> {t("websiteDetails.allWebsites")}
         </Link>
         <ErrorBlock
-          message={website.error ?? "Website not found."}
+          message={website.error ?? t("websiteDetails.websiteNotFound")}
           onRetry={website.refetch}
         />
       </div>

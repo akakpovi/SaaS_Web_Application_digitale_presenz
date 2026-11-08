@@ -574,7 +574,8 @@
     "commandMenuSearch": "Search pages, actions...",
     "commandMenuOpen": "open",
     "commandMenuClose": "close",
-    "planBadgePro": "Pro"
+    "planBadgePro": "Pro",
+    "userFallback": "User"
   },
   "status": {
     "completed": "Completed",
@@ -1195,7 +1196,12 @@
     "noScanResultHint": "Run a check to populate the health breakdown for this website.",
     "runCheck": "Run check",
     "scanning": "Scanning…",
-    "activating": "Activating…"
+    "activating": "Activating…",
+    "noSummary": "No summary reported.",
+    "monitoringActivated": "Continuous monitoring activated. The first scheduled check runs now.",
+    "scanQueued": "Scan #{id} queued.",
+    "invalidId": "Invalid website id.",
+    "websiteNotFound": "Website not found."
   },
   "settings": {
     "title": "Settings",
@@ -1247,7 +1253,10 @@
       "fullName": "Full name",
       "email": "Email address",
       "readOnly": "Editing your name, e-mail or profile picture is not available yet: the account API is read-only.",
-      "loadingProfile": "Loading your profile…"
+      "loadingProfile": "Loading your profile…",
+      "nameNotSet": "Name not set",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified"
     },
     "retry": "Retry",
     "saving": "Saving…",
@@ -1259,6 +1268,22 @@
       "country": "Country",
       "timezone": "Timezone",
       "notSet": "Not set",
+      "industries": {
+        "restaurant": "Restaurant / Café",
+        "retail": "Retail",
+        "hotel": "Hotel",
+        "autoRepair": "Auto repair",
+        "beauty": "Beauty",
+        "agency": "Agency",
+        "other": "Other"
+      },
+      "countries": {
+        "DE": "Germany",
+        "FR": "France",
+        "AT": "Austria",
+        "CH": "Switzerland",
+        "OTHER": "Other"
+      },
       "save": "Save changes"
     },
     "notifications": {
@@ -1281,6 +1306,51 @@
       "channelNamePlaceholder": "Ops team",
       "channelUrl": "Webhook URL",
       "channelUrlPlaceholder": "https://hooks.slack.com/services/…",
+      "types": {
+        "websiteUnavailable": {
+          "label": "Website unavailable",
+          "desc": "Notify when your website goes offline"
+        },
+        "sslExpiry": {
+          "label": "SSL certificate expiry",
+          "desc": "Notify before the certificate expires"
+        },
+        "sslInvalid": {
+          "label": "Invalid SSL certificate",
+          "desc": "Notify when the certificate stops validating"
+        },
+        "dnsProblems": {
+          "label": "DNS configuration problems",
+          "desc": "Notify when DNS records break"
+        },
+        "emailSecurity": {
+          "label": "Email security issues",
+          "desc": "SPF, DKIM and DMARC problems"
+        },
+        "securityHeaders": {
+          "label": "Security headers",
+          "desc": "Missing or weakened HTTP security headers"
+        },
+        "performance": {
+          "label": "Performance",
+          "desc": "Slow response time or heavy pages"
+        },
+        "scoreDrop": {
+          "label": "Score drop",
+          "desc": "Health score falls below its threshold"
+        },
+        "scanFailed": {
+          "label": "Scan failed",
+          "desc": "A scheduled scan could not complete"
+        }
+      },
+      "usage": "{used} of {max} used.",
+      "accountEmail": "Account e-mail address",
+      "test": "Test",
+      "sendingTest": "Sending…",
+      "testAria": "Send a test notification via {name}",
+      "deleteAria": "Delete {name}",
+      "webhookHelper": "Incoming webhook used to deliver the alert.",
       "adding": "Adding…",
       "add": "Add channel",
       "enabled": "enabled",
@@ -1289,7 +1359,9 @@
     "appearance": {
       "title": "Appearance",
       "hint": "Choose how Presence looks on your device.",
-      "saved": "Your preference is saved automatically."
+      "saved": "Your preference is saved automatically.",
+      "light": "Light",
+      "dark": "Dark"
     },
     "pwa": {
       "title": "Progressive Web App",
@@ -1300,7 +1372,12 @@
       "linking": "Linking…",
       "enable": "Enable on this browser",
       "sending": "Sending…",
-      "sendTest": "Send test push"
+      "sendTest": "Send test push",
+      "installed": "Running as an installed app",
+      "browser": "Running in the browser",
+      "installedHint": "This window was launched from the installed app.",
+      "browserHint": "Use your browser's Install / Add to home screen action to install Presence.",
+      "unsupported": "not supported by this browser"
     },
     "languageRegion": {
       "title": "Language & region",
@@ -1318,6 +1395,8 @@
       "keyName": "Key name",
       "keyNamePlaceholder": "CI pipeline",
       "copyNow": "Copy this key now",
+      "defaultKey": "Default key",
+      "keyHelper": "A label to recognise the integration later.",
       "copy": "Copy",
       "included": "Included",
       "pro": "Pro",
@@ -1335,6 +1414,12 @@
       "active": "Active",
       "included": "Included in your plan:",
       "upgradeBusiness": "Upgrade to Business",
+      "featureWebsites": "10 websites",
+      "featureMonitoring": "Automatic hourly monitoring",
+      "featureAlerts": "Email & push alerts",
+      "featureReports": "PDF reports",
+      "featureHistory": "Score history",
+      "featureChecks": "Advanced checks",
       "cancel": "Cancel subscription"
     },
     "privacy": {
@@ -1345,9 +1430,10 @@
       "deleteTitle": "Delete my account",
       "deleteHint": "This permanently erases your account and everything attached to it: websites, scans, check results, findings, alerts, notification channels and reports. It cannot be undone. (GDPR Art. 17)",
       "confirmPassword": "Confirm your password",
-      "typeDelete": "Type \"DELETE\" to confirm",
+      "typeDelete": "Type {word} to confirm",
       "deleting": "Deleting…",
-      "deleteButton": "Permanently delete my account"
+      "deleteButton": "Permanently delete my account",
+      "deleteWord": "DELETE"
     },
     "sectionUnavailableTitle": "{section} settings",
     "sectionUnavailableHint": "This section is available in the full application."
@@ -1586,7 +1672,12 @@
     "noScoredScan": "No scored scan recorded in this period.",
     "history": "Report history",
     "pointsShort": "{count} pts",
-    "downloadFor": "Download report for {period}"
+    "downloadFor": "Download report for {period}",
+    "noCompletedScan": "No completed scan exists for this report period.",
+    "pdfRendererError": "The PDF renderer returned a non-PDF response. Check the server logs for WeasyPrint.",
+    "preparing": "Preparing…",
+    "downloadPdf": "Download PDF",
+    "websiteFallback": "Website {id}"
   },
   "socialAudit": {
     "title": "Audit logs",
@@ -1731,7 +1822,13 @@
     "discoveryFoundOne": "Discovery finished: {count} review found.",
     "discoveryFound": "Discovery finished: {count} reviews found.",
     "discoveryFoundNone": "Discovery finished: no public review found for this website.",
-    "csvHint": "CSV columns: author (or author_name/name), rating, text (or content), optional external_id and review_date (ISO)."
+    "csvHint": "CSV columns: author (or author_name/name), rating, text (or content), optional external_id and review_date (ISO).",
+    "noWebsiteForSource": "Add a website before creating a review source.",
+    "chooseFile": "Choose a review source and a CSV or JSON file.",
+    "creatingSource": "Creating…",
+    "createSource": "Create source",
+    "sentimentQueued": "Sentiment analysis queued.",
+    "reviewApproved": "Review approved."
   },
   "growth": {
     "title": "Growth & security",
@@ -1831,7 +1928,12 @@
     "typeWordSuffix": "to confirm",
     "typeToConfirmAria": "Type {word} to confirm",
     "disconnecting": "Disconnecting…",
-    "disconnectAccount": "Disconnect account"
+    "disconnectAccount": "Disconnect account",
+    "toastNoOrganization": "No organization is available for this action.",
+    "toastRoleConnect": "Your organization role does not allow connecting social accounts.",
+    "toastHttpsRequired": "The authorization URL must use HTTPS.",
+    "toastRoleDisconnect": "Only owners and administrators can disconnect social accounts.",
+    "toastDisconnected": "LinkedIn account disconnected."
   },
   "about": {
     "metaTitle": "About Presence | Website Monitoring for Small Businesses",
