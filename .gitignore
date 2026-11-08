@@ -42,7 +42,9 @@ htmlcov/
 .DS_Store
 
 # Secrets d'exécution (mots de passe générés, clés d'instance) — jamais versionnés
-secrets/
+# Keep the CI-only Umami placeholder; the real env file remains private.
+secrets/*
+!secrets/umami.env.ci
 
 # Secrets et données locales — jamais versionnés (déplacés en quarantaine le 2026-10-28)
 omniroute_key.txt

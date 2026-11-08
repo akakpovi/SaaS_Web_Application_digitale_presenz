@@ -199,6 +199,13 @@ jobs:
           cp SaaS_Web_Application_digitale_presenz_v2/backend/.env.ci \
              SaaS_Web_Application_digitale_presenz_v2/backend/.env
 
+      - name: Create Umami env placeholder
+        # Compose validates every env_file for `docker compose exec`, even
+        # when Playwright only targets Redis. The real file is gitignored.
+        run: |
+          mkdir -p secrets
+          cp secrets/umami.env.ci secrets/umami.env
+
       - name: Prepare local TLS for nginx
         # nginx/ssl is gitignored and absent from the checkout. Create a
         # throwaway self-signed certificate so the frontend can start.
