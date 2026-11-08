@@ -199,6 +199,21 @@ jobs:
           cp SaaS_Web_Application_digitale_presenz_v2/backend/.env.ci \
              SaaS_Web_Application_digitale_presenz_v2/backend/.env
 
+      - name: Prepare local TLS for nginx
+        # nginx/ssl is gitignored and absent from the checkout. Create a
+        # throwaway self-signed certificate so the frontend can start.
+        run: |
+          mkdir -p nginx/ssl
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout nginx/ssl/presence.key \
+            -out nginx/ssl/presence.crt \
+            -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+          cat > nginx/ssl/tls.conf <<'EOF'
+          ssl_certificate     /etc/nginx/ssl/presence.crt;
+          ssl_certificate_key /etc/nginx/ssl/presence.key;
+          EOF
+
       - name: Start local stack
         run: docker compose up -d --build db redis web celery-worker mailpit frontend
 
