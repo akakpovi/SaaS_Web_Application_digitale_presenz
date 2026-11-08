@@ -530,16 +530,89 @@ async function getJson(url, { timeoutMs = 10_000 } = {}) {
   })
 }
 
+function mapWpPosts(posts) {
+  return posts.map((post) => {
+    const terms = (post._embedded?.["wp:term"] || []).flat()
+    const category =
+      terms.find((term) => term.taxonomy === "category")?.name || "Blog"
+    return {
+      slug: post.slug,
+      title: stripHtml(post.title?.rendered || post.slug),
+      excerpt: stripHtml(post.excerpt?.rendered || ""),
+      date: (post.date || "").slice(0, 10),
+      category,
+      contentHtml: post.content?.rendered || "",
+      author: post._embedded?.author?.[0]?.name || "Presence Team",
+      image: post._embedded?.["wp:featuredmedia"]?.[0]?.source_url,
+      // Fields added by wordpress/mu-plugins/presence-i18n.php; the same
+      // defaults as src/api/blog.ts, so the shell and the hydrated head
+      // describe an article the same way.
+      lang: post.presence_lang?.code === "de" ? "de" : "en",
+      translations: (post.presence_translations ?? [])
+        .filter((entry) => entry.slug && entry.lang)
+        .map((entry) => ({ lang: String(entry.lang), slug: String(entry.slug) })),
+      source: "wordpress",
+      // Shape expected by src/api/blog.ts when the same objects are embedded
+      // for the blog index. Computed here exactly like readingTime() there.
+      readTime: `${Math.max(
+        1,
+        Math.ceil(
+          stripHtml(post.content?.rendered || post.excerpt?.rendered || "")
+            .split(/\s+/)
+            .filter(Boolean).length / 200,
+        ),
+      )} min`,
+      related: [],
+    }
+  })
+}
+
+/**
+ * BuildKit refuses `network: host` without an extra entitlement in this
+ * installation, so the Docker build cannot reach the loopback WordPress
+ * container. The snapshot is refreshed explicitly with
+ * `pnpm snapshot:blog` and committed; it makes the image build deterministic
+ * and keeps the real articles in the static HTML. A live CMS URL still wins
+ * when `PRERENDER_WP_API_URL` is set (local builds, CI with a reachable CMS).
+ */
+function loadWpSnapshot() {
+  const snapshotPath =
+    ENV.PRERENDER_WP_SNAPSHOT ||
+    path.join(ROOT, "src/seo/wordpress-posts.snapshot.json")
+  if (!fs.existsSync(snapshotPath)) return null
+  try {
+    const posts = JSON.parse(fs.readFileSync(snapshotPath, "utf8"))
+    if (!Array.isArray(posts)) throw new Error("snapshot is not a list")
+    console.warn(
+      `[prerender] using committed WordPress snapshot (${posts.length} posts) — run pnpm snapshot:blog to refresh.`,
+    )
+    return posts
+  } catch (error) {
+    console.warn(
+      `[prerender] invalid WordPress snapshot (${error.message}) — ignoring it.`,
+    )
+    return null
+  }
+}
+
 async function loadWpPosts() {
-  // `PRERENDER_WP_API_URL` is a build-only override: Docker builds cannot
-  // resolve the Compose `wordpress` service, so they point this at the
-  // loopback-published CMS while the browser keeps the same-origin `/cms`.
-  const wp = (ENV.PRERENDER_WP_API_URL || ENV.VITE_WP_API_URL)
+  // `PRERENDER_WP_API_URL` is a build-only override: it must be reachable from
+  // the builder (a public CMS or a test tunnel). The committed snapshot is the
+  // default so a Docker build never needs host-network privileges.
+  // An explicit empty PRERENDER_WP_API_URL (Docker default) means "use the
+  // snapshot", not "fall back to VITE_WP_API_URL=/cms". The latter is a
+  // browser path, not a build-time endpoint, and would only add a timeout.
+  const wp = (ENV.PRERENDER_WP_API_URL !== undefined
+    ? ENV.PRERENDER_WP_API_URL
+    : ENV.VITE_WP_API_URL
+  )
     ?.trim()
     .replace(/\/+$/, "")
+  const snapshot = loadWpSnapshot()
   if (!wp) {
+    if (snapshot) return { posts: mapWpPosts(snapshot), ok: true }
     console.warn(
-      "[prerender] VITE_WP_API_URL is empty — blog articles will be client-rendered.",
+      "[prerender] VITE_WP_API_URL is empty and no snapshot exists — blog articles will be client-rendered.",
     )
     return { posts: [], ok: false }
   }
@@ -554,6 +627,7 @@ async function loadWpPosts() {
   if (!/^https?:\/\//.test(wp)) {
     const local = /^(https?:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/.exec(BASE_URL)
     if (!local) {
+      if (snapshot) return { posts: mapWpPosts(snapshot), ok: true }
       console.warn(
         `[prerender] VITE_WP_API_URL=${wp} is a same-origin path and cannot be fetched at build time — blog articles will be client-rendered.`,
       )
@@ -569,42 +643,14 @@ async function loadWpPosts() {
       `${api}/posts?per_page=100&_embed=1&orderby=date&order=desc`,
     )
     if (!Array.isArray(posts)) throw new Error("unexpected payload")
-    const mapped = posts.map((post) => {
-      const terms = (post._embedded?.["wp:term"] || []).flat()
-      const category =
-        terms.find((term) => term.taxonomy === "category")?.name || "Blog"
-      return {
-        slug: post.slug,
-        title: stripHtml(post.title?.rendered || post.slug),
-        excerpt: stripHtml(post.excerpt?.rendered || ""),
-        date: (post.date || "").slice(0, 10),
-        category,
-        contentHtml: post.content?.rendered || "",
-        author: post._embedded?.author?.[0]?.name || "Presence Team",
-        image: post._embedded?.["wp:featuredmedia"]?.[0]?.source_url,
-        // Fields added by wordpress/mu-plugins/presence-i18n.php; the same
-        // defaults as src/api/blog.ts, so the shell and the hydrated head
-        // describe an article the same way.
-        lang: post.presence_lang?.code === "de" ? "de" : "en",
-        translations: (post.presence_translations ?? [])
-          .filter((entry) => entry.slug && entry.lang)
-          .map((entry) => ({ lang: String(entry.lang), slug: String(entry.slug) })),
-        source: "wordpress",
-        // Shape expected by src/api/blog.ts when the same objects are embedded
-        // for the blog index. Computed here exactly like readingTime() there.
-        readTime: `${Math.max(
-          1,
-          Math.ceil(
-            stripHtml(post.content?.rendered || post.excerpt?.rendered || "")
-              .split(/\s+/)
-              .filter(Boolean).length / 200,
-          ),
-        )} min`,
-        related: [],
-      }
-    })
-    return { posts: mapped, ok: true }
+    return { posts: mapWpPosts(posts), ok: true }
   } catch (error) {
+    if (snapshot) {
+      console.warn(
+        `[prerender] WordPress unreachable (${error.message}) — using committed snapshot.`,
+      )
+      return { posts: mapWpPosts(snapshot), ok: true }
+    }
     console.warn(
       `[prerender] WordPress unreachable (${error.message}) — blog articles will be client-rendered.`,
     )

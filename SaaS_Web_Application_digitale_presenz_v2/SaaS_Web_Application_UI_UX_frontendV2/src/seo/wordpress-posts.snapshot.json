@@ -1,0 +1,1714 @@
+[
+  {
+    "id": 11,
+    "date": "2026-10-19T09:00:00",
+    "date_gmt": "2026-10-19T09:00:00",
+    "guid": {
+      "rendered": "http://localhost/cms/de-was-ist-website-monitoring/"
+    },
+    "modified": "2026-10-19T09:00:00",
+    "modified_gmt": "2026-10-19T09:00:00",
+    "slug": "de-was-ist-website-monitoring",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/de-was-ist-website-monitoring/",
+    "title": {
+      "rendered": "Was ist Website-Monitoring?"
+    },
+    "content": {
+      "rendered": "<h2>Was bedeutet Website-Monitoring?</h2>\n<p>Website-Monitoring ist die automatische, regelmäßige Prüfung Ihrer Website: Ist sie erreichbar? Lädt sie schnell genug? Ist das SSL-Zertifikat gültig? Stimmen DNS- und E-Mail-Einstellungen? Ein Monitoring-Dienst prüft diese Punkte im Hintergrund und meldet sich, sobald sich etwas ändert – nicht erst, wenn ein Kunde anruft, weil die Seite nicht erreichbar ist.</p>\n<h2>Warum das für kleine Unternehmen wichtig ist</h2>\n<p>Für ein Restaurant, eine Werkstatt oder eine Praxis ist die Website oft der erste Kontakt. Ist sie offline, lädt sie langsam oder zeigt der Browser eine Sicherheitswarnung, springen Besucher sofort ab. Diese Besucher kommen selten zurück.</p>\n<p>Die häufigsten Probleme sind harmlos in der Ursache, aber teuer in der Wirkung:</p>\n<ul>\n<li>ein abgelaufenes SSL-Zertifikat, das alle Besucher mit einer Warnseite begrüßt;</li>\n<li>ein fehlender <code>www</code>-Eintrag oder ein falscher DNS-Eintrag nach einem Umzug;</li>\n<li>eine E-Mail-Konfiguration ohne SPF, DKIM und DMARC, durch die Betrüger in Ihrem Namen schreiben können;</li>\n<li>ein Update, das die Seite zum Erliegen gebracht hat.</li>\n</ul>\n<h2>Was ein gutes Monitoring prüft</h2>\n<ol>\n<li><strong>Erreichbarkeit:</strong> Antwortet die Seite zuverlässig mit HTTP 200?</li>\n<li><strong>SSL:</strong> Ist das Zertifikat gültig und wann läuft es ab?</li>\n<li><strong>DNS:</strong> Haben sich Einträge unerwartet geändert?</li>\n<li><strong>E-Mail-Sicherheit:</strong> Sind SPF, DKIM und DMARC gesetzt?</li>\n<li><strong>Performance:</strong> Wie lange braucht die Seite zum Antworten?</li>\n</ol>\n<h2>Was Monitoring nicht ist</h2>\n<p>Monitoring liest ausschließlich öffentlich verfügbare Informationen – dieselben Daten, die auch ein Besucher oder eine Suchmaschine sieht. Es verändert nichts an Ihrer Website und greift nicht auf Dateien, Datenbank oder CMS zu. Es ersetzt auch keine Sicherheitsüberprüfung: Ein grüner Status heißt „erreichbar und korrekt konfiguriert“, nicht „garantiert sicher“.</p>\n<h2>Fazit</h2>\n<p>Mit Monitoring erfahren Sie Probleme zuerst – vor Ihren Kunden. Bei Presence genügt dafür eine Domain und ein Blick auf den Digital Health Score.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>Website-Monitoring prüft Erreichbarkeit, SSL, DNS und E-Mail-Sicherheit automatisch – und meldet Probleme, bevor Ihre Kunden sie bemerken.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      9
+    ],
+    "tags": [],
+    "language": [
+      7
+    ],
+    "class_list": [
+      "post-11",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-grundlagen",
+      "language-de"
+    ],
+    "presence_lang": {
+      "code": "de",
+      "name": "DE"
+    },
+    "presence_translations": [
+      {
+        "lang": "en",
+        "slug": "what-is-website-monitoring",
+        "title": "What is website monitoring?"
+      }
+    ],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/11",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=11"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/11/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=11"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=11"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=11"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=11"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 9,
+            "link": "http://localhost:8081/category/grundlagen/",
+            "name": "Grundlagen",
+            "slug": "grundlagen",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/9",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=9"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 7,
+            "link": "http://localhost:8081/sprache/de/",
+            "name": "DE",
+            "slug": "de",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/7",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=7"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "date": "2026-10-18T10:00:00",
+    "date_gmt": "2026-10-18T10:00:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=9"
+    },
+    "modified": "2026-10-18T10:00:00",
+    "modified_gmt": "2026-10-18T10:00:00",
+    "slug": "digital-presence-checklist-small-business",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/digital-presence-checklist-small-business/",
+    "title": {
+      "rendered": "Digital presence checklist for small businesses"
+    },
+    "content": {
+      "rendered": "<p>Your digital presence is everything a potential customer can find about you online — your website, your Google Business Profile, your social media accounts, and your online reviews. Monitoring and maintaining all of these is increasingly essential for any small business.</p>\n<h2>Your website</h2>\n<p>Your website is your digital storefront. At minimum, it should be always available (uptime monitoring), fast (performance monitoring), secure (SSL, DNS, email security, security headers), and up to date.</p>\n<h2>Your domain</h2>\n<p>Your domain name is one of your most important business assets. Make sure it is registered in your name, renews automatically, and that your contact details with your registrar are current. A lapsed domain can be immediately registered by someone else.</p>\n<h2>Your email</h2>\n<p>If you send email from your domain (info@yourbusiness.com), you need SPF, DKIM and DMARC records. Without them, your emails land in spam folders and your domain can be spoofed.</p>\n<h2>Your online reviews</h2>\n<p>Reviews on Google, Tripadvisor, and other platforms are powerful trust signals. A negative review left unanswered looks worse than no response at all. Set up review monitoring so you can respond promptly.</p>\n<h2>Your Google Business Profile</h2>\n<p>Verify and maintain your Google Business Profile. Accurate opening hours, contact details, and regular photo updates improve local search visibility and customer trust.</p>\n<h2>Putting it together</h2>\n<p>Presence monitors your website health, domain configuration, email security, and online reviews — all in one dashboard. <a href=\"/register\">Start for free</a> and get your first health report in minutes.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>Everything a small business needs to monitor and protect their digital presence in 2026.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      6
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-9",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-strategy",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/9",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=9"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/9/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=9"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=9"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=9"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=9"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 6,
+            "link": "http://localhost:8081/category/strategy/",
+            "name": "Strategy",
+            "slug": "strategy",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/6",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=6"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "date": "2026-10-06T09:45:00",
+    "date_gmt": "2026-10-06T09:45:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=8"
+    },
+    "modified": "2026-10-06T09:45:00",
+    "modified_gmt": "2026-10-06T09:45:00",
+    "slug": "website-security-checklist-small-business",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/website-security-checklist-small-business/",
+    "title": {
+      "rendered": "Website security checklist for small businesses"
+    },
+    "content": {
+      "rendered": "<p>You do not need to be a developer to secure your small business website. This checklist covers the most important security checks you can carry out — and most of them take less than 5 minutes to verify.</p>\n<h2>1. SSL certificate is valid</h2>\n<p>Every website should use HTTPS. Check that your SSL certificate is valid, issued by a trusted authority, and covers your exact domain. Use our SSL Checker or look for the padlock icon in your browser.</p>\n<h2>2. Certificate renewal is automatic</h2>\n<p>An expired SSL certificate shows a security warning to every visitor. Make sure your hosting provider renews certificates automatically, or set a calendar reminder 45 days before your certificate expiry date.</p>\n<h2>3. SPF record is configured</h2>\n<p>An SPF record in your DNS tells the world which mail servers are authorised to send email on your behalf. Without one, your emails are more likely to land in spam — and criminals can spoof your address.</p>\n<h2>4. DMARC policy is set</h2>\n<p>A DMARC policy tells receiving mail servers what to do when an email fails authentication. Start with <code>p=none</code> to monitor, then move to <code>p=reject</code> to block fraudulent emails completely.</p>\n<h2>5. Security headers are present</h2>\n<p>Security headers are HTTP response headers that tell browsers how to behave on your website. Key headers include Content-Security-Policy, X-Frame-Options, and Strict-Transport-Security.</p>\n<h2>6. DNS records are correct</h2>\n<p>Incorrect DNS records can make your website or email unreachable. Verify that your A, MX, and CNAME records are correctly configured and not pointing to old or obsolete services.</p>\n<h2>7. Monitoring is active</h2>\n<p>All the checks in this list mean nothing if a problem develops between checks. Set up automated monitoring so you are alerted the moment anything changes.</p>\n<p>Run all these checks at once using our free <a href=\"/tools/website-checker\">Website Health Checker</a>. For ongoing monitoring, <a href=\"/register\">create a free account</a>.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>A practical checklist covering SSL, DNS, email security, security headers and more — without the technical jargon.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      5
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-8",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-security",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/8",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=8"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/8/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=8"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=8"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=8"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=8"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 5,
+            "link": "http://localhost:8081/category/security/",
+            "name": "Security",
+            "slug": "security",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/5",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=5"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 12,
+    "date": "2026-09-25T11:00:00",
+    "date_gmt": "2026-09-25T11:00:00",
+    "guid": {
+      "rendered": "http://localhost/cms/de-ssl-zertifikat-pruefen/"
+    },
+    "modified": "2026-09-25T11:00:00",
+    "modified_gmt": "2026-09-25T11:00:00",
+    "slug": "de-ssl-zertifikat-pruefen",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/de-ssl-zertifikat-pruefen/",
+    "title": {
+      "rendered": "So prüfen Sie Ihr SSL-Zertifikat"
+    },
+    "content": {
+      "rendered": "<h2>Warum ein abgelaufenes Zertifikat teuer ist</h2>\n<p>Ein SSL-Zertifikat sorgt dafür, dass die Verbindung zu Ihrer Website verschlüsselt ist. Läuft es ab, zeigt der Browser eine ganzseitige Warnung. Besucher, die diese Warnung sehen, verlassen die Seite fast immer sofort – und manche rufen anschließend den Support an, weil sie glauben, Ihre Seite sei gehackt worden.</p>\n<h2>So prüfen Sie Ihr Zertifikat in 30 Sekunden</h2>\n<ol>\n<li>Öffnen Sie Ihre Website im Browser und klicken Sie auf das Schloss-Symbol links in der Adressleiste.</li>\n<li>Wählen Sie „Verbindung ist sicher“ und anschließend „Zertifikat ist gültig“.</li>\n<li>Prüfen Sie das Feld <em>Gültig bis</em>. Weniger als 30 Tage? Dann wird es Zeit.</li>\n</ol>\n<h2>Auf drei Details kommt es an</h2>\n<ul>\n<li><strong>Abdeckung:</strong> Das Zertifikat muss sowohl <code>ihre-domain.de</code> als auch <code>www.ihre-domain.de</code> abdecken. Ein Zertifikat nur für die eine Variante erzeugt beim Aufruf der anderen eine Warnung.</li>\n<li><strong>Weiterleitungen:</strong> Alle HTTP-Adressen sollten dauerhaft (301) auf HTTPS umgeleitet werden, und Ihre Seite sollte <em>Strict-Transport-Security</em> (HSTS) senden.</li>\n<li><strong>Sichere Protokolle:</strong> TLS 1.2 oder neuer. Veraltete Versionen sollten deaktiviert sein.</li>\n</ul>\n<h2>Erneuerung: nicht darauf verlassen, dass jemand daran denkt</h2>\n<p>Viele Zertifikate – etwa von Let&#8217;s Encrypt – sind nur 90 Tage gültig und werden automatisch erneuert. Scheitert die automatische Erneuerung (geänderte DNS-Einträge, ein neuer Server, ein fehlender Webroot-Pfad), merkt das oft niemand, bis das Zertifikat abgelaufen ist.</p>\n<p>Deshalb ist eine Warnung sinnvoll, die deutlich vorher ausgelöst wird. Presence prüft das Zertifikat täglich und meldet sich 30 Tage vor Ablauf – genug Zeit, um in Ruhe nachzubessern.</p>\n<h2>Kurz-Checkliste</h2>\n<ul>\n<li>Zertifikat gültig und vom Browser als vertrauenswürdig eingestuft</li>\n<li>Beide Varianten (mit und ohne <code>www</code>) abgedeckt</li>\n<li>HTTP dauerhaft auf HTTPS umgeleitet</li>\n<li>HSTS aktiv</li>\n<li>Erinnerung oder Warnung vor Ablauf eingerichtet</li>\n</ul>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>Ein abgelaufenes Zertifikat vertreibt Besucher. So prüfen Sie Ihr Zertifikat in 30 Sekunden – und warum eine Warnung vor Ablauf wichtiger ist als die manuelle Kontrolle.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      10
+    ],
+    "tags": [],
+    "language": [
+      7
+    ],
+    "class_list": [
+      "post-12",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-sicherheit",
+      "language-de"
+    ],
+    "presence_lang": {
+      "code": "de",
+      "name": "DE"
+    },
+    "presence_translations": [
+      {
+        "lang": "en",
+        "slug": "how-to-check-ssl-certificate",
+        "title": "How to check your SSL certificate"
+      }
+    ],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/12",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=12"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/12/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=12"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=12"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=12"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=12"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 10,
+            "link": "http://localhost:8081/category/sicherheit/",
+            "name": "Sicherheit",
+            "slug": "sicherheit",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/10",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=10"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 7,
+            "link": "http://localhost:8081/sprache/de/",
+            "name": "DE",
+            "slug": "de",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/7",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=7"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 7,
+    "date": "2026-09-24T11:00:00",
+    "date_gmt": "2026-09-24T11:00:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=7"
+    },
+    "modified": "2026-09-24T11:00:00",
+    "modified_gmt": "2026-09-24T11:00:00",
+    "slug": "how-to-check-ssl-certificate",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/how-to-check-ssl-certificate/",
+    "title": {
+      "rendered": "How to check your SSL certificate"
+    },
+    "content": {
+      "rendered": "<p>An SSL certificate (technically a TLS certificate) proves your website&#8217;s identity and encrypts the connection between your visitors&#8217; browsers and your server. Without one — or with an expired one — browsers display scary &#8220;Not Secure&#8221; warnings that drive visitors away.</p>\n<h2>Why SSL certificates expire</h2>\n<p>SSL certificates are issued with a fixed validity period — currently capped at 398 days. When a certificate expires, browsers immediately start showing security warnings. In Chrome, visitors see a red warning page with &#8220;Your connection is not private&#8221; — most people leave immediately.</p>\n<h2>How to check your SSL certificate</h2>\n<p>The quickest way is to use our free <a href=\"/tools/ssl-checker\">SSL Certificate Checker</a>. Enter your domain and you will instantly see:</p>\n<ul>\n<li>Whether your certificate is valid and trusted.</li>\n<li>The expiry date and how many days remain.</li>\n<li>The issuing certificate authority.</li>\n<li>Whether the certificate covers your domain correctly.</li>\n</ul>\n<h2>What to do if your certificate is expiring</h2>\n<p>Most modern hosting providers handle SSL certificate renewal automatically using Let&#8217;s Encrypt. Log in to your hosting control panel and check that automatic renewal is enabled. If you are using a paid certificate, you will need to purchase a renewal and install it before the current one expires.</p>\n<p>Set up automated monitoring with Presence and you will receive an alert 30 days before your certificate expires — giving you plenty of time to renew it.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>An SSL certificate ensures your website is trusted. Here&#8217;s how to check it and what to do if it expires.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      4
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-7",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-ssl",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [
+      {
+        "lang": "de",
+        "slug": "de-ssl-zertifikat-pruefen",
+        "title": "So prüfen Sie Ihr SSL-Zertifikat"
+      }
+    ],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/7",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=7"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/7/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=7"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=7"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=7"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=7"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 4,
+            "link": "http://localhost:8081/category/ssl/",
+            "name": "SSL",
+            "slug": "ssl",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/4",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=4"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 6,
+    "date": "2026-09-10T08:15:00",
+    "date_gmt": "2026-09-10T08:15:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=6"
+    },
+    "modified": "2026-09-10T08:15:00",
+    "modified_gmt": "2026-09-10T08:15:00",
+    "slug": "what-is-dmarc",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/what-is-dmarc/",
+    "title": {
+      "rendered": "What is DMARC and why does it matter for small businesses?"
+    },
+    "content": {
+      "rendered": "<p>DMARC (Domain-based Message Authentication, Reporting &amp; Conformance) is an email authentication protocol that tells receiving mail servers what to do when an email claiming to be from your domain fails authentication checks. In plain terms: it stops criminals from sending emails that look like they come from your business.</p>\n<h2>Why DMARC matters for small businesses</h2>\n<p>Email spoofing — where an attacker sends emails that appear to come from your domain — is one of the most common forms of phishing. If a criminal sends fraudulent invoices, requests for bank transfers, or phishing links using your business email address, the damage to your reputation can be severe even though you did nothing wrong.</p>\n<p>DMARC, combined with SPF and DKIM, creates a reliable authentication chain that protects your customers and your brand.</p>\n<h2>SPF, DKIM and DMARC: the three layers</h2>\n<ul>\n<li><strong>SPF (Sender Policy Framework)</strong> — specifies which mail servers are authorised to send email from your domain.</li>\n<li><strong>DKIM (DomainKeys Identified Mail)</strong> — adds a cryptographic signature to your emails so receiving servers can verify they have not been tampered with.</li>\n<li><strong>DMARC</strong> — ties SPF and DKIM together and tells receiving servers what to do if an email fails: accept it, quarantine it, or reject it outright.</li>\n</ul>\n<h2>How to check your DMARC record</h2>\n<p>Use our free <a href=\"/tools/email-security-checker\">Email Security Checker</a> to verify your SPF, DKIM and DMARC configuration in seconds. You will see exactly what is configured, what is missing, and what to fix.</p>\n<h2>A minimal DMARC record</h2>\n<p>A DMARC record is a TXT record in your DNS, typically added to <code>_dmarc.yourdomain.com</code>. A simple starting policy looks like this:</p>\n<pre><code>v=DMARC1; p=none; rua=mailto:dmarc-reports@yourdomain.com</code></pre>\n<p>Start with <code>p=none</code> (monitor only), then move to <code>p=quarantine</code> and eventually <code>p=reject</code> once you are confident your legitimate mail is passing authentication.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>DMARC protects your domain from email spoofing. Here&#8217;s what it is and how to set it up.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      3
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-6",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-email-security",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/6",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=6"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/6/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=6"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=6"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=6"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=6"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 3,
+            "link": "http://localhost:8081/category/email-security/",
+            "name": "Email security",
+            "slug": "email-security",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/3",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=3"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "date": "2026-08-28T10:30:00",
+    "date_gmt": "2026-08-28T10:30:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=5"
+    },
+    "modified": "2026-08-28T10:30:00",
+    "modified_gmt": "2026-08-28T10:30:00",
+    "slug": "how-to-monitor-website-uptime",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/how-to-monitor-website-uptime/",
+    "title": {
+      "rendered": "How to monitor your website uptime"
+    },
+    "content": {
+      "rendered": "<p>Uptime monitoring tracks whether your website is accessible to visitors. The goal is simple: know the moment your website goes down, so you can act quickly and minimise the impact on your business.</p>\n<h2>What is uptime?</h2>\n<p>Uptime refers to the percentage of time your website is accessible and responding correctly. A website with 99% uptime is still down for about 7.3 hours per month — which may be acceptable for a personal blog, but problematic for a restaurant that takes online bookings.</p>\n<h2>How uptime monitoring works</h2>\n<p>An uptime monitoring service sends an HTTP request to your website every 1–5 minutes. If your website responds with a success status code (like 200 OK), it records the check as successful. If it times out, returns an error, or is unreachable, an incident is triggered and alerts are sent immediately.</p>\n<h2>What affects your uptime?</h2>\n<ul>\n<li><strong>Server issues</strong> — your hosting provider&#8217;s servers can go down or become overloaded.</li>\n<li><strong>DNS problems</strong> — misconfigured DNS records can make your domain unreachable.</li>\n<li><strong>SSL certificate expiry</strong> — expired certificates cause browsers to block your site.</li>\n<li><strong>Traffic spikes</strong> — unexpected traffic can overwhelm servers on lower-tier hosting plans.</li>\n<li><strong>Software updates gone wrong</strong> — a CMS or plugin update can break your site.</li>\n</ul>\n<h2>What to do when your website goes down</h2>\n<p>When you receive a downtime alert, the first step is to confirm it — visit your site from a different device or network. Then contact your hosting provider&#8217;s support if it is a server-side issue, or check your DNS settings and recent plugin updates if the issue is on your end.</p>\n<p>Start monitoring your website for free with <a href=\"/register\">Presence</a>.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>Learn how uptime monitoring works and why tracking availability matters for your business.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      2
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-5",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-guides",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/5",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=5"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/5/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=5"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=5"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=5"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=5"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 2,
+            "link": "http://localhost:8081/category/guides/",
+            "name": "Guides",
+            "slug": "guides",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/2",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=2"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "date": "2026-08-12T09:00:00",
+    "date_gmt": "2026-08-12T09:00:00",
+    "guid": {
+      "rendered": "http://localhost/cms/?p=4"
+    },
+    "modified": "2026-08-12T09:00:00",
+    "modified_gmt": "2026-08-12T09:00:00",
+    "slug": "what-is-website-monitoring",
+    "status": "publish",
+    "type": "post",
+    "link": "http://localhost:8081/what-is-website-monitoring/",
+    "title": {
+      "rendered": "What is website monitoring?"
+    },
+    "content": {
+      "rendered": "<p>Website monitoring is the practice of automatically checking whether your website is working correctly — and alerting you when it isn&#8217;t. If your website goes offline at 2am on a Sunday, do you want to find out from a customer complaint on Monday morning, or from an alert sent to your phone within minutes?</p>\n<h2>What does website monitoring check?</h2>\n<p>Modern website monitoring covers much more than simple availability. A complete monitoring setup checks:</p>\n<ul>\n<li><strong>Uptime</strong> — is your website responding to requests?</li>\n<li><strong>Response time</strong> — how fast is it responding?</li>\n<li><strong>SSL certificate</strong> — is your HTTPS certificate valid and not about to expire?</li>\n<li><strong>DNS records</strong> — are your domain name settings correct?</li>\n<li><strong>Email security</strong> — are SPF, DKIM and DMARC configured properly?</li>\n<li><strong>Security headers</strong> — does your site send the right HTTP security headers?</li>\n</ul>\n<h2>Why does website monitoring matter?</h2>\n<p>Search engines like Google factor in website availability and speed as ranking signals. A website that is frequently offline or slow to load will rank lower in search results — meaning fewer customers finding you.</p>\n<p>Beyond SEO, every minute your website is down is a minute where potential customers hit an error page and leave, probably to a competitor. For an e-commerce store or a booking system, website downtime directly costs money.</p>\n<h2>How does monitoring work?</h2>\n<p>A monitoring service like Presence sends automated requests to your website at regular intervals (typically every minute to every hour, depending on your plan). If your website fails to respond, or responds with an error, the monitoring service immediately sends you an alert by email, push notification, or another channel you have configured.</p>\n<p>Beyond availability, monitoring also runs periodic scans of your domain&#8217;s DNS records, SSL certificate, and email security configuration — and calculates a <strong>Website Health Score</strong> that gives you a single number summarising your website&#8217;s overall health.</p>\n<h2>How to get started</h2>\n<p>You can check your website right now using our free <a href=\"/tools/website-checker\">Website Health Checker</a>. For ongoing monitoring, create a free Presence account — no credit card required.</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>A plain-language guide to website monitoring — what it is, why it matters, and how it works.</p>\n",
+      "protected": false
+    },
+    "author": 0,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      2
+    ],
+    "tags": [],
+    "language": [
+      8
+    ],
+    "class_list": [
+      "post-4",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-guides",
+      "language-en"
+    ],
+    "presence_lang": {
+      "code": "en",
+      "name": "EN"
+    },
+    "presence_translations": [
+      {
+        "lang": "de",
+        "slug": "de-was-ist-website-monitoring",
+        "title": "Was ist Website-Monitoring?"
+      }
+    ],
+    "_links": {
+      "self": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/4",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/posts"
+        }
+      ],
+      "about": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/types/post"
+        }
+      ],
+      "replies": [
+        {
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/comments?post=4"
+        }
+      ],
+      "version-history": [
+        {
+          "count": 0,
+          "href": "http://localhost:8081/wp-json/wp/v2/posts/4/revisions"
+        }
+      ],
+      "wp:attachment": [
+        {
+          "href": "http://localhost:8081/wp-json/wp/v2/media?parent=4"
+        }
+      ],
+      "wp:term": [
+        {
+          "taxonomy": "category",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/categories?post=4"
+        },
+        {
+          "taxonomy": "post_tag",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/tags?post=4"
+        },
+        {
+          "taxonomy": "language",
+          "embeddable": true,
+          "href": "http://localhost:8081/wp-json/wp/v2/language?post=4"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    },
+    "_embedded": {
+      "wp:term": [
+        [
+          {
+            "id": 2,
+            "link": "http://localhost:8081/category/guides/",
+            "name": "Guides",
+            "slug": "guides",
+            "taxonomy": "category",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories/2",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/categories"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/category"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?categories=2"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ],
+        [],
+        [
+          {
+            "id": 8,
+            "link": "http://localhost:8081/sprache/en/",
+            "name": "EN",
+            "slug": "en",
+            "taxonomy": "language",
+            "_links": {
+              "self": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language/8",
+                  "targetHints": {
+                    "allow": [
+                      "GET"
+                    ]
+                  }
+                }
+              ],
+              "collection": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/language"
+                }
+              ],
+              "about": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/taxonomies/language"
+                }
+              ],
+              "wp:post_type": [
+                {
+                  "href": "http://localhost:8081/wp-json/wp/v2/posts?language=8"
+                }
+              ],
+              "curies": [
+                {
+                  "name": "wp",
+                  "href": "https://api.w.org/{rel}",
+                  "templated": true
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  }
+]
