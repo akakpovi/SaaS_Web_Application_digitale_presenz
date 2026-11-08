@@ -11,6 +11,7 @@
     "check:nginx": "bash scripts/verify-nginx.sh",
     "assets": "python3 scripts/generate_brand_assets.py",
     "snapshot:blog": "node scripts/fetch-wordpress-snapshot.mjs",
+    "check:snapshot": "node scripts/check-snapshot-freshness.mjs",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "format": "oxfmt"

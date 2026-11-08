@@ -1,0 +1,88 @@
+name: Refresh Blog Snapshot
+
+# Optional automation: configure the repository secret WP_API_URL with a
+# publicly reachable WordPress REST base (for example
+# https://presence.example/cms/wp-json). Without it, every scheduled run is a
+# successful no-op; the local loopback WordPress is not reachable from GitHub.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blog-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check CMS secret
+        id: cms
+        env:
+          WP_API_URL: ${{ secrets.WP_API_URL }}
+        run: |
+          if [ -z "$WP_API_URL" ]; then
+            echo "WP_API_URL is not configured; skipping the refresh."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.cms.outputs.configured == 'true'
+        with:
+          version: 12.18.0
+
+      - uses: actions/setup-node@v4
+        if: steps.cms.outputs.configured == 'true'
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/pnpm-lock.yaml
+
+      - name: Install frontend deps
+        if: steps.cms.outputs.configured == 'true'
+        working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch WordPress snapshot
+        if: steps.cms.outputs.configured == 'true'
+        working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+        env:
+          PRERENDER_WP_API_URL: ${{ secrets.WP_API_URL }}
+        run: pnpm snapshot:blog
+
+      - name: Validate refreshed snapshot
+        if: steps.cms.outputs.configured == 'true'
+        working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+        run: |
+          node scripts/check-snapshot-freshness.mjs --max-age-days 1
+          pnpm run build
+        env:
+          VITE_API_BASE_URL: /api/v1
+          VITE_BASE_URL: https://presence.example
+          VITE_WP_API_URL: /cms
+          PRERENDER_WP_API_URL: ""
+
+      - name: Commit refreshed snapshot
+        if: steps.cms.outputs.configured == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          SNAPSHOT="SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/src/seo/wordpress-posts.snapshot.json"
+          git add "$SNAPSHOT"
+          if git diff --cached --quiet; then
+            echo "Snapshot unchanged."
+            exit 0
+          fi
+          git commit -m "chore(blog): refresh WordPress snapshot"
+          git push origin HEAD:main
