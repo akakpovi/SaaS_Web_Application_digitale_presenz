@@ -5,6 +5,7 @@
 backend/.env
 backend/.env.*
 !backend/.env.example
+!SaaS_Web_Application_digitale_presenz_v2/backend/.env.ci
 
 # Python
 __pycache__/

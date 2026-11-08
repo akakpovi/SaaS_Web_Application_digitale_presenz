@@ -192,6 +192,13 @@ jobs:
         working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
         run: pnpm exec playwright install chromium
 
+      - name: Create CI environment file
+        # The Compose stack requires backend/.env, which is intentionally not
+        # committed. Use the secret-free template copied into the checkout.
+        run: |
+          cp SaaS_Web_Application_digitale_presenz_v2/backend/.env.ci \
+             SaaS_Web_Application_digitale_presenz_v2/backend/.env
+
       - name: Start local stack
         run: docker compose up -d --build db redis web celery-worker mailpit frontend
 
