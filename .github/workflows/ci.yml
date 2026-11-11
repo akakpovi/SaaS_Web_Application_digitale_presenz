@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -168,9 +169,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [frontend]
     timeout-minutes: 30
-    # Non-blocking while the CI Docker/Playwright infrastructure is new.
-    # Remove this once the job has a stable green history.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -236,6 +234,18 @@ jobs:
           docker compose ps
           docker compose logs --tail=100 web frontend
           exit 1
+
+      - name: Seed E2E test data
+        env:
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_WEBSITE_ID: ${{ secrets.E2E_WEBSITE_ID }}
+        run: |
+          docker compose exec -T \
+            -e E2E_EMAIL="$E2E_EMAIL" \
+            -e E2E_PASSWORD="$E2E_PASSWORD" \
+            -e E2E_WEBSITE_ID="$E2E_WEBSITE_ID" \
+            web python scripts/seed_e2e.py
 
       - name: Run French i18n E2E
         working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
