@@ -238,8 +238,3 @@ test.describe("French private screens", () => {
     )
   })
 })
-
-// TEMPORARY: force failure to verify artifact upload — REMOVE AFTER VALIDATION
-test("TEMP: force failure for artifact upload test", async () => {
-  expect(true).toBe(false)
-})
