@@ -149,6 +149,24 @@ Un test qui échoue avant toute navigation (par exemple une assertion
 synthétique) peut ne produire que `trace.zip` et le rapport HTML : c'est
 normal, Playwright n'a pas encore de page à capturer ou à filmer.
 
+### Vérification effectuée (run 43002444396)
+
+Un test temporaire a échoué **après** `page.goto("/fr/login")` : l'assertion
+sur le titre attendait une valeur volontairement fausse, tandis que la page
+répondait `Bon retour | Presence`. Le test a été retiré après vérification.
+
+| Type | Fichier | Taille |
+| --- | --- | --- |
+| Screenshot | `test-results/<test>/test-failed-1.png` (1280 × 720) | 35 162 octets |
+| Vidéo | `test-results/<test>/video.webm` (tentative initiale) | 84 218 octets |
+| Vidéo | `test-results/<test>/video.webm` (retry) | 81 337 octets |
+| Trace | `test-results/<test>/trace.zip` (21 entrées) | 235 333 octets |
+| Rapport HTML | `playwright-report/index.html` | 529 512 octets |
+
+La capture montre le formulaire de connexion français ; la trace contient le
+DOM, le réseau, les logs console et les images de screencast. Les deux
+vidéos correspondent à la tentative initiale et au retry automatique.
+
 ### Télécharger l'artefact
 
 Depuis la racine du dépôt :
