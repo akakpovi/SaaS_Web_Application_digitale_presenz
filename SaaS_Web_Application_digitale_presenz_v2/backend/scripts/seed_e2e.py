@@ -51,7 +51,7 @@ def required_env(name: str, *, strip: bool = False) -> str:
     return value
 
 
-def main() -> None:
+def run_seed() -> None:
     email = required_env("E2E_EMAIL", strip=True).lower()
     # Keep the password byte-for-byte: spaces are valid password characters.
     password = required_env("E2E_PASSWORD")
@@ -160,6 +160,10 @@ def main() -> None:
         f"tier={subscription.plan.tier}"
     )
     print(f"E2E_WEBSITE_ID={website.pk}")
+
+
+def main() -> None:
+    run_seed()
 
 
 if __name__ == "__main__":
