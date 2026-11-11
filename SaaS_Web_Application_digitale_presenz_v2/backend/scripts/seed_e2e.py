@@ -31,6 +31,8 @@ django.setup()
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.db import transaction  # noqa: E402
 
+from subscriptions.models import Plan, Subscription  # noqa: E402
+from subscriptions.pricing import get_catalogue_entry  # noqa: E402
 from websites.models import Website  # noqa: E402
 
 DEFAULT_DOMAIN = "e2e.presence.local"
@@ -74,6 +76,17 @@ def main() -> None:
     User = get_user_model()
 
     with transaction.atomic():
+        # The user post_save signal only creates a Free subscription when the
+        # Free plan already exists. Create it first, using the same catalogue
+        # as the create_plans management command, so a fresh CI database does
+        # not emit "Free plan not found" and the QA account receives a plan.
+        free_plan_data = dict(get_catalogue_entry(Plan.Tier.FREE.value))
+        free_plan_data.pop("tier", None)
+        free_plan, plan_created = Plan.objects.get_or_create(
+            tier=Plan.Tier.FREE,
+            defaults=free_plan_data,
+        )
+
         user = User.objects.filter(email__iexact=email).first()
         created_user = user is None
         if user is None:
@@ -85,6 +98,20 @@ def main() -> None:
             user.full_name = "Presence QA"
         user.set_password(password)
         user.save()
+
+        # Fresh accounts get this from the signal. Keep the seed idempotent
+        # and repair an existing QA account that predates the plan catalogue.
+        subscription, subscription_created = Subscription.objects.get_or_create(
+            user=user,
+            defaults={"plan": free_plan, "status": Subscription.Status.ACTIVE},
+        )
+        if (
+            subscription.plan_id == free_plan.pk
+            and subscription.status != Subscription.Status.ACTIVE
+        ):
+            subscription.status = Subscription.Status.ACTIVE
+            subscription.cancelled_at = None
+            subscription.save(update_fields=["status", "cancelled_at", "updated_at"])
 
         if website_id is not None:
             website = Website.objects.filter(pk=website_id).first()
@@ -121,10 +148,16 @@ def main() -> None:
             if website.organization_id is None:
                 website.save()
 
+    print(f"seed-e2e: plan free {'created' if plan_created else 'reused'}")
     print(f"seed-e2e: user {'created' if created_user else 'updated'} id={user.pk}")
     print(
         f"seed-e2e: website {'created' if created_website else 'reused'} "
         f"id={website.pk}"
+    )
+    print(
+        f"seed-e2e: subscription "
+        f"{'created' if subscription_created else 'reused'} "
+        f"tier={subscription.plan.tier}"
     )
     print(f"E2E_WEBSITE_ID={website.pk}")
 
