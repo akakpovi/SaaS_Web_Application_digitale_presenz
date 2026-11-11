@@ -238,3 +238,12 @@ test.describe("French private screens", () => {
     )
   })
 })
+
+// TEMPORARY: force failure after navigation to verify screenshot + video
+test("TEMP: fail after goto for artifact verification", async ({ page }) => {
+  await page.goto("/fr/login")
+  await page.waitForTimeout(2000)
+  expect(await page.title()).toBe(
+    "INTENTIONALLY WRONG TITLE FOR ARTIFACT TEST",
+  )
+})
