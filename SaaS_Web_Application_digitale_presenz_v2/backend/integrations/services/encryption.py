@@ -149,9 +149,7 @@ def _open_bytes(envelope: str, key: bytes, aad: bytes) -> bytes:
         return AESGCM(key).decrypt(nonce, ciphertext, aad)
     except (InvalidTag, UnicodeDecodeError, ValueError, TypeError, binascii.Error):
         # Never include the envelope, plaintext or key in the exception.
-        raise ConnectorDecryptionError(
-            "Unable to decrypt connector secret."
-        ) from None
+        raise ConnectorDecryptionError("Unable to decrypt connector secret.") from None
 
 
 def seal_secret(plaintext: str, key: bytes, aad: bytes) -> str:
@@ -168,9 +166,7 @@ def open_secret(envelope: str, key: bytes, aad: bytes) -> str:
     try:
         return _open_bytes(envelope, key, aad).decode("utf-8")
     except UnicodeDecodeError:
-        raise ConnectorDecryptionError(
-            "Unable to decrypt connector secret."
-        ) from None
+        raise ConnectorDecryptionError("Unable to decrypt connector secret.") from None
 
 
 def _aad_component(value: object) -> str:

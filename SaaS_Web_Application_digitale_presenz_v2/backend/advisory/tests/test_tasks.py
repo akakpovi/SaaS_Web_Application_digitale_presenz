@@ -51,9 +51,7 @@ class AdvisorTaskTests(TestCase):
     @override_settings(AI_ADVISOR_ENABLED=False)
     @mock.patch("advisory.services.advisor.generate_recommendations_for_scan")
     def test_disabled_flag_skips_provider(self, generate: mock.Mock) -> None:
-        result = generate_scan_recommendations_task.apply(
-            args=[self.scan.pk]
-        ).get()
+        result = generate_scan_recommendations_task.apply(args=[self.scan.pk]).get()
 
         self.assertEqual(result["status"], "disabled")
         generate.assert_not_called()
@@ -64,9 +62,7 @@ class AdvisorTaskTests(TestCase):
         return_value=_fake_result(),
     )
     def test_enabled_task_calls_service(self, generate: mock.Mock) -> None:
-        result = generate_scan_recommendations_task.apply(
-            args=[self.scan.pk]
-        ).get()
+        result = generate_scan_recommendations_task.apply(args=[self.scan.pk]).get()
 
         self.assertEqual(result["status"], "succeeded")
         self.assertEqual(result["model_used"], "model-a")
@@ -78,9 +74,7 @@ class AdvisorTaskTests(TestCase):
         side_effect=RuntimeError("provider exploded"),
     )
     def test_service_exception_is_contained(self, generate: mock.Mock) -> None:
-        result = generate_scan_recommendations_task.apply(
-            args=[self.scan.pk]
-        ).get()
+        result = generate_scan_recommendations_task.apply(args=[self.scan.pk]).get()
 
         self.assertEqual(result["status"], "error")
         self.assertEqual(result["error"], "RuntimeError")
@@ -91,9 +85,7 @@ class AdvisorTaskTests(TestCase):
         self.scan.status = Scan.Status.RUNNING
         self.scan.save(update_fields=["status"])
 
-        result = generate_scan_recommendations_task.apply(
-            args=[self.scan.pk]
-        ).get()
+        result = generate_scan_recommendations_task.apply(args=[self.scan.pk]).get()
 
         self.assertEqual(result["status"], "skipped_not_completed")
 
@@ -110,9 +102,7 @@ class AdvisorTaskTests(TestCase):
             "retry",
             side_effect=Retry(),
         ) as retry:
-            result = generate_scan_recommendations_task.apply(
-                args=[self.scan.pk]
-            )
+            result = generate_scan_recommendations_task.apply(args=[self.scan.pk])
 
         self.assertEqual(result.state, "RETRY")
         retry.assert_called_once_with(countdown=120)
@@ -135,9 +125,7 @@ class AdvisorTaskTests(TestCase):
                 side_effect=RuntimeError("broker down"),
             ):
                 with mock.patch("alerts.tasks.detect_alerts.delay"):
-                    result = run_authenticated_scan.apply(
-                        args=[self.scan.pk]
-                    ).get()
+                    result = run_authenticated_scan.apply(args=[self.scan.pk]).get()
 
         self.assertEqual(result["status"], "completed")
         self.assertFalse(result["advisor_queued"])
@@ -196,9 +184,7 @@ class AdvisorDispatchTests(TestCase):
                 with mock.patch(
                     "advisory.tasks.generate_scan_recommendations_task.delay"
                 ) as delay:
-                    result = run_authenticated_scan.apply(
-                        args=[self.scan.pk]
-                    ).get()
+                    result = run_authenticated_scan.apply(args=[self.scan.pk]).get()
 
         delay.assert_called_once_with(self.scan.pk)
         self.assertTrue(result["advisor_queued"])

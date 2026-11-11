@@ -14,6 +14,14 @@ urlpatterns = [
         MonitoringOverviewView.as_view(),
         name="monitoring-overview",
     ),
-    path("monitoring/websites/<int:website_id>/", MonitoringConfigDetailView.as_view(), name="monitoring-detail"),
-    path("monitoring/websites/<int:website_id>/scan/", TriggerImmediateScanView.as_view(), name="monitoring-trigger-scan"),
+    path(
+        "monitoring/websites/<int:website_id>/",
+        MonitoringConfigDetailView.as_view(),
+        name="monitoring-detail",
+    ),
+    path(
+        "monitoring/websites/<int:website_id>/scan/",
+        TriggerImmediateScanView.as_view(),
+        name="monitoring-trigger-scan",
+    ),
 ]

@@ -23,10 +23,12 @@ class AlertModelTest(TestCase):
         self.user = User.objects.create_user(email="a@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="alerttest.com")
         self.alert = Alert.objects.create(
-            user=self.user, website=self.website,
+            user=self.user,
+            website=self.website,
             alert_type=Alert.AlertType.WEBSITE_OFFLINE,
             severity=Alert.Severity.CRITICAL,
-            title="Site is down", message="Unreachable",
+            title="Site is down",
+            message="Unreachable",
         )
 
     def test_initial_status_firing(self):
@@ -86,8 +88,11 @@ class AlertRuleEvaluateTest(TestCase):
 
     def _rule(self, metric, operator, threshold):
         return AlertRule(
-            user=self.user, name="Test", metric=metric,
-            operator=operator, threshold=threshold,
+            user=self.user,
+            name="Test",
+            metric=metric,
+            operator=operator,
+            threshold=threshold,
             severity=AlertRule.Severity.WARNING,
         )
 
@@ -114,7 +119,9 @@ class AlertRuleEvaluateTest(TestCase):
 
 class AlertPreferenceQuietHoursTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="quiet@test.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="quiet@test.com", password="pass1234"
+        )
         self.pref = AlertPreference.objects.get(user=self.user)
 
     def test_no_quiet_hours_never_mutes(self):
@@ -122,6 +129,7 @@ class AlertPreferenceQuietHoursTest(TestCase):
 
     def test_quiet_hours_active(self):
         import datetime
+
         self.pref.quiet_hours_start = datetime.time(22, 0)
         self.pref.quiet_hours_end = datetime.time(23, 59)
         self.pref.save()
@@ -130,6 +138,7 @@ class AlertPreferenceQuietHoursTest(TestCase):
 
     def test_quiet_hours_inactive(self):
         import datetime
+
         self.pref.quiet_hours_start = datetime.time(22, 0)
         self.pref.quiet_hours_end = datetime.time(23, 59)
         self.pref.save()

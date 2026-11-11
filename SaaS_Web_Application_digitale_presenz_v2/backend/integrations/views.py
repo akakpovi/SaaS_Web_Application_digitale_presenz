@@ -80,9 +80,7 @@ def _frontend_callback_url(provider: str, *, error: str | None = None) -> str:
     parts = urlsplit(_frontend_base_url())
 
     normalized_provider = (provider or "").strip().lower()
-    integration = (
-        "linkedin" if normalized_provider == "linkedin" else "unknown"
-    )
+    integration = "linkedin" if normalized_provider == "linkedin" else "unknown"
     query = dict(parse_qsl(parts.query, keep_blank_values=True))
     query["integration"] = integration
     if error:
@@ -110,9 +108,7 @@ def _redirect_to_frontend(
     *,
     error: str | None = None,
 ) -> HttpResponseRedirect:
-    response = HttpResponseRedirect(
-        _frontend_callback_url(provider, error=error)
-    )
+    response = HttpResponseRedirect(_frontend_callback_url(provider, error=error))
     response["Cache-Control"] = "no-store"
     response["Pragma"] = "no-cache"
     # Do not send the callback URL (which contains code/state) as a Referer
@@ -200,17 +196,13 @@ class SocialAuditEventListView(generics.ListAPIView):
         )
         queryset = SocialAuditEvent.objects.filter(organization=organization)
 
-        action = str(
-            self.request.query_params.get("action") or ""
-        ).strip().lower()
+        action = str(self.request.query_params.get("action") or "").strip().lower()
         if action:
             if action not in SocialAuditEvent.Action.values:
                 raise ValidationError({"action": "Invalid audit action."})
             queryset = queryset.filter(action=action)
 
-        provider = str(
-            self.request.query_params.get("provider") or ""
-        ).strip().lower()
+        provider = str(self.request.query_params.get("provider") or "").strip().lower()
         if provider:
             if provider not in OAuthConnection.Provider.values:
                 raise ValidationError({"provider": "Invalid provider."})

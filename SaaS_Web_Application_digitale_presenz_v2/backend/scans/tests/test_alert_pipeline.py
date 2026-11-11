@@ -32,7 +32,9 @@ class ScanAlertTriggerTests(TestCase):
     """The scan task must hand every completed scan to the alert engine."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user(email="scan@example.com", password="pass1234!")
+        self.user = User.objects.create_user(
+            email="scan@example.com", password="pass1234!"
+        )
         self.website = Website.objects.create(owner=self.user, domain="scan-example.de")
         self.scan = Scan.objects.create(
             website=self.website,
@@ -52,17 +54,19 @@ class ScanAlertTriggerTests(TestCase):
         return mock.patch.object(ScanOrchestrator, "run", fake_run)
 
     def test_completed_scan_queues_detect_alerts(self) -> None:
-        with self._patch_orchestrator(Scan.Status.COMPLETED), mock.patch(
-            "alerts.tasks.detect_alerts.delay"
-        ) as delay:
+        with (
+            self._patch_orchestrator(Scan.Status.COMPLETED),
+            mock.patch("alerts.tasks.detect_alerts.delay") as delay,
+        ):
             run_authenticated_scan.apply(args=[self.scan.pk]).get()
 
         delay.assert_called_once_with(self.scan.pk)
 
     def test_failed_scan_does_not_queue_detect_alerts(self) -> None:
-        with self._patch_orchestrator(Scan.Status.FAILED, score=None), mock.patch(
-            "alerts.tasks.detect_alerts.delay"
-        ) as delay:
+        with (
+            self._patch_orchestrator(Scan.Status.FAILED, score=None),
+            mock.patch("alerts.tasks.detect_alerts.delay") as delay,
+        ):
             run_authenticated_scan.apply(args=[self.scan.pk]).get()
 
         delay.assert_not_called()
@@ -85,8 +89,12 @@ class DetectAlertsDeliveryTests(TestCase):
     """``detect_alerts`` must create the alert *and* e-mail it to the owner."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user(email="alert@example.com", password="pass1234!")
-        self.website = Website.objects.create(owner=self.user, domain="alert-example.de")
+        self.user = User.objects.create_user(
+            email="alert@example.com", password="pass1234!"
+        )
+        self.website = Website.objects.create(
+            owner=self.user, domain="alert-example.de"
+        )
         self.scan = Scan.objects.create(
             website=self.website,
             status=Scan.Status.COMPLETED,

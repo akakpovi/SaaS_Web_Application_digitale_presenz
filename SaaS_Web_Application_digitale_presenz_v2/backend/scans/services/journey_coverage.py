@@ -191,8 +191,7 @@ def _alert_stuck_awaiting(now: datetime) -> int:
             issue=ISSUE_STUCK_AWAITING,
             severity=Alert.Severity.WARNING,
             title=(
-                "Scan journey stuck awaiting confirmation for "
-                f"{journey.website.domain}"
+                f"Scan journey stuck awaiting confirmation for {journey.website.domain}"
             ),
             message=(
                 f"Journey {journey.pk} has been awaiting confirmation for "
@@ -202,9 +201,7 @@ def _alert_stuck_awaiting(now: datetime) -> int:
             extra={
                 "hours": hours,
                 "expires_at": (
-                    journey.expires_at.isoformat()
-                    if journey.expires_at
-                    else None
+                    journey.expires_at.isoformat() if journey.expires_at else None
                 ),
             },
         ):

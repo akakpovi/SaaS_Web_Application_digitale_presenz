@@ -115,7 +115,9 @@ class MuteWindowListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return MuteWindow.objects.filter(user=self.request.user).prefetch_related("websites")
+        return MuteWindow.objects.filter(user=self.request.user).prefetch_related(
+            "websites"
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

@@ -59,9 +59,7 @@ def rewrap_data_key(
     )
     data_key.kek_version = target_kek_version
     data_key.rotated_at = timezone.now()
-    data_key.save(
-        update_fields=["wrapped_dek", "kek_version", "rotated_at"]
-    )
+    data_key.save(update_fields=["wrapped_dek", "kek_version", "rotated_at"])
 
 
 def rewrap_all_data_keys(target_kek_version: int) -> int:
@@ -71,8 +69,9 @@ def rewrap_all_data_keys(target_kek_version: int) -> int:
     target_kek = keyring.kek(target_kek_version)
     count = 0
     data_key_ids = list(
-        OrganizationDataKey.objects.order_by("organization_id", "version")
-        .values_list("id", flat=True)
+        OrganizationDataKey.objects.order_by("organization_id", "version").values_list(
+            "id", flat=True
+        )
     )
 
     for data_key_id in data_key_ids:
@@ -92,9 +91,7 @@ def rewrap_all_data_keys(target_kek_version: int) -> int:
             )
             data_key.kek_version = target_kek_version
             data_key.rotated_at = timezone.now()
-            data_key.save(
-                update_fields=["wrapped_dek", "kek_version", "rotated_at"]
-            )
+            data_key.save(update_fields=["wrapped_dek", "kek_version", "rotated_at"])
         count += 1
 
     return count
@@ -245,9 +242,7 @@ def rotate_organization_dek(
             )
             data_key.kek_version = target_kek_version
             data_key.rotated_at = timezone.now()
-            data_key.save(
-                update_fields=["wrapped_dek", "kek_version", "rotated_at"]
-            )
+            data_key.save(update_fields=["wrapped_dek", "kek_version", "rotated_at"])
 
     return OrganizationRotationResult(
         organization_id=organization_id,

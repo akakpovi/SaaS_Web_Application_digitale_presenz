@@ -212,9 +212,7 @@ class AdvisorCredentialTests(TestCase):
         build.assert_not_called()
 
     def test_successful_probe_clears_the_cache(self) -> None:
-        cache.set(
-            "advisory:aka_credentials_invalid", {"reason": "old"}, timeout=900
-        )
+        cache.set("advisory:aka_credentials_invalid", {"reason": "old"}, timeout=900)
         clear_aka_credentials_invalid()
         self.assertIsNone(aka_credentials_marked_invalid())
 

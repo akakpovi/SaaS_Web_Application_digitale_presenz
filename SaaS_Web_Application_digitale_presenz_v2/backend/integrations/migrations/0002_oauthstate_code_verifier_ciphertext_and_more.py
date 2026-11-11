@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('integrations', '0001_initial'),
+        ("integrations", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='oauthstate',
-            name='code_verifier_ciphertext',
-            field=models.TextField(blank=True, default=''),
+            model_name="oauthstate",
+            name="code_verifier_ciphertext",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AddField(
-            model_name='oauthstate',
-            name='code_verifier_key_version',
+            model_name="oauthstate",
+            name="code_verifier_key_version",
             field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='oauthstate',
-            name='consumed_at',
+            model_name="oauthstate",
+            name="consumed_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='oauthstate',
-            name='redirect_uri',
-            field=models.URLField(blank=True, default='', max_length=500),
+            model_name="oauthstate",
+            name="redirect_uri",
+            field=models.URLField(blank=True, default="", max_length=500),
         ),
     ]

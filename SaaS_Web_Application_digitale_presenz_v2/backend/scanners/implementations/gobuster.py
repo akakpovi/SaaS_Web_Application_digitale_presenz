@@ -60,9 +60,16 @@ logger = logging.getLogger(__name__)
 DEFAULT_WORDLIST = "/usr/share/dirb/wordlists/common.txt"
 
 #: Paths whose exposure is treated as high severity.
-_SENSITIVE_PATHS = frozenset({
-    "/admin", "/.env", "/backup", "/config", "/.git", "/wp-admin",
-})
+_SENSITIVE_PATHS = frozenset(
+    {
+        "/admin",
+        "/.env",
+        "/backup",
+        "/config",
+        "/.git",
+        "/wp-admin",
+    }
+)
 
 #: Gobuster clears its progress line with ANSI escapes even under
 #: ``--no-color`` when stdout is not a terminal (observed with 3.6 in the
@@ -209,11 +216,13 @@ def _parse_gobuster_output(output: str) -> list[dict[str, Any]]:
         if not path or not (path.startswith("/") or path.startswith("http")):
             continue
 
-        findings.append({
-            "path": path,
-            "status_code": status_code,
-            "size": size,
-        })
+        findings.append(
+            {
+                "path": path,
+                "status_code": status_code,
+                "size": size,
+            }
+        )
     return findings
 
 
@@ -304,7 +313,9 @@ class GobusterScanner(BaseScanner):
         extra_reason = ""
         extra_run: ToolRun | None = None
         if extra_wordlist and self._extra_wordlist_available(extra_wordlist):
-            step_budget = int(context.timeout) if context is not None else int(self.timeout)
+            step_budget = (
+                int(context.timeout) if context is not None else int(self.timeout)
+            )
             extra_timeout = max(1, step_budget - int(time.monotonic() - step_started))
             try:
                 extra_run = run_tool(
@@ -336,9 +347,7 @@ class GobusterScanner(BaseScanner):
                 # The step duration must be the real cost of both passes.
                 run.duration_ms += extra_run.duration_ms
                 run.timed_out = run.timed_out or extra_run.timed_out
-                run.memory_exceeded = (
-                    run.memory_exceeded or extra_run.memory_exceeded
-                )
+                run.memory_exceeded = run.memory_exceeded or extra_run.memory_exceeded
                 run.output_truncated = (
                     run.output_truncated or extra_run.output_truncated
                 )
@@ -384,8 +393,7 @@ class GobusterScanner(BaseScanner):
             run=run,
             findings=findings,
             message=(
-                f"Gobuster found {len(parsed)} path(s), "
-                f"{sensitive_paths} sensitive"
+                f"Gobuster found {len(parsed)} path(s), {sensitive_paths} sensitive"
                 if complete
                 else f"Gobuster scan incomplete ({reason}): "
                 f"{len(parsed)} path(s) seen so far"
@@ -473,12 +481,17 @@ class GobusterScanner(BaseScanner):
         threads = int(cfg.get("threads", 10) or 10)
         request_timeout = str(cfg.get("request_timeout", "10s"))
         command = [
-            "gobuster", "dir",
-            "-u", target,
-            "-w", wordlist or self.wordlist,
-            "-t", str(threads),
-            "-q",                       # only results on stdout
-            "--timeout", request_timeout,
+            "gobuster",
+            "dir",
+            "-u",
+            target,
+            "-w",
+            wordlist or self.wordlist,
+            "-t",
+            str(threads),
+            "-q",  # only results on stdout
+            "--timeout",
+            request_timeout,
             "--no-color",
         ]
         if soft404_length is not None:
@@ -491,35 +504,44 @@ class GobusterScanner(BaseScanner):
     def parse(self, output: str) -> list[dict[str, Any]]:
         return _parse_gobuster_output(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
 
         for item in parsed_results:
             path = item.get("path", "")
             # Compare on the path component only (gobuster may echo a full URL).
             path_key = path.split("://", 1)[-1] if "://" in path else path
-            path_key = "/" + path_key.split("/", 3)[-1] if path_key.count("/") > 2 else path_key
+            path_key = (
+                "/" + path_key.split("/", 3)[-1]
+                if path_key.count("/") > 2
+                else path_key
+            )
             sensitive = path_key in _SENSITIVE_PATHS
 
-            findings.append(NormalizedFinding(
-                check_code=(
-                    "gobuster.path."
-                    + (path_key.strip("/").replace("/", "_") or "root")
-                ),
-                category="security",
-                severity=Severity.HIGH if sensitive else Severity.LOW,
-                status=FindingStatus.FAIL if sensitive else FindingStatus.WARNING,
-                title=f"Directory/file found: {path}",
-                description=(
-                    f"Path '{path}' is publicly accessible "
-                    f"(HTTP {item.get('status_code', '?')})"
-                ),
-                evidence=item,
-                recommendation=(
-                    f"Restrict access to '{path}' or remove it if not needed."
-                    if sensitive else ""
-                ),
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=(
+                        "gobuster.path."
+                        + (path_key.strip("/").replace("/", "_") or "root")
+                    ),
+                    category="security",
+                    severity=Severity.HIGH if sensitive else Severity.LOW,
+                    status=FindingStatus.FAIL if sensitive else FindingStatus.WARNING,
+                    title=f"Directory/file found: {path}",
+                    description=(
+                        f"Path '{path}' is publicly accessible "
+                        f"(HTTP {item.get('status_code', '?')})"
+                    ),
+                    evidence=item,
+                    recommendation=(
+                        f"Restrict access to '{path}' or remove it if not needed."
+                        if sensitive
+                        else ""
+                    ),
+                )
+            )
 
         return findings
 

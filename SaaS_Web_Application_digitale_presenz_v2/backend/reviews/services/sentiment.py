@@ -5,6 +5,7 @@ from reviews.models import Review
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class SentimentResult:
     sentiment: str = Review.Sentiment.NEUTRAL
@@ -13,48 +14,284 @@ class SentimentResult:
     keywords: list[str] = field(default_factory=list)
     language: str = "fr"
 
+
 class MultilingualSentimentAnalyzer:
     STOPWORDS = {
-        "fr": {"le", "la", "les", "un", "une", "des", "du", "de", "et", "est", "pour", "dans", "avec", "sur", "ce", "cette", "qui", "que", "nous", "vous", "très", "tout"},
-        "en": {"the", "a", "an", "and", "is", "are", "was", "were", "in", "on", "at", "to", "for", "of", "with", "by", "from", "this", "that", "we", "you", "very"},
-        "de": {"der", "die", "das", "ein", "eine", "einen", "und", "ist", "sind", "war", "in", "im", "auf", "zu", "für", "von", "mit", "bei", "es", "dies", "wir", "sehr"}
+        "fr": {
+            "le",
+            "la",
+            "les",
+            "un",
+            "une",
+            "des",
+            "du",
+            "de",
+            "et",
+            "est",
+            "pour",
+            "dans",
+            "avec",
+            "sur",
+            "ce",
+            "cette",
+            "qui",
+            "que",
+            "nous",
+            "vous",
+            "très",
+            "tout",
+        },
+        "en": {
+            "the",
+            "a",
+            "an",
+            "and",
+            "is",
+            "are",
+            "was",
+            "were",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "this",
+            "that",
+            "we",
+            "you",
+            "very",
+        },
+        "de": {
+            "der",
+            "die",
+            "das",
+            "ein",
+            "eine",
+            "einen",
+            "und",
+            "ist",
+            "sind",
+            "war",
+            "in",
+            "im",
+            "auf",
+            "zu",
+            "für",
+            "von",
+            "mit",
+            "bei",
+            "es",
+            "dies",
+            "wir",
+            "sehr",
+        },
     }
 
     NEGATIONS = {
-        "pas", "plus", "jamais", "aucun", "aucune", "guère", "nullement",
-        "not", "never", "no", "n't", "hardly", "barely",
-        "nicht", "kein", "keine", "keinen", "nie", "niemals", "keineswegs"
+        "pas",
+        "plus",
+        "jamais",
+        "aucun",
+        "aucune",
+        "guère",
+        "nullement",
+        "not",
+        "never",
+        "no",
+        "n't",
+        "hardly",
+        "barely",
+        "nicht",
+        "kein",
+        "keine",
+        "keinen",
+        "nie",
+        "niemals",
+        "keineswegs",
     }
 
     POSITIVE_WORDS = {
-        "excellent", "parfait", "super", "génial", "recommande", "recommander", "bon", "bonne",
-        "propre", "rapide", "merci", "top", "délicieux", "agréable", "formidable", "magnifique",
-        "adore", "adoré", "bravo", "chaleureux", "impeccable", "satisfait", "sympa", "merveilleux",
-        "aimable", "professionnel", "convivial", "qualité", "irréprochable",
-        "perfect", "great", "awesome", "recommend", "good", "clean", "fast",
-        "thanks", "thank", "amazing", "delicious", "wonderful", "fantastic", "love", "loved",
-        "best", "friendly", "superb", "brilliant", "outstanding", "helpful", "nice", "fabulous",
-        "flawless", "satisfied", "enjoyed", "top-notch", "impressed", "pleased",
-        "ausgezeichnet", "perfekt", "toll", "genial", "empfehlen", "empfehlenswert",
-        "guter", "gutes", "sauber", "schnell", "danke", "lecker", "wunderbar",
-        "schön", "hervorragend", "begeistert", "spitze", "zufrieden",
-        "klasse", "prima", "köstlich", "tadellos", "gemütlich", "herzlich", "lohnenswert"
+        "excellent",
+        "parfait",
+        "super",
+        "génial",
+        "recommande",
+        "recommander",
+        "bon",
+        "bonne",
+        "propre",
+        "rapide",
+        "merci",
+        "top",
+        "délicieux",
+        "agréable",
+        "formidable",
+        "magnifique",
+        "adore",
+        "adoré",
+        "bravo",
+        "chaleureux",
+        "impeccable",
+        "satisfait",
+        "sympa",
+        "merveilleux",
+        "aimable",
+        "professionnel",
+        "convivial",
+        "qualité",
+        "irréprochable",
+        "perfect",
+        "great",
+        "awesome",
+        "recommend",
+        "good",
+        "clean",
+        "fast",
+        "thanks",
+        "thank",
+        "amazing",
+        "delicious",
+        "wonderful",
+        "fantastic",
+        "love",
+        "loved",
+        "best",
+        "friendly",
+        "superb",
+        "brilliant",
+        "outstanding",
+        "helpful",
+        "nice",
+        "fabulous",
+        "flawless",
+        "satisfied",
+        "enjoyed",
+        "top-notch",
+        "impressed",
+        "pleased",
+        "ausgezeichnet",
+        "perfekt",
+        "toll",
+        "genial",
+        "empfehlen",
+        "empfehlenswert",
+        "guter",
+        "gutes",
+        "sauber",
+        "schnell",
+        "danke",
+        "lecker",
+        "wunderbar",
+        "schön",
+        "hervorragend",
+        "begeistert",
+        "spitze",
+        "zufrieden",
+        "klasse",
+        "prima",
+        "köstlich",
+        "tadellos",
+        "gemütlich",
+        "herzlich",
+        "lohnenswert",
     }
 
     NEGATIVE_WORDS = {
-        "mauvais", "mauvaise", "horrible", "déçu", "déçue", "décevant", "nul", "nulle",
-        "arnaque", "catastrophe", "catastrophique", "lent", "lente", "froid", "froide",
-        "impoli", "impolie", "sale", "pire", "dégueulasse", "inacceptable", "honte", "fuyez",
-        "fuir", "voleur", "médiocre", "déplorable", "cher", "chère", "dommage", "déception",
-        "désagréable", "regrette", "évitez", "scandaleux", "immonde",
-        "bad", "disappointed", "disappointing", "terrible", "scam", "slow",
-        "rude", "dirty", "worst", "awful", "poor", "sucks", "waste", "useless",
-        "disgusting", "unprofessional", "unacceptable", "avoid", "broken", "ruined", "overpriced",
-        "regret", "cold", "pathetic", "annoying", "garbage", "shame",
-        "schlecht", "schlechte", "schlechter", "schrecklich", "enttäuscht", "enttäuschend",
-        "katastrophe", "katastrophal", "langsam", "kalt", "unfreundlich", "schmutzig", "dreckig",
-        "schlimmste", "ekelhaft", "unverschämt", "abzocke", "meiden", "unhöflich", "minderwertig",
-        "ärgerlich", "mies", "grauenhaft", "mangelhaft", "überteuert", "furchtbar", "schade", "unangenehm"
+        "mauvais",
+        "mauvaise",
+        "horrible",
+        "déçu",
+        "déçue",
+        "décevant",
+        "nul",
+        "nulle",
+        "arnaque",
+        "catastrophe",
+        "catastrophique",
+        "lent",
+        "lente",
+        "froid",
+        "froide",
+        "impoli",
+        "impolie",
+        "sale",
+        "pire",
+        "dégueulasse",
+        "inacceptable",
+        "honte",
+        "fuyez",
+        "fuir",
+        "voleur",
+        "médiocre",
+        "déplorable",
+        "cher",
+        "chère",
+        "dommage",
+        "déception",
+        "désagréable",
+        "regrette",
+        "évitez",
+        "scandaleux",
+        "immonde",
+        "bad",
+        "disappointed",
+        "disappointing",
+        "terrible",
+        "scam",
+        "slow",
+        "rude",
+        "dirty",
+        "worst",
+        "awful",
+        "poor",
+        "sucks",
+        "waste",
+        "useless",
+        "disgusting",
+        "unprofessional",
+        "unacceptable",
+        "avoid",
+        "broken",
+        "ruined",
+        "overpriced",
+        "regret",
+        "cold",
+        "pathetic",
+        "annoying",
+        "garbage",
+        "shame",
+        "schlecht",
+        "schlechte",
+        "schlechter",
+        "schrecklich",
+        "enttäuscht",
+        "enttäuschend",
+        "katastrophe",
+        "katastrophal",
+        "langsam",
+        "kalt",
+        "unfreundlich",
+        "schmutzig",
+        "dreckig",
+        "schlimmste",
+        "ekelhaft",
+        "unverschämt",
+        "abzocke",
+        "meiden",
+        "unhöflich",
+        "minderwertig",
+        "ärgerlich",
+        "mies",
+        "grauenhaft",
+        "mangelhaft",
+        "überteuert",
+        "furchtbar",
+        "schade",
+        "unangenehm",
     }
 
     def detect_language(self, text: str) -> str:
@@ -64,7 +301,9 @@ class MultilingualSentimentAnalyzer:
         if any(c in text_lower for c in "éèêàâçùîô"):
             return "fr"
         words = set(re.findall(r"[a-z0-9à-ÿ]+", text_lower))
-        scores = {lang: len(words.intersection(sw)) for lang, sw in self.STOPWORDS.items()}
+        scores = {
+            lang: len(words.intersection(sw)) for lang, sw in self.STOPWORDS.items()
+        }
         detected = max(scores, key=scores.get)
         return detected if scores[detected] > 0 else "fr"
 
@@ -72,7 +311,9 @@ class MultilingualSentimentAnalyzer:
         if not text or not text.strip():
             return SentimentResult()
 
-        detected_lang = lang if lang in ["fr", "en", "de"] else self.detect_language(text)
+        detected_lang = (
+            lang if lang in ["fr", "en", "de"] else self.detect_language(text)
+        )
         text_lower = text.lower()
         tokens = re.findall(r"[a-z0-9à-ÿ'-]+", text_lower)
 
@@ -102,7 +343,11 @@ class MultilingualSentimentAnalyzer:
             negate_next = False
 
         all_sw = self.STOPWORDS["fr"] | self.STOPWORDS["en"] | self.STOPWORDS["de"]
-        keywords = [t for t in tokens if len(t) > 3 and t not in all_sw and t not in self.NEGATIONS]
+        keywords = [
+            t
+            for t in tokens
+            if len(t) > 3 and t not in all_sw and t not in self.NEGATIONS
+        ]
         unique_keywords = list(dict.fromkeys(keywords))[:6]
 
         if pos_count > neg_count:
@@ -133,6 +378,7 @@ class MultilingualSentimentAnalyzer:
             keywords=unique_keywords,
             language=detected_lang,
         )
+
 
 def get_analyzer():
     return MultilingualSentimentAnalyzer()

@@ -55,13 +55,15 @@ def _extract_whatweb_item(item: dict) -> list[dict[str, Any]]:
         # WhatWeb stores versions, strings, etc. as lists under keys
         versions = tech_data.get("version", []) or []
         strings = tech_data.get("string", []) or []
-        findings.append({
-            "type": "technology",
-            "target": target,
-            "http_status": http_status,
-            "technology": tech_name,
-            "versions": versions if isinstance(versions, list) else [str(versions)],
-            "strings": strings if isinstance(strings, list) else [str(strings)],
-        })
+        findings.append(
+            {
+                "type": "technology",
+                "target": target,
+                "http_status": http_status,
+                "technology": tech_name,
+                "versions": versions if isinstance(versions, list) else [str(versions)],
+                "strings": strings if isinstance(strings, list) else [str(strings)],
+            }
+        )
 
     return findings

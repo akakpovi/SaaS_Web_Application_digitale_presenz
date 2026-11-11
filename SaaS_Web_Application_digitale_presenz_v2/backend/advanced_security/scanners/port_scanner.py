@@ -5,7 +5,15 @@ from core.security import DomainValidationError, resolve_public_ip
 
 logger = logging.getLogger(__name__)
 
-SENSITIVE_PORTS = {21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 3306: "MySQL", 5432: "PostgreSQL", 6379: "Redis"}
+SENSITIVE_PORTS = {
+    21: "FTP",
+    22: "SSH",
+    23: "Telnet",
+    25: "SMTP",
+    3306: "MySQL",
+    5432: "PostgreSQL",
+    6379: "Redis",
+}
 
 
 def scan_sensitive_ports(domain: str) -> list[dict]:

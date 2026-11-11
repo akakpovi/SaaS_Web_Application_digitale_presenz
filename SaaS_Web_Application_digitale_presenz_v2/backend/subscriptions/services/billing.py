@@ -75,9 +75,9 @@ def is_configured(*, require_api_key: bool = True) -> bool:
 
 
 def _api_base() -> str:
-    return (
-        getattr(settings, "PADDLE_API_URL", "") or "https://api.paddle.com"
-    ).rstrip("/")
+    return (getattr(settings, "PADDLE_API_URL", "") or "https://api.paddle.com").rstrip(
+        "/"
+    )
 
 
 def _api_headers() -> dict[str, str]:
@@ -218,10 +218,9 @@ def create_portal_session(user) -> str:
         raise BillingNotConfigured("No billing account is attached to this user.")
 
     data = _post(f"/customers/{customer_id}/portal-sessions", {})
-    url = (
-        ((data.get("urls") or {}).get("general") or {}).get("overview")
-        or (data.get("urls") or {}).get("general")
-    )
+    url = ((data.get("urls") or {}).get("general") or {}).get("overview") or (
+        data.get("urls") or {}
+    ).get("general")
     if not url:
         raise BillingProviderError("Payment provider returned no portal URL.")
     return url
@@ -269,8 +268,7 @@ def verify_paddle_signature(
     ).hexdigest()
 
     return any(
-        hmac.compare_digest(expected, candidate)
-        for candidate in parts.get("h1", [])
+        hmac.compare_digest(expected, candidate) for candidate in parts.get("h1", [])
     )
 
 
@@ -295,8 +293,7 @@ def _resolve_plan(price_id: str | None) -> tuple[Plan | None, str | None]:
     if not price_id:
         return None, None
     plan = Plan.objects.filter(
-        Q(external_price_id_monthly=price_id)
-        | Q(external_price_id_yearly=price_id),
+        Q(external_price_id_monthly=price_id) | Q(external_price_id_yearly=price_id),
         is_active=True,
     ).first()
     if plan is None:
@@ -347,7 +344,7 @@ def _apply_subscription_payload(data: dict, event_type: str) -> dict:
     items = data.get("items") or []
     price_id = None
     if items:
-        price_id = ((items[0].get("price") or {}).get("id"))
+        price_id = (items[0].get("price") or {}).get("id")
 
     plan, cycle = _resolve_plan(price_id)
     if plan is None and price_id:
@@ -382,14 +379,16 @@ def _apply_subscription_payload(data: dict, event_type: str) -> dict:
         sub.external_id = data.get("id") or sub.external_id
         if cycle:
             sub.billing_cycle = cycle
-        sub.current_period_start = _parse_datetime(
-            period.get("starts_at")
-        ) or sub.current_period_start
-        sub.current_period_end = _parse_datetime(
-            period.get("ends_at")
-        ) or sub.current_period_end
+        sub.current_period_start = (
+            _parse_datetime(period.get("starts_at")) or sub.current_period_start
+        )
+        sub.current_period_end = (
+            _parse_datetime(period.get("ends_at")) or sub.current_period_end
+        )
         if new_status == Subscription.Status.CANCELLED:
-            sub.cancelled_at = _parse_datetime(data.get("canceled_at")) or timezone.now()
+            sub.cancelled_at = (
+                _parse_datetime(data.get("canceled_at")) or timezone.now()
+            )
         elif new_status in (Subscription.Status.ACTIVE, Subscription.Status.TRIALING):
             sub.cancelled_at = None
         sub.billing_metadata = metadata
@@ -419,10 +418,13 @@ def _apply_transaction_completed(data: dict) -> dict:
     items = data.get("items") or []
     price_id = (items[0] or {}).get("price_id") if items else None
     if not price_id and items:
-        price_id = ((items[0].get("price") or {}).get("id"))
+        price_id = (items[0].get("price") or {}).get("id")
 
     sub = _find_subscription(
-        {"subscription_id": data.get("subscription_id"), "customer_id": data.get("customer_id")},
+        {
+            "subscription_id": data.get("subscription_id"),
+            "customer_id": data.get("customer_id"),
+        },
         custom_data,
     )
 
@@ -461,12 +463,12 @@ def _apply_transaction_completed(data: dict) -> dict:
         sub.billing_provider = "paddle"
         sub.billing_cycle = cycle or sub.billing_cycle
         sub.external_id = data.get("subscription_id") or sub.external_id
-        sub.current_period_start = _parse_datetime(
-            period.get("starts_at")
-        ) or sub.current_period_start
-        sub.current_period_end = _parse_datetime(
-            period.get("ends_at")
-        ) or sub.current_period_end
+        sub.current_period_start = (
+            _parse_datetime(period.get("starts_at")) or sub.current_period_start
+        )
+        sub.current_period_end = (
+            _parse_datetime(period.get("ends_at")) or sub.current_period_end
+        )
         sub.cancelled_at = None
         sub.billing_metadata = metadata
         sub.save()

@@ -30,9 +30,8 @@ jobs:
         run: ruff check SaaS_Web_Application_digitale_presenz_v2/backend
 
       - name: Ruff format check
-        # Report-only: the existing formatter backlog is not part of this change.
+        # Blocking: the backend is formatted with Ruff 0.17.4.
         run: ruff format --check SaaS_Web_Application_digitale_presenz_v2/backend
-        continue-on-error: true
 
   backend:
     runs-on: ubuntu-latest

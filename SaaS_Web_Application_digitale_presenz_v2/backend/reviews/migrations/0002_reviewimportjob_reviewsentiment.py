@@ -4,49 +4,106 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('reviews', '0001_initial'),
+        ("reviews", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ReviewSentiment',
+            name="ReviewSentiment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('confidence', models.FloatField(default=0.0)),
-                ('emotions', models.JSONField(blank=True, default=dict)),
-                ('keywords', models.JSONField(blank=True, default=list)),
-                ('language_detected', models.CharField(default='fr', max_length=10)),
-                ('model_version', models.CharField(default='rule-based-v1', max_length=50)),
-                ('analyzed_at', models.DateTimeField(auto_now_add=True)),
-                ('review', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='sentiment_details', to='reviews.review')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("confidence", models.FloatField(default=0.0)),
+                ("emotions", models.JSONField(blank=True, default=dict)),
+                ("keywords", models.JSONField(blank=True, default=list)),
+                ("language_detected", models.CharField(default="fr", max_length=10)),
+                (
+                    "model_version",
+                    models.CharField(default="rule-based-v1", max_length=50),
+                ),
+                ("analyzed_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "review",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sentiment_details",
+                        to="reviews.review",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Review Sentiment',
+                "verbose_name": "Review Sentiment",
             },
         ),
         migrations.CreateModel(
-            name='ReviewImportJob',
+            name="ReviewImportJob",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('file', models.FileField(upload_to='review_imports/%Y/%m/')),
-                ('file_type', models.CharField(choices=[('csv', 'CSV'), ('json', 'JSON')], max_length=5)),
-                ('total_rows', models.PositiveIntegerField(default=0)),
-                ('imported_count', models.PositiveIntegerField(default=0)),
-                ('failed_count', models.PositiveIntegerField(default=0)),
-                ('errors', models.JSONField(blank=True, default=list)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('processing', 'Processing'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending', max_length=15)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='import_jobs', to='reviews.reviewsource')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='review_imports', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("file", models.FileField(upload_to="review_imports/%Y/%m/")),
+                (
+                    "file_type",
+                    models.CharField(
+                        choices=[("csv", "CSV"), ("json", "JSON")], max_length=5
+                    ),
+                ),
+                ("total_rows", models.PositiveIntegerField(default=0)),
+                ("imported_count", models.PositiveIntegerField(default=0)),
+                ("failed_count", models.PositiveIntegerField(default=0)),
+                ("errors", models.JSONField(blank=True, default=list)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("processing", "Processing"),
+                            ("completed", "Completed"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=15,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "source",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="import_jobs",
+                        to="reviews.reviewsource",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="review_imports",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Review Import Job',
-                'ordering': ['-created_at'],
+                "verbose_name": "Review Import Job",
+                "ordering": ["-created_at"],
             },
         ),
     ]

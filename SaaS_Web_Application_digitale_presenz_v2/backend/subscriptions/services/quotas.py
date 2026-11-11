@@ -58,11 +58,7 @@ def get_effective_plan(user) -> Plan | None:
     updated by a webhook after the instance was loaded would otherwise be
     ignored for the whole request.
     """
-    sub = (
-        Subscription.objects.select_related("plan")
-        .filter(user_id=user.pk)
-        .first()
-    )
+    sub = Subscription.objects.select_related("plan").filter(user_id=user.pk).first()
     if sub is None:
         return get_free_plan()
 
@@ -287,8 +283,7 @@ def assert_paid_plan(user) -> None:
         return
     raise QuotaExceeded(
         "paid_plan_required",
-        "This feature requires a paid plan. Your current plan is "
-        f"{plan.name}.",
+        f"This feature requires a paid plan. Your current plan is {plan.name}.",
         plan=plan.tier,
         required_plan="pro",
         upgrade_url="/app/billing",

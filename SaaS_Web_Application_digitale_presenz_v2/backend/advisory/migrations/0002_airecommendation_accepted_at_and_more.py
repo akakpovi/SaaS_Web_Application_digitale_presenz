@@ -6,56 +6,87 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('advisory', '0001_initial'),
-        ('scans', '0004_finding_scannerrun_remove_scan_scan_status_valid_and_more'),
+        ("advisory", "0001_initial"),
+        ("scans", "0004_finding_scannerrun_remove_scan_scan_status_valid_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='airecommendation',
-            name='accepted_at',
+            model_name="airecommendation",
+            name="accepted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='airecommendation',
-            name='accepted_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accepted_ai_recommendations', to=settings.AUTH_USER_MODEL),
+            model_name="airecommendation",
+            name="accepted_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="accepted_ai_recommendations",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='airecommendation',
-            name='dismissed_at',
+            model_name="airecommendation",
+            name="dismissed_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='airecommendation',
-            name='dismissed_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='dismissed_ai_recommendations', to=settings.AUTH_USER_MODEL),
+            model_name="airecommendation",
+            name="dismissed_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="dismissed_ai_recommendations",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='airecommendation',
-            name='status',
-            field=models.CharField(choices=[('proposed', 'Proposed'), ('accepted', 'Accepted'), ('dismissed', 'Dismissed')], default='proposed', max_length=12),
+            model_name="airecommendation",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("proposed", "Proposed"),
+                    ("accepted", "Accepted"),
+                    ("dismissed", "Dismissed"),
+                ],
+                default="proposed",
+                max_length=12,
+            ),
         ),
         migrations.AddField(
-            model_name='airecommendation',
-            name='updated_at',
+            model_name="airecommendation",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='airecommendationrun',
-            name='attempts',
-            field=models.PositiveSmallIntegerField(default=0, help_text='Number of provider attempts claimed for this run.'),
+            model_name="airecommendationrun",
+            name="attempts",
+            field=models.PositiveSmallIntegerField(
+                default=0, help_text="Number of provider attempts claimed for this run."
+            ),
         ),
         migrations.AddField(
-            model_name='airecommendationrun',
-            name='error_code',
-            field=models.CharField(blank=True, default='', help_text='Sanitised provider error code from the last failed attempt.', max_length=64),
+            model_name="airecommendationrun",
+            name="error_code",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Sanitised provider error code from the last failed attempt.",
+                max_length=64,
+            ),
         ),
         migrations.AddConstraint(
-            model_name='airecommendation',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['proposed', 'accepted', 'dismissed'])), name='ai_recommendation_status_valid'),
+            model_name="airecommendation",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("status__in", ["proposed", "accepted", "dismissed"])
+                ),
+                name="ai_recommendation_status_valid",
+            ),
         ),
     ]

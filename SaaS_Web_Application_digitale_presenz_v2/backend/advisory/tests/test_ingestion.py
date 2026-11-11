@@ -135,7 +135,9 @@ class ParserTests(SimpleTestCase):
 
     def test_zap_informational_risk_maps_to_info(self):
         report = parse_report(zap_body())
-        csp = next(f for f in report.findings if "Content Security" in f.vulnerability_name)
+        csp = next(
+            f for f in report.findings if "Content Security" in f.vulnerability_name
+        )
         self.assertEqual(csp.severity, "info")
 
     def test_zap_supports_the_core_alerts_payload(self):
@@ -162,7 +164,9 @@ class ParserTests(SimpleTestCase):
         self.assertEqual(report.source, "nuclei")
         self.assertEqual(len(report.findings), 2)
 
-        env = next(f for f in report.findings if f.vulnerability_name == "Exposed .env File")
+        env = next(
+            f for f in report.findings if f.vulnerability_name == "Exposed .env File"
+        )
         self.assertEqual(env.severity, "critical")
         self.assertIn("publicly readable", env.description)
         self.assertIn("template: exposed-env-file", env.proof_or_payload)
@@ -403,7 +407,9 @@ class IngestionServiceTests(TestCase):
         self.assertEqual(outcome.received, 0)
         self.assertEqual(outcome.resolved, 2)
         self.assertEqual(self.findings(status="resolved").count(), 2)
-        self.assertEqual(self.findings(scanner_source="nuclei", status="open").count(), 2)
+        self.assertEqual(
+            self.findings(scanner_source="nuclei", status="open").count(), 2
+        )
 
     def test_empty_report_does_not_touch_another_tenant(self):
         SecurityFinding.objects.create(
@@ -626,7 +632,9 @@ class ImportEndpointTests(APITestCase):
 
     def test_non_utf8_upload_is_rejected(self):
         self.as_user(self.owner)
-        upload = SimpleUploadedFile("report.json", b"\xff\xfe\x00bad", "application/json")
+        upload = SimpleUploadedFile(
+            "report.json", b"\xff\xfe\x00bad", "application/json"
+        )
         response = self.client.post(self.url, {"file": upload}, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

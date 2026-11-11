@@ -55,16 +55,14 @@ class AdvancedSecurityGateTests(TestCase):
         self.website = Website.objects.create(owner=user, domain="example.com")
 
     def _run(self, scanner: AdvancedScanner) -> Scan:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.QUEUED
-        )
-        with patch(
-            "scanners.registry.ScannerRegistry.get", return_value=scanner
-        ), patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step()],
-        ), patch(
-            "scans.services.scoring.recalculate_scan_health"
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
+        with (
+            patch("scanners.registry.ScannerRegistry.get", return_value=scanner),
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step()],
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             ScanOrchestrator(scan.id).run()
         scan.refresh_from_db()

@@ -41,11 +41,20 @@ from scanners.parsers.whatweb import parse_whatweb_json
 logger = logging.getLogger(__name__)
 
 # Technologies that indicate potential version disclosure risk
-_SENSITIVE_TECH = frozenset({
-    "PHP", "WordPress", "Drupal", "Joomla", "Laravel",
-    "Django", "Ruby-on-Rails", "ASP.NET", "jQuery",
-    "Bootstrap",
-})
+_SENSITIVE_TECH = frozenset(
+    {
+        "PHP",
+        "WordPress",
+        "Drupal",
+        "Joomla",
+        "Laravel",
+        "Django",
+        "Ruby-on-Rails",
+        "ASP.NET",
+        "jQuery",
+        "Bootstrap",
+    }
+)
 
 
 class WhatWebScanner(BaseScanner):
@@ -157,18 +166,24 @@ class WhatWebScanner(BaseScanner):
     def build_command(self, target: str, options: dict | None = None) -> list[str]:
         return [
             "whatweb",
-            "--log-json", "/dev/stdout",
-            "--color", "never",
+            "--log-json",
+            "/dev/stdout",
+            "--color",
+            "never",
             "--quiet",
             # Aggression 1 = passive: one request per target, no payloads.
-            "--aggression", "1",
-            "--", target,
+            "--aggression",
+            "1",
+            "--",
+            target,
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_whatweb_json(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         all_techs = [p.get("technology", "") for p in parsed_results]
 
@@ -182,33 +197,39 @@ class WhatWebScanner(BaseScanner):
                 else FindingStatus.PASS
             )
 
-            findings.append(NormalizedFinding(
-                check_code=f"whatweb.technology.{tech.lower().replace(' ', '_').replace('-', '_')}",
-                category="security",
-                severity=severity,
-                status=status,
-                title=f"Technology detected: {tech}" + (f" {', '.join(versions)}" if versions else ""),
-                description=(
-                    f"Version information exposed for {tech}"
-                    if versions and tech in _SENSITIVE_TECH
-                    else f"{tech} detected"
-                ),
-                evidence=item,
-                recommendation=(
-                    f"Consider hiding or obfuscating {tech} version information."
-                    if versions and tech in _SENSITIVE_TECH else ""
-                ),
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"whatweb.technology.{tech.lower().replace(' ', '_').replace('-', '_')}",
+                    category="security",
+                    severity=severity,
+                    status=status,
+                    title=f"Technology detected: {tech}"
+                    + (f" {', '.join(versions)}" if versions else ""),
+                    description=(
+                        f"Version information exposed for {tech}"
+                        if versions and tech in _SENSITIVE_TECH
+                        else f"{tech} detected"
+                    ),
+                    evidence=item,
+                    recommendation=(
+                        f"Consider hiding or obfuscating {tech} version information."
+                        if versions and tech in _SENSITIVE_TECH
+                        else ""
+                    ),
+                )
+            )
 
         if all_techs:
-            findings.append(NormalizedFinding(
-                check_code="whatweb.technologies_summary",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.PASS,
-                title=f"WhatWeb detected {len(all_techs)} technologies",
-                evidence={"technologies": all_techs},
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code="whatweb.technologies_summary",
+                    category="security",
+                    severity=Severity.INFO,
+                    status=FindingStatus.PASS,
+                    title=f"WhatWeb detected {len(all_techs)} technologies",
+                    evidence={"technologies": all_techs},
+                )
+            )
 
         return findings
 

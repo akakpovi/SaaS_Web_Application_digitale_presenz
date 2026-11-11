@@ -13,9 +13,35 @@ class PresenceUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profile", {"fields": ("full_name", "is_email_verified")}),
-        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
         ("Important dates", {"fields": ("last_login", "date_joined", "updated_at")}),
     )
-    add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "full_name", "password1", "password2", "is_staff", "is_active")}),)
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "email",
+                    "full_name",
+                    "password1",
+                    "password2",
+                    "is_staff",
+                    "is_active",
+                ),
+            },
+        ),
+    )
     readonly_fields = ("date_joined", "updated_at")
     filter_horizontal = ("groups", "user_permissions")

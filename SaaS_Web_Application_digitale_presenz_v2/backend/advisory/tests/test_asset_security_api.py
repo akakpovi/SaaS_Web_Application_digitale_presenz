@@ -230,7 +230,9 @@ class AssetScopedChatTests(APITestCase):
             return_value=client,
         ):
             return self.client.post(
-                self.url, {"message": "What should I fix first?", **payload}, format="json"
+                self.url,
+                {"message": "What should I fix first?", **payload},
+                format="json",
             )
 
     def test_asset_context_limits_the_prompt_to_that_asset(self):
@@ -239,7 +241,9 @@ class AssetScopedChatTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["findings_included"], 1)
-        prompt = "\n".join(message["content"] for message in client.calls[0]["messages"])
+        prompt = "\n".join(
+            message["content"] for message in client.calls[0]["messages"]
+        )
         self.assertIn("ASSET UNDER DISCUSSION: chat-asset-owner.example", prompt)
         self.assertIn("Exposed .env File", prompt)
         self.assertNotIn("SIBLING-ASSET-FINDING", prompt)
@@ -250,7 +254,9 @@ class AssetScopedChatTests(APITestCase):
         response = self.ask(client)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        prompt = "\n".join(message["content"] for message in client.calls[0]["messages"])
+        prompt = "\n".join(
+            message["content"] for message in client.calls[0]["messages"]
+        )
         self.assertIn("Exposed .env File", prompt)
         self.assertIn("SIBLING-ASSET-FINDING", prompt)
         self.assertNotIn("ASSET UNDER DISCUSSION", prompt)

@@ -2,11 +2,15 @@ import hashlib
 from django.utils.deprecation import MiddlewareMixin
 from .models import TrafficLog
 
+
 class TrafficTrackingMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         path = request.path
         # Ne pas logger les fichiers statiques ou health checks
-        if any(path.startswith(prefix) for prefix in ["/static/", "/media/", "/favicon.ico", "/health/"]):
+        if any(
+            path.startswith(prefix)
+            for prefix in ["/static/", "/media/", "/favicon.ico", "/health/"]
+        ):
             return response
 
         # An account-erasure request (DELETE /api/v1/auth/me/) has no user left
@@ -16,13 +20,15 @@ class TrafficTrackingMiddleware(MiddlewareMixin):
             return response
 
         try:
-            ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", ""))
+            ip = request.META.get(
+                "HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")
+            )
             if ip:
                 ip = ip.split(",")[0].strip()
             ip_hash = hashlib.sha256(ip.encode()).hexdigest()[:16] if ip else ""
-            
+
             user = request.user if request.user.is_authenticated else None
-            
+
             TrafficLog.objects.create(
                 path=path[:500],
                 method=request.method,
@@ -34,5 +40,5 @@ class TrafficTrackingMiddleware(MiddlewareMixin):
             )
         except Exception:
             pass
-            
+
         return response

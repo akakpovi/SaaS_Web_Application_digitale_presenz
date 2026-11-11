@@ -124,17 +124,9 @@ def read_reaper_metrics() -> dict[str, Any]:
         "ai_last_tick": cache.get(AI_LAST_TICK_KEY),
         "scans_last_tick": cache.get(SCANS_LAST_TICK_KEY),
         "journeys_last_tick": cache.get(JOURNEYS_LAST_TICK_KEY),
-        "journeys_expired_total": int(
-            cache.get(JOURNEYS_EXPIRED_TOTAL_KEY) or 0
-        ),
-        "journeys_reconciled_total": int(
-            cache.get(JOURNEYS_RECONCILED_TOTAL_KEY) or 0
-        ),
-        "journeys_orphans_total": int(
-            cache.get(JOURNEYS_ORPHANS_TOTAL_KEY) or 0
-        ),
+        "journeys_expired_total": int(cache.get(JOURNEYS_EXPIRED_TOTAL_KEY) or 0),
+        "journeys_reconciled_total": int(cache.get(JOURNEYS_RECONCILED_TOTAL_KEY) or 0),
+        "journeys_orphans_total": int(cache.get(JOURNEYS_ORPHANS_TOTAL_KEY) or 0),
         "journeys_active_count": int(cache.get(JOURNEYS_ACTIVE_COUNT_KEY) or 0),
-        "journeys_awaiting_count": int(
-            cache.get(JOURNEYS_AWAITING_COUNT_KEY) or 0
-        ),
+        "journeys_awaiting_count": int(cache.get(JOURNEYS_AWAITING_COUNT_KEY) or 0),
     }

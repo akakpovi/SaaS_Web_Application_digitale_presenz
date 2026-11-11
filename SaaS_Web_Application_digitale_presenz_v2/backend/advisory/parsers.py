@@ -167,15 +167,21 @@ def _document_shape(text: str) -> str | None:
 
 
 def _is_nuclei_object(document: dict[str, Any]) -> bool:
-    return "template-id" in document or "template_id" in document or (
-        isinstance(document.get("info"), dict)
-        and ("matched-at" in document or "matched_at" in document)
+    return (
+        "template-id" in document
+        or "template_id" in document
+        or (
+            isinstance(document.get("info"), dict)
+            and ("matched-at" in document or "matched_at" in document)
+        )
     )
 
 
 def _is_zap_alert(document: dict[str, Any]) -> bool:
-    return "pluginid" in document or "alert" in document or (
-        "riskcode" in document and "name" in document
+    return (
+        "pluginid" in document
+        or "alert" in document
+        or ("riskcode" in document and "name" in document)
     )
 
 
@@ -240,8 +246,7 @@ def parse_report(text: str, *, source: str | None = None) -> ParsedReport:
         if detected is not None and detected != requested:
             raise ReportParseError(
                 "report_format_mismatch",
-                "The uploaded file does not look like a "
-                f"{requested.upper()} report.",
+                f"The uploaded file does not look like a {requested.upper()} report.",
             )
         resolved = requested
     else:
@@ -284,9 +289,7 @@ def _nuclei_lines(text: str) -> str:
         return text
     if not isinstance(document, list):
         return text
-    return "\n".join(
-        json.dumps(entry) for entry in document if isinstance(entry, dict)
-    )
+    return "\n".join(json.dumps(entry) for entry in document if isinstance(entry, dict))
 
 
 def _zap_finding(alert: dict[str, Any]) -> ParsedFinding:

@@ -121,14 +121,16 @@ class TestSSLScanner(BaseScanner):
             return build_outcome(
                 self,
                 run=ToolRun(exit_code=-1),
-                findings=[NormalizedFinding(
-                    check_code="testssl.unavailable",
-                    category="ssl",
-                    severity=Severity.INFO,
-                    status=FindingStatus.NOT_APPLICABLE,
-                    title="testssl.sh not available",
-                    recommendation="Install testssl.sh for comprehensive TLS analysis.",
-                )],
+                findings=[
+                    NormalizedFinding(
+                        check_code="testssl.unavailable",
+                        category="ssl",
+                        severity=Severity.INFO,
+                        status=FindingStatus.NOT_APPLICABLE,
+                        title="testssl.sh not available",
+                        recommendation="Install testssl.sh for comprehensive TLS analysis.",
+                    )
+                ],
                 message="testssl.sh not available — skipped",
                 status="neutral",
                 recommendation="Install testssl.sh for deep TLS analysis.",
@@ -143,9 +145,7 @@ class TestSSLScanner(BaseScanner):
                 else validate_target(f"https://{domain}")
             )
         except TargetValidationError as exc:
-            return target_validation_outcome(
-                self, error=str(exc), category="ssl"
-            )
+            return target_validation_outcome(self, error=str(exc), category="ssl")
 
         timeout = (
             context.effective_timeout(self.timeout)
@@ -204,18 +204,14 @@ class TestSSLScanner(BaseScanner):
         report_path = f"{container_dir}/testssl.json"
         run = ToolRun.from_command_result(
             executor.run(
-                command=self.build_command(
-                    target_info.hostname, jsonfile=report_path
-                ),
+                command=self.build_command(target_info.hostname, jsonfile=report_path),
                 limits=limits,
                 scanner_name=self.name,
                 mounts=[(workdir, container_dir)],
             ),
             max_output_bytes=executor.max_output_bytes,
         )
-        report, truncated = read_report_file(
-            os.path.join(workdir, "testssl.json")
-        )
+        report, truncated = read_report_file(os.path.join(workdir, "testssl.json"))
         return self._outcome_from_run(
             run,
             report=report,
@@ -281,11 +277,7 @@ class TestSSLScanner(BaseScanner):
                 if complete
                 else f"testssl.sh scan incomplete ({reason})"
             ),
-            status=(
-                ("critical" if high_sev else "neutral")
-                if complete
-                else "warning"
-            ),
+            status=(("critical" if high_sev else "neutral") if complete else "warning"),
             score=ssl_score,
             scan_complete=complete,
             partial_reason=reason,
@@ -341,19 +333,26 @@ class TestSSLScanner(BaseScanner):
             "--server-defaults",
             "--headers",
             "--vulnerable",
-            "--ip", "one",
-            "--jsonfile-pretty", jsonfile,
+            "--ip",
+            "one",
+            "--jsonfile-pretty",
+            jsonfile,
             "--quiet",
-            "--nodns", "min",
-            "--color", "0",
+            "--nodns",
+            "min",
+            "--color",
+            "0",
             "--parallel",
-            "--", f"{target}:443",
+            "--",
+            f"{target}:443",
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_testssl_json(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         severity_map = {
             "info": (Severity.INFO, FindingStatus.PASS),
@@ -383,21 +382,25 @@ class TestSSLScanner(BaseScanner):
 
         for (check_id, sev_raw, _finding_text), entry in grouped.items():
             item = entry["item"]
-            severity, status = severity_map.get(sev_raw, (Severity.INFO, FindingStatus.PASS))
+            severity, status = severity_map.get(
+                sev_raw, (Severity.INFO, FindingStatus.PASS)
+            )
 
             cve = item.get("cve", "")
             ref = f"https://cve.mitre.org/cgi-bin/cvename.cgi?name={cve}" if cve else ""
 
-            findings.append(NormalizedFinding(
-                check_code=f"testssl.{check_id}",
-                category="ssl",
-                severity=severity,
-                status=status,
-                title=f"TLS check: {check_id}",
-                description=item.get("finding", ""),
-                evidence={**item, "addresses": entry["ips"]},
-                reference_url=ref,
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"testssl.{check_id}",
+                    category="ssl",
+                    severity=severity,
+                    status=status,
+                    title=f"TLS check: {check_id}",
+                    description=item.get("finding", ""),
+                    evidence={**item, "addresses": entry["ips"]},
+                    reference_url=ref,
+                )
+            )
 
         return findings
 

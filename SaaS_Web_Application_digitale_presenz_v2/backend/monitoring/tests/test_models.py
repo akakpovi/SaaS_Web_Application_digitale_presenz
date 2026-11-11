@@ -22,7 +22,9 @@ class IntervalMapTest(TestCase):
 
 class MonitoringConfigSignalTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="test@example.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="test@example.com", password="pass1234"
+        )
 
     def test_auto_created_on_website_creation(self):
         website = Website.objects.create(owner=self.user, domain="example.com")
@@ -39,7 +41,9 @@ class MonitoringConfigSignalTest(TestCase):
 
 class MonitoringConfigMethodsTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="test2@example.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="test2@example.com", password="pass1234"
+        )
         self.website = Website.objects.create(owner=self.user, domain="methods.com")
         self.config = MonitoringConfig.objects.get(website=self.website)
 
@@ -50,7 +54,9 @@ class MonitoringConfigMethodsTest(TestCase):
         expected = now + timedelta(hours=24)
         delta = abs((self.config.next_scan_at - expected).total_seconds())
         self.assertLess(delta, 1)
-        self.assertEqual(self.config.last_scan_at.replace(microsecond=0), now.replace(microsecond=0))
+        self.assertEqual(
+            self.config.last_scan_at.replace(microsecond=0), now.replace(microsecond=0)
+        )
 
     def test_record_failure_first(self):
         self.config.record_failure()

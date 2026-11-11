@@ -58,17 +58,23 @@ class PublicScanAccessControlTests(APITestCase):
     # ── P0-04 : lecture du rapport ────────────────────────────────────────
 
     def test_anonymous_cannot_read_private_scan(self):
-        response = self.client.get(f"/api/v1/public/scan/{self.private_scan.id}/status/")
+        response = self.client.get(
+            f"/api/v1/public/scan/{self.private_scan.id}/status/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_other_account_cannot_read_private_scan(self):
         self.client.force_authenticate(user=self.attacker)
-        response = self.client.get(f"/api/v1/public/scan/{self.private_scan.id}/status/")
+        response = self.client.get(
+            f"/api/v1/public/scan/{self.private_scan.id}/status/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_owner_can_read_private_scan(self):
         self.client.force_authenticate(user=self.owner)
-        response = self.client.get(f"/api/v1/public/scan/{self.private_scan.id}/status/")
+        response = self.client.get(
+            f"/api/v1/public/scan/{self.private_scan.id}/status/"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["score"], 77)
 

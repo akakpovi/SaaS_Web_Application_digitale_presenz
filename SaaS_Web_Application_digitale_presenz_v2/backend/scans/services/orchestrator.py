@@ -234,8 +234,7 @@ class ScanOrchestrator:
                 recalculate_scan_health(scan)
             except Exception as exc:
                 logger.error(
-                    "ScanOrchestrator: Failed to recalculate health for scan "
-                    "%d: %s",
+                    "ScanOrchestrator: Failed to recalculate health for scan %d: %s",
                     self.scan_id,
                     exc,
                 )
@@ -327,8 +326,7 @@ class ScanOrchestrator:
                 self._skip_from(
                     steps,
                     index,
-                    "Scan time budget exhausted "
-                    f"({self._time_budget_seconds}s)",
+                    f"Scan time budget exhausted ({self._time_budget_seconds}s)",
                 )
                 self._flush_step(scan, steps)
                 logger.warning(
@@ -497,9 +495,7 @@ class ScanOrchestrator:
                     # Legacy adapters do not report completeness: keep the
                     # previous behaviour (only an explicit timeout disables
                     # resolution).
-                    scan_complete = not (
-                        timed_out or details.get("memory_exceeded")
-                    )
+                    scan_complete = not (timed_out or details.get("memory_exceeded"))
                 if timed_out:
                     run_status = ScannerRun.Status.TIMEOUT
                 elif not scan_complete:
@@ -507,29 +503,27 @@ class ScanOrchestrator:
                 else:
                     run_status = ScannerRun.Status.COMPLETED
                 run_metadata = {
-                        "findings_count": len(findings),
-                        "scanner_status": scan_result.status,
-                        "score": scan_result.score,
-                        "scanner_type": scanner_type,
-                        "timeout_s": effective_timeout,
-                        "target_validated": target is not None,
-                        "memory_mb": getattr(sandbox_limits, "memory_mb", None),
-                        "cpu_seconds": getattr(sandbox_limits, "cpu_seconds", None),
-                        "scan_complete": bool(scan_complete),
-                        "partial_reason": details.get("partial_reason", ""),
-                        "output_truncated": details.get("output_truncated"),
-                        "profile": details.get("profile"),
-                        "profile_timeout_s": details.get("profile_timeout_s"),
-                        "duration_alert_s": details.get("duration_alert_s"),
-                        "duration_over_alert": details.get(
-                            "duration_over_alert"
-                        ),
-                        "templates_loaded": details.get("templates_loaded"),
-                        "percent": details.get("percent"),
-                        "requests": details.get("requests"),
-                        "errors": details.get("errors"),
-                        "host_skipped": details.get("host_skipped"),
-                    }
+                    "findings_count": len(findings),
+                    "scanner_status": scan_result.status,
+                    "score": scan_result.score,
+                    "scanner_type": scanner_type,
+                    "timeout_s": effective_timeout,
+                    "target_validated": target is not None,
+                    "memory_mb": getattr(sandbox_limits, "memory_mb", None),
+                    "cpu_seconds": getattr(sandbox_limits, "cpu_seconds", None),
+                    "scan_complete": bool(scan_complete),
+                    "partial_reason": details.get("partial_reason", ""),
+                    "output_truncated": details.get("output_truncated"),
+                    "profile": details.get("profile"),
+                    "profile_timeout_s": details.get("profile_timeout_s"),
+                    "duration_alert_s": details.get("duration_alert_s"),
+                    "duration_over_alert": details.get("duration_over_alert"),
+                    "templates_loaded": details.get("templates_loaded"),
+                    "percent": details.get("percent"),
+                    "requests": details.get("requests"),
+                    "errors": details.get("errors"),
+                    "host_skipped": details.get("host_skipped"),
+                }
                 if archive_metadata:
                     run_metadata["archive"] = archive_metadata
                 scanner_run.finish(
@@ -570,8 +564,7 @@ class ScanOrchestrator:
                 # invoked.  The remaining (internal) steps still run.
                 duration_ms = int((time.monotonic() - step_start) * 1000)
                 logger.warning(
-                    "ScanOrchestrator: SSRF gate blocked scanner '%s' for scan "
-                    "%d (%s)",
+                    "ScanOrchestrator: SSRF gate blocked scanner '%s' for scan %d (%s)",
                     scanner_name,
                     self.scan_id,
                     exc,
@@ -752,8 +745,7 @@ class ScanOrchestrator:
         except TargetValidationError as exc:
             self._target_error = f"Target blocked by SSRF protection: {exc}"
             logger.warning(
-                "ScanOrchestrator: central SSRF validation rejected %r for "
-                "scan %d: %s",
+                "ScanOrchestrator: central SSRF validation rejected %r for scan %d: %s",
                 domain,
                 self.scan_id,
                 exc,
@@ -802,9 +794,7 @@ class ScanOrchestrator:
         scan_result = scanner.scan(context.domain)
         return ScanOutcome(
             result=scan_result,
-            findings=self._collect_findings(
-                scanner, context.domain, scan_result
-            ),
+            findings=self._collect_findings(scanner, context.domain, scan_result),
         )
 
     # ------------------------------------------------------------------
@@ -817,9 +807,7 @@ class ScanOrchestrator:
         try:
             return Scan.objects.select_related("website").get(pk=self.scan_id)
         except Scan.DoesNotExist:
-            logger.error(
-                "ScanOrchestrator: Scan %d not found", self.scan_id
-            )
+            logger.error("ScanOrchestrator: Scan %d not found", self.scan_id)
             return None
 
     def _scanner_cfg(self, name: str) -> dict:
@@ -914,9 +902,7 @@ class ScanOrchestrator:
         explicit.  Ingestion runs regardless: a missing archive must not be
         mistaken for a missing report.
         """
-        configured = getattr(
-            settings, "SCANNER_ARCHIVE_SCANNERS", ("nuclei",)
-        )
+        configured = getattr(settings, "SCANNER_ARCHIVE_SCANNERS", ("nuclei",))
         if scanner_name not in tuple(configured or ()):
             return {}
 
@@ -935,9 +921,7 @@ class ScanOrchestrator:
                 scan_id=getattr(scan, "pk", None),
                 scanner_run_id=getattr(scanner_run, "pk", None),
                 raw_report=getattr(outcome, "raw_report", None),
-                report_format=(
-                    getattr(outcome, "raw_report_format", "") or "jsonl"
-                ),
+                report_format=(getattr(outcome, "raw_report_format", "") or "jsonl"),
                 diagnostics=getattr(outcome, "raw_report_meta", None) or {},
                 complete=bool(complete),
                 partial_reason=str(details.get("partial_reason") or ""),
@@ -998,9 +982,7 @@ class ScanOrchestrator:
                 else:
                     url = finding_url(f)
                     if url:
-                        content_key = finding_dedup_key(
-                            f.category, f.check_code, url
-                        )
+                        content_key = finding_dedup_key(f.category, f.check_code, url)
                         if content_key in self._finding_keys:
                             # Same source, same canonical identity: keep the
                             # highest severity rather than the first seen.
@@ -1011,9 +993,7 @@ class ScanOrchestrator:
                             ):
                                 existing.severity = f.severity
                                 existing.status = f.status
-                                existing.save(
-                                    update_fields=["severity", "status"]
-                                )
+                                existing.save(update_fields=["severity", "status"])
                             continue
                         self._finding_keys.add(content_key)
 
@@ -1105,17 +1085,17 @@ class ScanOrchestrator:
 
         # Map scanner name → CheckResult category (legacy adapters).
         _CATEGORY_MAP: dict[str, str] = {
-            "website":          CheckResult.Category.WEBSITE,
-            "ssl":              CheckResult.Category.SSL,
-            "dns":              CheckResult.Category.DNS,
-            "email_security":   CheckResult.Category.EMAIL_SECURITY,
+            "website": CheckResult.Category.WEBSITE,
+            "ssl": CheckResult.Category.SSL,
+            "dns": CheckResult.Category.DNS,
+            "email_security": CheckResult.Category.EMAIL_SECURITY,
             "security_headers": CheckResult.Category.SECURITY_HEADERS,
-            "performance":      CheckResult.Category.PERFORMANCE,
-            "lighthouse":       CheckResult.Category.PERFORMANCE,
-            "uptime":           CheckResult.Category.UPTIME,
-            "zap":              CheckResult.Category.ZAP,
-            "nuclei":           CheckResult.Category.NUCLEI,
-            "gobuster":         CheckResult.Category.EXPOSURE,
+            "performance": CheckResult.Category.PERFORMANCE,
+            "lighthouse": CheckResult.Category.PERFORMANCE,
+            "uptime": CheckResult.Category.UPTIME,
+            "zap": CheckResult.Category.ZAP,
+            "nuclei": CheckResult.Category.NUCLEI,
+            "gobuster": CheckResult.Category.EXPOSURE,
         }
 
         declared = getattr(scanner, "check_result_category", None)
@@ -1193,9 +1173,7 @@ class ScanOrchestrator:
         details.setdefault("scanner", scanner_name)
 
         try:
-            existing = CheckResult.objects.filter(
-                scan=scan, category=category
-            ).first()
+            existing = CheckResult.objects.filter(scan=scan, category=category).first()
             if existing is not None:
                 details.setdefault(
                     "previous_measurement",

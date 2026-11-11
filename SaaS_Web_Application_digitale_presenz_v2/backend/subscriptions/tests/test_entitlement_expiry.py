@@ -41,21 +41,15 @@ class EntitlementExpiryTests(TestCase):
         self.sub.save()
 
     def test_active_subscription_inside_its_period_keeps_paid_plan(self) -> None:
-        self._activate(
-            Subscription.Status.ACTIVE, timezone.now() + timedelta(days=10)
-        )
+        self._activate(Subscription.Status.ACTIVE, timezone.now() + timedelta(days=10))
         self.assertEqual(get_effective_plan(self.user), self.pro)
 
     def test_past_due_inside_its_period_keeps_paid_plan(self) -> None:
-        self._activate(
-            Subscription.Status.PAST_DUE, timezone.now() + timedelta(days=2)
-        )
+        self._activate(Subscription.Status.PAST_DUE, timezone.now() + timedelta(days=2))
         self.assertEqual(get_effective_plan(self.user), self.pro)
 
     def test_past_due_after_the_period_falls_back_to_free(self) -> None:
-        self._activate(
-            Subscription.Status.PAST_DUE, timezone.now() - timedelta(days=2)
-        )
+        self._activate(Subscription.Status.PAST_DUE, timezone.now() - timedelta(days=2))
         self.assertEqual(get_effective_plan(self.user), self.free)
 
     def test_cancelled_keeps_paid_until_the_period_ends(self) -> None:
@@ -71,9 +65,7 @@ class EntitlementExpiryTests(TestCase):
         self.assertEqual(get_effective_plan(self.user), self.free)
 
     def test_expiry_task_only_touches_ended_periods(self) -> None:
-        self._activate(
-            Subscription.Status.ACTIVE, timezone.now() - timedelta(hours=1)
-        )
+        self._activate(Subscription.Status.ACTIVE, timezone.now() - timedelta(hours=1))
         active_user = User.objects.create_user(
             email="still-active@example.com", password="pass1234!"
         )
@@ -92,7 +84,5 @@ class EntitlementExpiryTests(TestCase):
         self.assertEqual(active_sub.status, Subscription.Status.ACTIVE)
 
     def test_expired_subscription_never_grants_paid_limits(self) -> None:
-        self._activate(
-            Subscription.Status.EXPIRED, timezone.now() + timedelta(days=10)
-        )
+        self._activate(Subscription.Status.EXPIRED, timezone.now() + timedelta(days=10))
         self.assertEqual(get_effective_plan(self.user), self.free)

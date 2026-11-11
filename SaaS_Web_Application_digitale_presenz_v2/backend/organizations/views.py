@@ -53,7 +53,9 @@ class Gone(APIException):
     default_code = "gone"
 
 
-def _organization_and_role(request: Request, organization_id) -> tuple[Organization, str]:
+def _organization_and_role(
+    request: Request, organization_id
+) -> tuple[Organization, str]:
     organization = (
         Organization.objects.select_related("billing_owner")
         .filter(pk=organization_id)
@@ -83,11 +85,7 @@ def _member_queryset(organization: Organization):
 
 
 def _member_or_404(organization: Organization, pk) -> Membership:
-    membership = (
-        _member_queryset(organization)
-        .filter(pk=pk)
-        .first()
-    )
+    membership = _member_queryset(organization).filter(pk=pk).first()
     if membership is None:
         raise NotFound("Member not found.")
     return membership
@@ -268,13 +266,14 @@ class OrganizationInvitationDetailView(APIView):
     def delete(self, request: Request, organization_id, pk) -> Response:
         organization, role = _organization_and_role(request, organization_id)
         _require_manager(role)
-        invitation = (
-            OrganizationInvitation.objects.filter(
-                organization=organization,
-                pk=pk,
-            ).first()
-        )
-        if invitation is None or invitation.status != OrganizationInvitation.Status.PENDING:
+        invitation = OrganizationInvitation.objects.filter(
+            organization=organization,
+            pk=pk,
+        ).first()
+        if (
+            invitation is None
+            or invitation.status != OrganizationInvitation.Status.PENDING
+        ):
             raise NotFound("Invitation not found.")
         invitation.status = OrganizationInvitation.Status.REVOKED
         invitation.save(update_fields=["status", "updated_at"])

@@ -16,7 +16,11 @@ from reviews.serializers import (
     ReviewImportJobSerializer,
 )
 from reviews.services.responses import generate_draft
-from reviews.tasks import analyze_review_sentiment, sync_review_source, process_review_import
+from reviews.tasks import (
+    analyze_review_sentiment,
+    sync_review_source,
+    process_review_import,
+)
 from reviews.services.real_discovery import RealReviewDiscoveryService
 
 
@@ -81,11 +85,14 @@ class ReviewDraftResponseView(APIView):
     def post(self, request, pk) -> Response:
         review = get_object_or_404(Review, pk=pk, source__user=request.user)
         draft = generate_draft(review)
-        return Response(ResponseDraftSerializer(draft).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ResponseDraftSerializer(draft).data, status=status.HTTP_201_CREATED
+        )
 
 
 class DiscoverRealReviewsView(APIView):
     """Scanne et extrait automatiquement les avis réels du web pour un site donné."""
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -97,8 +104,10 @@ class DiscoverRealReviewsView(APIView):
 
         if not website:
             return Response(
-                {"error": "Aucun site web trouvé. Ajoutez d'abord un site dans 'Websites'."},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Aucun site web trouvé. Ajoutez d'abord un site dans 'Websites'."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         discovery_service = RealReviewDiscoveryService(website)
@@ -107,18 +116,20 @@ class DiscoverRealReviewsView(APIView):
 
 
 class ReviewSourceListCreateView(generics.ListCreateAPIView):
-    serializer_class   = ReviewSourceSerializer
+    serializer_class = ReviewSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ReviewSource.objects.filter(user=self.request.user).select_related("website")
+        return ReviewSource.objects.filter(user=self.request.user).select_related(
+            "website"
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
 class ReviewSourceDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class   = ReviewSourceSerializer
+    serializer_class = ReviewSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -134,7 +145,9 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         return ReviewSerializer
 
     def get_queryset(self):
-        qs = Review.objects.filter(source__user=self.request.user).select_related("source")
+        qs = Review.objects.filter(source__user=self.request.user).select_related(
+            "source"
+        )
         if source_id := self.request.query_params.get("source_id"):
             qs = qs.filter(source_id=source_id)
         if approved := self.request.query_params.get("approved"):
@@ -150,7 +163,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class   = ReviewSerializer
+    serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -169,18 +182,20 @@ class ApproveReviewView(APIView):
 
 
 class ResponseDraftListCreateView(generics.ListCreateAPIView):
-    serializer_class   = ResponseDraftSerializer
+    serializer_class = ResponseDraftSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ResponseDraft.objects.filter(user=self.request.user).select_related("review")
+        return ResponseDraft.objects.filter(user=self.request.user).select_related(
+            "review"
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
 class ResponseDraftDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class   = ResponseDraftSerializer
+    serializer_class = ResponseDraftSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -193,7 +208,9 @@ class AnalyzeSentimentView(APIView):
     def post(self, request, pk):
         review = get_object_or_404(Review, id=pk, source__user=request.user)
         task = analyze_review_sentiment.delay(str(review.id))
-        return Response({"status": "queued", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {"status": "queued", "task_id": task.id}, status=status.HTTP_202_ACCEPTED
+        )
 
 
 class SyncReviewSourceView(APIView):
@@ -202,7 +219,9 @@ class SyncReviewSourceView(APIView):
     def post(self, request, pk):
         source = get_object_or_404(ReviewSource, id=pk, user=request.user)
         task = sync_review_source.delay(source.id)
-        return Response({"status": "queued", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {"status": "queued", "task_id": task.id}, status=status.HTTP_202_ACCEPTED
+        )
 
 
 class ReviewBulkImportView(APIView):
@@ -214,11 +233,18 @@ class ReviewBulkImportView(APIView):
         file_obj = request.FILES.get("file")
         file_type = request.data.get("file_type", "csv")
         if not source_id or not file_obj:
-            return Response({"error": "source_id and file are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "source_id and file are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         source = get_object_or_404(ReviewSource, id=source_id, user=request.user)
-        job = ReviewImportJob.objects.create(user=request.user, source=source, file=file_obj, file_type=file_type)
+        job = ReviewImportJob.objects.create(
+            user=request.user, source=source, file=file_obj, file_type=file_type
+        )
         process_review_import.delay(str(job.id))
-        return Response(ReviewImportJobSerializer(job).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ReviewImportJobSerializer(job).data, status=status.HTTP_201_CREATED
+        )
 
 
 class ReviewImportJobDetailView(generics.RetrieveAPIView):

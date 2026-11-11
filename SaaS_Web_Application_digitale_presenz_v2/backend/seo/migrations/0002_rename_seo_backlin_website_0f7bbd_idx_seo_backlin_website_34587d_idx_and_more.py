@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('seo', '0001_initial'),
+        ("seo", "0001_initial"),
     ]
 
     operations = [
         migrations.RenameIndex(
-            model_name='backlink',
-            new_name='seo_backlin_website_34587d_idx',
-            old_name='seo_backlin_website_0f7bbd_idx',
+            model_name="backlink",
+            new_name="seo_backlin_website_34587d_idx",
+            old_name="seo_backlin_website_0f7bbd_idx",
         ),
         migrations.RenameIndex(
-            model_name='seoaudit',
-            new_name='seo_seoaudi_website_5db439_idx',
-            old_name='seo_seoaudi_website_72cb05_idx',
+            model_name="seoaudit",
+            new_name="seo_seoaudi_website_5db439_idx",
+            old_name="seo_seoaudi_website_72cb05_idx",
         ),
     ]

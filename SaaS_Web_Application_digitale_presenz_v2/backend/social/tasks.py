@@ -105,7 +105,10 @@ def sync_social_profiles(website_id: int) -> dict:
             metrics = fetcher(profile)
         except requests.RequestException as exc:
             logger.warning(
-                "Social sync failed for %s/%s: %s", profile.provider, profile.handle, exc
+                "Social sync failed for %s/%s: %s",
+                profile.provider,
+                profile.handle,
+                exc,
             )
             failed.append(profile.provider)
             continue

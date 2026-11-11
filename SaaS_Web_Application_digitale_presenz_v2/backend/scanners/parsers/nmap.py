@@ -48,11 +48,15 @@ def parse_nmap_xml(output: str) -> list[dict[str, Any]]:
         addr_el = host.find("address[@addrtype='ipv4']")
         if addr_el is None:
             addr_el = host.find("address")
-        ip_address = addr_el.get("addr", "unknown") if addr_el is not None else "unknown"
+        ip_address = (
+            addr_el.get("addr", "unknown") if addr_el is not None else "unknown"
+        )
 
         # Host status
         status_el = host.find("status")
-        host_state = status_el.get("state", "unknown") if status_el is not None else "unknown"
+        host_state = (
+            status_el.get("state", "unknown") if status_el is not None else "unknown"
+        )
 
         # Ports
         ports_el = host.find("ports")
@@ -64,7 +68,9 @@ def parse_nmap_xml(output: str) -> list[dict[str, Any]]:
             protocol = port_el.get("protocol", "tcp")
 
             state_el = port_el.find("state")
-            port_state = state_el.get("state", "unknown") if state_el is not None else "unknown"
+            port_state = (
+                state_el.get("state", "unknown") if state_el is not None else "unknown"
+            )
 
             service_el = port_el.find("service")
             service_info: dict[str, str] = {}
@@ -80,21 +86,25 @@ def parse_nmap_xml(output: str) -> list[dict[str, Any]]:
             # Scripts (NSE results)
             scripts: list[dict[str, str]] = []
             for script_el in port_el.findall("script"):
-                scripts.append({
-                    "id": script_el.get("id", ""),
-                    "output": script_el.get("output", ""),
-                })
+                scripts.append(
+                    {
+                        "id": script_el.get("id", ""),
+                        "output": script_el.get("output", ""),
+                    }
+                )
 
-            findings.append({
-                "type": "port",
-                "ip_address": ip_address,
-                "host_state": host_state,
-                "protocol": protocol,
-                "port": int(portid),
-                "state": port_state,
-                "service": service_info,
-                "scripts": scripts,
-            })
+            findings.append(
+                {
+                    "type": "port",
+                    "ip_address": ip_address,
+                    "host_state": host_state,
+                    "protocol": protocol,
+                    "port": int(portid),
+                    "state": port_state,
+                    "service": service_info,
+                    "scripts": scripts,
+                }
+            )
 
     return findings
 
@@ -126,14 +136,16 @@ def parse_nmap_greppable(output: str) -> list[dict[str, Any]]:
                     continue
                 tokens = port_entry.split("/")
                 if len(tokens) >= 4:
-                    findings.append({
-                        "type": "port",
-                        "ip_address": ip,
-                        "port": int(tokens[0]) if tokens[0].isdigit() else 0,
-                        "state": tokens[1],
-                        "protocol": tokens[2],
-                        "service": {"name": tokens[4] if len(tokens) > 4 else ""},
-                        "scripts": [],
-                    })
+                    findings.append(
+                        {
+                            "type": "port",
+                            "ip_address": ip,
+                            "port": int(tokens[0]) if tokens[0].isdigit() else 0,
+                            "state": tokens[1],
+                            "protocol": tokens[2],
+                            "service": {"name": tokens[4] if len(tokens) > 4 else ""},
+                            "scripts": [],
+                        }
+                    )
 
     return findings

@@ -124,9 +124,7 @@ class Command(BaseCommand):
         wall_seconds = round(time.monotonic() - started, 1)
 
         scan.refresh_from_db()
-        runs = list(
-            ScannerRun.objects.filter(scan=scan).order_by("started_at", "id")
-        )
+        runs = list(ScannerRun.objects.filter(scan=scan).order_by("started_at", "id"))
         steps = {step.get("scanner"): step for step in (scan.steps or [])}
 
         per_scanner = []

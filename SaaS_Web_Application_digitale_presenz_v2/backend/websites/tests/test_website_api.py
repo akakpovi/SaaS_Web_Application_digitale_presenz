@@ -39,9 +39,7 @@ class WebsiteAPITests(APITestCase):
         )
 
         self.client.credentials(
-            HTTP_AUTHORIZATION=(
-                f"Bearer {AccessToken.for_user(self.user)}"
-            )
+            HTTP_AUTHORIZATION=(f"Bearer {AccessToken.for_user(self.user)}")
         )
 
     # ──────────────────────────────────────────────
@@ -70,9 +68,7 @@ class WebsiteAPITests(APITestCase):
             response.data["display_name"],
             "Main site",
         )
-        self.assertTrue(
-            response.data["is_active"]
-        )
+        self.assertTrue(response.data["is_active"])
 
         self.assertEqual(
             Website.objects.get().owner,
@@ -90,9 +86,7 @@ class WebsiteAPITests(APITestCase):
             response.status_code,
             status.HTTP_201_CREATED,
         )
-        self.assertTrue(
-            response.data["is_active"]
-        )
+        self.assertTrue(response.data["is_active"])
 
     def test_create_website_with_is_active_false(self) -> None:
         response = self.client.post(
@@ -108,9 +102,7 @@ class WebsiteAPITests(APITestCase):
             response.status_code,
             status.HTTP_201_CREATED,
         )
-        self.assertFalse(
-            response.data["is_active"]
-        )
+        self.assertFalse(response.data["is_active"])
 
     # ──────────────────────────────────────────────
     # Validation — domain format
@@ -229,19 +221,14 @@ class WebsiteAPITests(APITestCase):
             domain="other.example",
         )
 
-        response = self.client.get(
-            "/api/v1/websites/"
-        )
+        response = self.client.get("/api/v1/websites/")
 
         self.assertEqual(
             response.status_code,
             status.HTTP_200_OK,
         )
 
-        ids = [
-            item["id"]
-            for item in response.data["results"]
-        ]
+        ids = [item["id"] for item in response.data["results"]]
 
         self.assertEqual(
             ids,
@@ -249,9 +236,7 @@ class WebsiteAPITests(APITestCase):
         )
 
     def test_list_empty_for_user_with_no_websites(self) -> None:
-        response = self.client.get(
-            "/api/v1/websites/"
-        )
+        response = self.client.get("/api/v1/websites/")
 
         self.assertEqual(
             response.status_code,
@@ -273,9 +258,7 @@ class WebsiteAPITests(APITestCase):
             display_name="Mine",
         )
 
-        response = self.client.get(
-            f"/api/v1/websites/{owned.id}/"
-        )
+        response = self.client.get(f"/api/v1/websites/{owned.id}/")
 
         self.assertEqual(
             response.status_code,
@@ -296,9 +279,7 @@ class WebsiteAPITests(APITestCase):
             domain="secret.example",
         )
 
-        response = self.client.get(
-            f"/api/v1/websites/{other.id}/"
-        )
+        response = self.client.get(f"/api/v1/websites/{other.id}/")
 
         self.assertEqual(
             response.status_code,
@@ -306,9 +287,7 @@ class WebsiteAPITests(APITestCase):
         )
 
     def test_retrieve_nonexistent_website_returns_404(self) -> None:
-        response = self.client.get(
-            "/api/v1/websites/99999/"
-        )
+        response = self.client.get("/api/v1/websites/99999/")
 
         self.assertEqual(
             response.status_code,
@@ -378,9 +357,7 @@ class WebsiteAPITests(APITestCase):
             response.status_code,
             status.HTTP_200_OK,
         )
-        self.assertFalse(
-            response.data["is_active"]
-        )
+        self.assertFalse(response.data["is_active"])
 
     def test_update_domain_to_duplicate_rejected(self) -> None:
         Website.objects.create(
@@ -431,19 +408,13 @@ class WebsiteAPITests(APITestCase):
             domain="delete.example",
         )
 
-        response = self.client.delete(
-            f"/api/v1/websites/{website.id}/"
-        )
+        response = self.client.delete(f"/api/v1/websites/{website.id}/")
 
         self.assertEqual(
             response.status_code,
             status.HTTP_204_NO_CONTENT,
         )
-        self.assertFalse(
-            Website.objects.filter(
-                pk=website.id
-            ).exists()
-        )
+        self.assertFalse(Website.objects.filter(pk=website.id).exists())
 
     def test_cannot_delete_another_users_website(self) -> None:
         other = Website.objects.create(
@@ -451,19 +422,13 @@ class WebsiteAPITests(APITestCase):
             domain="protected.example",
         )
 
-        response = self.client.delete(
-            f"/api/v1/websites/{other.id}/"
-        )
+        response = self.client.delete(f"/api/v1/websites/{other.id}/")
 
         self.assertEqual(
             response.status_code,
             status.HTTP_404_NOT_FOUND,
         )
-        self.assertTrue(
-            Website.objects.filter(
-                pk=other.id
-            ).exists()
-        )
+        self.assertTrue(Website.objects.filter(pk=other.id).exists())
 
     def test_deleting_website_cascades_to_scans(self) -> None:
         website = Website.objects.create(
@@ -476,15 +441,9 @@ class WebsiteAPITests(APITestCase):
             status=Scan.Status.QUEUED,
         )
 
-        self.client.delete(
-            f"/api/v1/websites/{website.id}/"
-        )
+        self.client.delete(f"/api/v1/websites/{website.id}/")
 
-        self.assertFalse(
-            Scan.objects.filter(
-                website=website
-            ).exists()
-        )
+        self.assertFalse(Scan.objects.filter(website=website).exists())
 
     # ──────────────────────────────────────────────
     # Authentication
@@ -494,9 +453,7 @@ class WebsiteAPITests(APITestCase):
         self.client.credentials()
 
         self.assertEqual(
-            self.client.get(
-                "/api/v1/websites/"
-            ).status_code,
+            self.client.get("/api/v1/websites/").status_code,
             status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -635,11 +592,7 @@ class WebsiteAPITests(APITestCase):
             1,
         )
 
-        self.assertTrue(
-            Scan.objects.filter(
-                pk=existing_scan.pk
-            ).exists()
-        )
+        self.assertTrue(Scan.objects.filter(pk=existing_scan.pk).exists())
 
         mock_delay.assert_not_called()
 

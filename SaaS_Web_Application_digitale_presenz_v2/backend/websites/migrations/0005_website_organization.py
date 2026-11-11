@@ -5,16 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('organizations', '0001_initial'),
-        ('websites', '0004_scanner_engine'),
+        ("organizations", "0001_initial"),
+        ("websites", "0004_scanner_engine"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='website',
-            name='organization',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='websites', to='organizations.organization'),
+            model_name="website",
+            name="organization",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="websites",
+                to="organizations.organization",
+            ),
         ),
     ]

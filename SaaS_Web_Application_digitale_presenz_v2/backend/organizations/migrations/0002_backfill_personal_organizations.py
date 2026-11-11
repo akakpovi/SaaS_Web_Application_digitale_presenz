@@ -6,7 +6,7 @@ def _organization_name(user) -> str:
     if business_name:
         return business_name[:150]
     email = (getattr(user, "email", "") or "").strip()
-    return ((email.split("@", 1)[0] or "Personal")[:150])
+    return (email.split("@", 1)[0] or "Personal")[:150]
 
 
 def backfill(apps, schema_editor):
@@ -41,7 +41,6 @@ def backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("organizations", "0001_initial"),
         ("websites", "0005_website_organization"),

@@ -29,6 +29,7 @@ from scanners.security.target_validator import validate_target
 # CommandExecutor tests
 # ═══════════════════════════════════════════════════
 
+
 class CommandExecutorTests(TestCase):
     def setUp(self):
         self.executor = CommandExecutor()
@@ -92,6 +93,7 @@ class CommandExecutorTests(TestCase):
     def test_env_does_not_leak_secrets(self):
         """The executor should not pass host env vars (e.g. AWS_SECRET_ACCESS_KEY)."""
         import os
+
         os.environ["_TEST_SECRET"] = "super_secret"
         try:
             result = self.executor.run(
@@ -109,6 +111,7 @@ class CommandExecutorTests(TestCase):
 # Target validator tests (SSRF protection)
 # ═══════════════════════════════════════════════════
 
+
 class TargetValidatorTests(TestCase):
     """Verify SSRF protection at the scanner layer."""
 
@@ -124,26 +127,31 @@ class TargetValidatorTests(TestCase):
 
     def test_localhost_blocked(self):
         from scanners.exceptions import TargetValidationError
+
         with self.assertRaises(TargetValidationError):
             validate_target("https://localhost")
 
     def test_loopback_ip_blocked(self):
         from scanners.exceptions import TargetValidationError
+
         with self.assertRaises(TargetValidationError):
             validate_target("https://127.0.0.1")
 
     def test_private_ip_blocked(self):
         from scanners.exceptions import TargetValidationError
+
         with self.assertRaises(TargetValidationError):
             validate_target("https://192.168.1.1")
 
     def test_private_ip_10_blocked(self):
         from scanners.exceptions import TargetValidationError
+
         with self.assertRaises(TargetValidationError):
             validate_target("https://10.0.0.1")
 
     def test_metadata_service_blocked(self):
         from scanners.exceptions import TargetValidationError
+
         with self.assertRaises(TargetValidationError):
             validate_target("https://169.254.169.254")
 
@@ -152,9 +160,11 @@ class TargetValidatorTests(TestCase):
 # Base scanner tests
 # ═══════════════════════════════════════════════════
 
+
 class BaseScannerTests(TestCase):
     def _make_scanner(self, name="test", scanner_type=ScannerType.INTERNAL):
         """Create a minimal concrete scanner for testing."""
+
         class MinimalScanner(BaseScanner):
             def scan(self, domain):
                 return self._create_result(
@@ -163,6 +173,7 @@ class BaseScannerTests(TestCase):
                     message="OK",
                     recommendation="",
                 )
+
         MinimalScanner.name = name
         MinimalScanner.scanner_type = scanner_type
         return MinimalScanner()
@@ -186,8 +197,11 @@ class BaseScannerTests(TestCase):
     def test_scan_result_to_findings_healthy(self):
         scanner = self._make_scanner("website")
         result = ScanResult(
-            score=20, status="healthy", message="Site accessible",
-            recommendation="", details={"http_status": 200}
+            score=20,
+            status="healthy",
+            message="Site accessible",
+            recommendation="",
+            details={"http_status": 200},
         )
         findings = scanner._scan_result_to_findings(result, "example.com")
         self.assertEqual(len(findings), 1)
@@ -196,8 +210,11 @@ class BaseScannerTests(TestCase):
     def test_scan_result_to_findings_critical(self):
         scanner = self._make_scanner("website")
         result = ScanResult(
-            score=0, status="critical", message="Site down",
-            recommendation="Check server.", details={}
+            score=0,
+            status="critical",
+            message="Site down",
+            recommendation="Check server.",
+            details={},
         )
         findings = scanner._scan_result_to_findings(result, "example.com")
         self.assertEqual(findings[0].status, FindingStatus.FAIL)
@@ -214,6 +231,7 @@ class BaseScannerTests(TestCase):
 # External adapter graceful degradation tests
 # ═══════════════════════════════════════════════════
 
+
 class ExternalAdapterGracefulDegradationTests(TestCase):
     """External adapters should return graceful results when binary is missing."""
 
@@ -225,7 +243,9 @@ class ExternalAdapterGracefulDegradationTests(TestCase):
         scanner = getattr(module, scanner_instance_name)
 
         if scanner.is_available():
-            self.skipTest(f"{scanner.name} binary is available — skipping unavailability test")
+            self.skipTest(
+                f"{scanner.name} binary is available — skipping unavailability test"
+            )
 
         # scan() should return a graceful neutral/unavailable result
         result = scanner.scan("example.com")
@@ -236,7 +256,14 @@ class ExternalAdapterGracefulDegradationTests(TestCase):
         self.assertIsInstance(findings, list)
         # All findings should have NOT_APPLICABLE or UNKNOWN status
         for f in findings:
-            self.assertIn(f.status, [FindingStatus.NOT_APPLICABLE, FindingStatus.UNKNOWN, FindingStatus.FAIL])
+            self.assertIn(
+                f.status,
+                [
+                    FindingStatus.NOT_APPLICABLE,
+                    FindingStatus.UNKNOWN,
+                    FindingStatus.FAIL,
+                ],
+            )
 
     def test_nmap_graceful_when_unavailable(self):
         self._test_adapter_graceful("scanners.implementations.nmap", "nmap_scanner")
@@ -248,19 +275,29 @@ class ExternalAdapterGracefulDegradationTests(TestCase):
         self._test_adapter_graceful("scanners.implementations.nuclei", "nuclei_scanner")
 
     def test_whatweb_graceful_when_unavailable(self):
-        self._test_adapter_graceful("scanners.implementations.whatweb", "whatweb_scanner")
+        self._test_adapter_graceful(
+            "scanners.implementations.whatweb", "whatweb_scanner"
+        )
 
     def test_testssl_graceful_when_unavailable(self):
-        self._test_adapter_graceful("scanners.implementations.testssl", "testssl_scanner")
+        self._test_adapter_graceful(
+            "scanners.implementations.testssl", "testssl_scanner"
+        )
 
     def test_dnsrecon_graceful_when_unavailable(self):
-        self._test_adapter_graceful("scanners.implementations.dnsrecon", "dnsrecon_scanner")
+        self._test_adapter_graceful(
+            "scanners.implementations.dnsrecon", "dnsrecon_scanner"
+        )
 
     def test_gobuster_graceful_when_unavailable(self):
-        self._test_adapter_graceful("scanners.implementations.gobuster", "gobuster_scanner")
+        self._test_adapter_graceful(
+            "scanners.implementations.gobuster", "gobuster_scanner"
+        )
 
     def test_feroxbuster_graceful_when_unavailable(self):
-        self._test_adapter_graceful("scanners.implementations.feroxbuster", "feroxbuster_scanner")
+        self._test_adapter_graceful(
+            "scanners.implementations.feroxbuster", "feroxbuster_scanner"
+        )
 
     def test_zap_graceful_when_unavailable(self):
         self._test_adapter_graceful("scanners.implementations.zap", "zap_scanner")
@@ -270,14 +307,17 @@ class ExternalAdapterGracefulDegradationTests(TestCase):
 # Parser unit tests (no external tools required)
 # ═══════════════════════════════════════════════════
 
+
 class NmapParserTests(TestCase):
     def test_parse_empty_xml(self):
         from scanners.parsers.nmap import parse_nmap_xml
+
         result = parse_nmap_xml("")
         self.assertIsInstance(result, list)
 
     def test_parse_valid_xml_with_open_port(self):
         from scanners.parsers.nmap import parse_nmap_xml
+
         xml = """<?xml version="1.0"?>
         <nmaprun>
           <host>
@@ -299,12 +339,14 @@ class NmapParserTests(TestCase):
 class NiktoParserTests(TestCase):
     def test_parse_empty_output(self):
         from scanners.parsers.nikto import parse_nikto_json
+
         result = parse_nikto_json("")
         self.assertIsInstance(result, list)
 
     def test_parse_nikto_json(self):
         from scanners.parsers.nikto import parse_nikto_json
         import json
+
         data = [
             {
                 "vulnerabilities": [
@@ -330,22 +372,24 @@ class NiktoParserTests(TestCase):
         """
         from scanners.parsers.nikto import parse_nikto_text
 
-        output = "\n".join([
-            "- Nikto v2.6.1",
-            "---",
-            "+ Target IP:          188.114.97.3",
-            "+ Target Hostname:    appchat.elomaiapp.com",
-            "+ Target Port:        80",
-            "+ Platform:           Unknown",
-            "+ Start Time:         2026-10-27 05:23:15 (GMT0)",
-            "---",
-            "+ Server: cloudflare",
-            "+ Multiple IPs found: 188.114.97.3, 188.114.96.3",
-            "+ [011799] /: An alt-svc header was found which is advertising HTTP/3.",
-            "+ OSVDB-1234: /admin/: Admin interface exposed.",
-            "+ /backup/: Directory indexing enabled.",
-            "+ End Time:           2026-10-27 05:24:02 (GMT0) (47 seconds)",
-        ])
+        output = "\n".join(
+            [
+                "- Nikto v2.6.1",
+                "---",
+                "+ Target IP:          188.114.97.3",
+                "+ Target Hostname:    appchat.elomaiapp.com",
+                "+ Target Port:        80",
+                "+ Platform:           Unknown",
+                "+ Start Time:         2026-10-27 05:23:15 (GMT0)",
+                "---",
+                "+ Server: cloudflare",
+                "+ Multiple IPs found: 188.114.97.3, 188.114.96.3",
+                "+ [011799] /: An alt-svc header was found which is advertising HTTP/3.",
+                "+ OSVDB-1234: /admin/: Admin interface exposed.",
+                "+ /backup/: Directory indexing enabled.",
+                "+ End Time:           2026-10-27 05:24:02 (GMT0) (47 seconds)",
+            ]
+        )
 
         findings = parse_nikto_text(output)
         self.assertEqual(len(findings), 3)
@@ -359,13 +403,15 @@ class NiktoParserTests(TestCase):
     def test_parse_nikto_text_ignores_text_without_findings(self):
         from scanners.parsers.nikto import parse_nikto_text
 
-        output = "\n".join([
-            "- Nikto v2.6.1",
-            "+ Target IP: 188.114.97.3",
-            "+ Server: cloudflare",
-            "+ No CGI Directories found (use '-C all' to force check all possible dirs)",
-            "+ 1 host(s) tested",
-        ])
+        output = "\n".join(
+            [
+                "- Nikto v2.6.1",
+                "+ Target IP: 188.114.97.3",
+                "+ Server: cloudflare",
+                "+ No CGI Directories found (use '-C all' to force check all possible dirs)",
+                "+ 1 host(s) tested",
+            ]
+        )
 
         self.assertEqual(parse_nikto_text(output), [])
 
@@ -373,13 +419,21 @@ class NiktoParserTests(TestCase):
 class WhatWebParserTests(TestCase):
     def test_parse_empty(self):
         from scanners.parsers.whatweb import parse_whatweb_json
+
         result = parse_whatweb_json("")
         self.assertIsInstance(result, list)
 
     def test_parse_whatweb_json(self):
         from scanners.parsers.whatweb import parse_whatweb_json
         import json
-        data = [{"target": "https://example.com", "http_status": 200, "plugins": {"WordPress": {"version": ["5.9"]}}}]
+
+        data = [
+            {
+                "target": "https://example.com",
+                "http_status": 200,
+                "plugins": {"WordPress": {"version": ["5.9"]}},
+            }
+        ]
         result = parse_whatweb_json(json.dumps(data))
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) > 0)
@@ -388,6 +442,7 @@ class WhatWebParserTests(TestCase):
 class DnsreconParserTests(TestCase):
     def test_parse_empty_output(self):
         from scanners.implementations.dnsrecon import _parse_dnsrecon_json
+
         self.assertEqual(_parse_dnsrecon_json(""), [])
         self.assertEqual(_parse_dnsrecon_json("   "), [])
 
@@ -400,16 +455,18 @@ class DnsreconParserTests(TestCase):
         """
         from scanners.implementations.dnsrecon import _parse_dnsrecon_json
 
-        output = "\n".join([
-            "[",
-            '    {"type": "NS", "name": "example.com", "address": "ns1.example.net"},',
-            '    {"type": "A", "name": "example.com", "address": "93.184.216.34"}',
-            "]",
-            "[*] \t AAAA example.com 2606:2800:220:1:248:1893:25c8:1946",
-            "[*] Enumerating SRV Records",
-            "[+] 0 Records Found",
-            "[*] Saving records to JSON file: /dev/stdout",
-        ])
+        output = "\n".join(
+            [
+                "[",
+                '    {"type": "NS", "name": "example.com", "address": "ns1.example.net"},',
+                '    {"type": "A", "name": "example.com", "address": "93.184.216.34"}',
+                "]",
+                "[*] \t AAAA example.com 2606:2800:220:1:248:1893:25c8:1946",
+                "[*] Enumerating SRV Records",
+                "[+] 0 Records Found",
+                "[*] Saving records to JSON file: /dev/stdout",
+            ]
+        )
 
         records = _parse_dnsrecon_json(output)
         self.assertEqual(len(records), 2)
@@ -436,4 +493,3 @@ class DnsreconParserTests(TestCase):
         )
         self.assertEqual(_parse_dnsrecon_json("not json at all"), [])
         self.assertEqual(_parse_dnsrecon_json("[{"), [])
-

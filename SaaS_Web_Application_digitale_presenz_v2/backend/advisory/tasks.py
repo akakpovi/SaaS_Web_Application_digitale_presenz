@@ -54,9 +54,7 @@ def generate_scan_recommendations_task(self, scan_id: int) -> dict:
 
     from scans.models import Scan
 
-    scan = Scan.objects.filter(pk=scan_id).only(
-        "id", "status", "is_guest"
-    ).first()
+    scan = Scan.objects.filter(pk=scan_id).only("id", "status", "is_guest").first()
     if scan is None:
         return {"scan_id": scan_id, "status": "not_found"}
     if scan.is_guest:
@@ -101,17 +99,14 @@ def generate_scan_recommendations_task(self, scan_id: int) -> dict:
     }
 
     if result.should_retry:
-        max_countdown = int(
-            getattr(settings, "AI_ADVISOR_RETRY_MAX_SECONDS", 900)
-        )
+        max_countdown = int(getattr(settings, "AI_ADVISOR_RETRY_MAX_SECONDS", 900))
         countdown = min(
             max(result.retry_after_seconds or _DEFAULT_RETRY_COUNTDOWN, 30),
             max_countdown,
         )
         if retries < self.max_retries:
             logger.warning(
-                "AI advisor retry scheduled scan=%s code=%s in %ss "
-                "(attempt %s/%s)",
+                "AI advisor retry scheduled scan=%s code=%s in %ss (attempt %s/%s)",
                 scan_id,
                 result.error_code or "unknown",
                 countdown,

@@ -41,7 +41,9 @@ class ScanLifecycleTests(TestCase):
     """Test the scan state machine transitions."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user("owner@example.com", "CorrectHorseBattery1!")
+        self.user = User.objects.create_user(
+            "owner@example.com", "CorrectHorseBattery1!"
+        )
         self.website = Website.objects.create(owner=self.user, domain="example.com")
 
     def test_new_scan_defaults_to_pending(self) -> None:
@@ -139,11 +141,24 @@ class HealthScoreServiceTests(TestCase):
     """Test the deterministic scoring service."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user("owner@example.com", "CorrectHorseBattery1!")
-        self.scan = Scan.objects.create(website=Website.objects.create(owner=self.user, domain="example.com"), status=Scan.Status.QUEUED)
+        self.user = User.objects.create_user(
+            "owner@example.com", "CorrectHorseBattery1!"
+        )
+        self.scan = Scan.objects.create(
+            website=Website.objects.create(owner=self.user, domain="example.com"),
+            status=Scan.Status.QUEUED,
+        )
 
-    def add_result(self, category: str, score: int | None, result_status: str) -> CheckResult:
-        result = CheckResult(scan=self.scan, category=category, score=score, status=result_status, summary="Result")
+    def add_result(
+        self, category: str, score: int | None, result_status: str
+    ) -> CheckResult:
+        result = CheckResult(
+            scan=self.scan,
+            category=category,
+            score=score,
+            status=result_status,
+            summary="Result",
+        )
         result.full_clean()
         result.save()
         return result
@@ -177,7 +192,9 @@ class HealthScoreServiceTests(TestCase):
         self.assertEqual(health.status, HealthStatus.NEUTRAL)
 
     def test_only_uptime_result_is_neutral_and_unscored(self) -> None:
-        uptime = self.add_result(CheckResult.Category.UPTIME, None, HealthStatus.HEALTHY)
+        uptime = self.add_result(
+            CheckResult.Category.UPTIME, None, HealthStatus.HEALTHY
+        )
         health = calculate_health_score([uptime])
         self.assertIsNone(health.score)
         self.assertEqual(health.status, HealthStatus.NEUTRAL)
@@ -259,7 +276,9 @@ class HealthScoreServiceTests(TestCase):
         self.add_result(CheckResult.Category.SSL, 20, HealthStatus.HEALTHY)
         self.add_result(CheckResult.Category.DNS, 15, HealthStatus.HEALTHY)
         self.add_result(CheckResult.Category.EMAIL_SECURITY, 15, HealthStatus.HEALTHY)
-        self.add_result(CheckResult.Category.SECURITY_HEADERS, 15, HealthStatus.WARNING)  # WARNING status
+        self.add_result(
+            CheckResult.Category.SECURITY_HEADERS, 15, HealthStatus.WARNING
+        )  # WARNING status
         # Total = 85, but WARNING status → warning
         health = calculate_health_score(self.scan.check_results.all())
         self.assertEqual(health.score, 85)
@@ -327,40 +346,85 @@ class CheckResultValidationTests(TestCase):
     """Test model-level validation of CheckResult scores."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user("owner@example.com", "CorrectHorseBattery1!")
-        self.scan = Scan.objects.create(website=Website.objects.create(owner=self.user, domain="example.com"), status=Scan.Status.QUEUED)
+        self.user = User.objects.create_user(
+            "owner@example.com", "CorrectHorseBattery1!"
+        )
+        self.scan = Scan.objects.create(
+            website=Website.objects.create(owner=self.user, domain="example.com"),
+            status=Scan.Status.QUEUED,
+        )
 
     def test_weighted_category_requires_score(self) -> None:
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.WEBSITE, score=None, status=HealthStatus.HEALTHY)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.WEBSITE,
+            score=None,
+            status=HealthStatus.HEALTHY,
+        )
         with self.assertRaises(ValidationError):
             result.full_clean()
 
     def test_uptime_score_must_be_none(self) -> None:
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.UPTIME, score=1, status=HealthStatus.HEALTHY)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.UPTIME,
+            score=1,
+            status=HealthStatus.HEALTHY,
+        )
         with self.assertRaises(ValidationError):
             result.full_clean()
 
     def test_uptime_with_none_score_is_valid(self) -> None:
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.UPTIME, score=None, status=HealthStatus.HEALTHY)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.UPTIME,
+            score=None,
+            status=HealthStatus.HEALTHY,
+        )
         result.full_clean()  # Should not raise
 
     def test_score_cannot_exceed_category_weight(self) -> None:
         # DNS max is 15; score=16 should fail
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.DNS, score=16, status=HealthStatus.HEALTHY)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.DNS,
+            score=16,
+            status=HealthStatus.HEALTHY,
+        )
         with self.assertRaises(ValidationError):
             result.full_clean()
 
     def test_score_at_category_max_is_valid(self) -> None:
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.DNS, score=15, status=HealthStatus.HEALTHY)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.DNS,
+            score=15,
+            status=HealthStatus.HEALTHY,
+        )
         result.full_clean()  # Should not raise
 
     def test_score_zero_is_valid_for_weighted_category(self) -> None:
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.PERFORMANCE, score=0, status=HealthStatus.CRITICAL)
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.PERFORMANCE,
+            score=0,
+            status=HealthStatus.CRITICAL,
+        )
         result.full_clean()  # Should not raise
 
     def test_unique_constraint_per_scan_category(self) -> None:
-        CheckResult.objects.create(scan=self.scan, category=CheckResult.Category.WEBSITE, score=20, status=HealthStatus.HEALTHY)
-        duplicate = CheckResult(scan=self.scan, category=CheckResult.Category.WEBSITE, score=15, status=HealthStatus.WARNING)
+        CheckResult.objects.create(
+            scan=self.scan,
+            category=CheckResult.Category.WEBSITE,
+            score=20,
+            status=HealthStatus.HEALTHY,
+        )
+        duplicate = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.WEBSITE,
+            score=15,
+            status=HealthStatus.WARNING,
+        )
         with self.assertRaises(Exception):
             duplicate.save()
 
@@ -372,7 +436,11 @@ class CheckResultValidationTests(TestCase):
             status=HealthStatus.HEALTHY,
             summary="Available",
             recommendation="No changes needed.",
-            technical_details={"http_status": 200, "response_time_ms": 230, "server": "nginx"},
+            technical_details={
+                "http_status": 200,
+                "response_time_ms": 230,
+                "server": "nginx",
+            },
         )
         result.full_clean()
         result.save()
@@ -383,8 +451,12 @@ class CheckResultValidationTests(TestCase):
         for i, health_status in enumerate(HealthStatus.values):
             result = CheckResult(
                 scan=self.scan,
-                category=list(CheckResult.Category.values)[i] if i < len(CheckResult.Category.values) else CheckResult.Category.WEBSITE,
-                score=10 if list(CheckResult.Category.values)[i] != CheckResult.Category.UPTIME else None,
+                category=list(CheckResult.Category.values)[i]
+                if i < len(CheckResult.Category.values)
+                else CheckResult.Category.WEBSITE,
+                score=10
+                if list(CheckResult.Category.values)[i] != CheckResult.Category.UPTIME
+                else None,
                 status=health_status,
             )
             # Don't save since we might hit unique constraint; just validate
@@ -404,13 +476,24 @@ class CheckResultSerializerTests(TestCase):
     """CheckResultSerializer.get_max_score must use CHECK_WEIGHTS."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user("owner@example.com", "CorrectHorseBattery1!")
-        self.scan = Scan.objects.create(website=Website.objects.create(owner=self.user, domain="example.com"), status=Scan.Status.QUEUED)
+        self.user = User.objects.create_user(
+            "owner@example.com", "CorrectHorseBattery1!"
+        )
+        self.scan = Scan.objects.create(
+            website=Website.objects.create(owner=self.user, domain="example.com"),
+            status=Scan.Status.QUEUED,
+        )
 
     def test_max_score_is_20_for_website_and_ssl(self) -> None:
         for category in (CheckResult.Category.WEBSITE, CheckResult.Category.SSL):
-            result = CheckResult(scan=self.scan, category=category, score=10, status=HealthStatus.HEALTHY)
-            self.assertEqual(CheckResultSerializer(result).data["max_score"], 20, f"{category} should be 20")
+            result = CheckResult(
+                scan=self.scan, category=category, score=10, status=HealthStatus.HEALTHY
+            )
+            self.assertEqual(
+                CheckResultSerializer(result).data["max_score"],
+                20,
+                f"{category} should be 20",
+            )
 
     def test_max_score_is_15_for_weighted_categories(self) -> None:
         for category in (
@@ -419,8 +502,14 @@ class CheckResultSerializerTests(TestCase):
             CheckResult.Category.SECURITY_HEADERS,
             CheckResult.Category.PERFORMANCE,
         ):
-            result = CheckResult(scan=self.scan, category=category, score=10, status=HealthStatus.HEALTHY)
-            self.assertEqual(CheckResultSerializer(result).data["max_score"], 15, f"{category} should be 15")
+            result = CheckResult(
+                scan=self.scan, category=category, score=10, status=HealthStatus.HEALTHY
+            )
+            self.assertEqual(
+                CheckResultSerializer(result).data["max_score"],
+                15,
+                f"{category} should be 15",
+            )
 
     def test_max_score_all_weighted_categories(self) -> None:
         expected: dict[str, int] = {
@@ -432,14 +521,30 @@ class CheckResultSerializerTests(TestCase):
             CheckResult.Category.PERFORMANCE: 15,
         }
         for category, weight in expected.items():
-            result = CheckResult(scan=self.scan, category=category, score=weight, status=HealthStatus.HEALTHY)
+            result = CheckResult(
+                scan=self.scan,
+                category=category,
+                score=weight,
+                status=HealthStatus.HEALTHY,
+            )
             with self.subTest(category=category):
-                self.assertEqual(CheckResultSerializer(result).data["max_score"], weight)
+                self.assertEqual(
+                    CheckResultSerializer(result).data["max_score"], weight
+                )
 
     def test_serializer_uses_check_weights_as_source_of_truth(self) -> None:
         from scans.services.scoring import CHECK_WEIGHTS as _W
-        result = CheckResult(scan=self.scan, category=CheckResult.Category.DNS, score=15, status=HealthStatus.HEALTHY)
-        self.assertEqual(CheckResultSerializer(result).data["max_score"], _W[CheckResult.Category.DNS])
+
+        result = CheckResult(
+            scan=self.scan,
+            category=CheckResult.Category.DNS,
+            score=15,
+            status=HealthStatus.HEALTHY,
+        )
+        self.assertEqual(
+            CheckResultSerializer(result).data["max_score"],
+            _W[CheckResult.Category.DNS],
+        )
 
     def test_max_score_is_none_for_unbounded_categories(self) -> None:
         for category in (
@@ -453,9 +558,7 @@ class CheckResultSerializerTests(TestCase):
                 status=HealthStatus.HEALTHY,
             )
             with self.subTest(category=category):
-                self.assertIsNone(
-                    CheckResultSerializer(result).data["max_score"]
-                )
+                self.assertIsNone(CheckResultSerializer(result).data["max_score"])
 
         ssl = CheckResult(
             scan=self.scan,
@@ -493,8 +596,12 @@ class ScanAPITests(APITestCase):
     """Test the Scan and CheckResult REST API endpoints."""
 
     def setUp(self) -> None:
-        self.user = User.objects.create_user("owner@example.com", "CorrectHorseBattery1!")
-        self.other_user = User.objects.create_user("other@example.com", "CorrectHorseBattery1!")
+        self.user = User.objects.create_user(
+            "owner@example.com", "CorrectHorseBattery1!"
+        )
+        self.other_user = User.objects.create_user(
+            "other@example.com", "CorrectHorseBattery1!"
+        )
         self.website = Website.objects.create(owner=self.user, domain="owner.example")
         self.scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
         self.result = CheckResult.objects.create(
@@ -506,9 +613,15 @@ class ScanAPITests(APITestCase):
             recommendation="",
             technical_details={"http_status": 200},
         )
-        self.other_website = Website.objects.create(owner=self.other_user, domain="other.example")
-        self.other_scan = Scan.objects.create(website=self.other_website, status=Scan.Status.QUEUED)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(self.user)}")
+        self.other_website = Website.objects.create(
+            owner=self.other_user, domain="other.example"
+        )
+        self.other_scan = Scan.objects.create(
+            website=self.other_website, status=Scan.Status.QUEUED
+        )
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(self.user)}"
+        )
 
     # ── Scan listing ──
 
@@ -557,11 +670,15 @@ class ScanAPITests(APITestCase):
         self.assertEqual(response.data["results"], [])
 
     def test_check_results_are_read_only(self) -> None:
-        response = self.client.post(f"/api/v1/scans/{self.scan.id}/results/", {}, format="json")
+        response = self.client.post(
+            f"/api/v1/scans/{self.scan.id}/results/", {}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_check_result_detail_is_owner_scoped(self) -> None:
-        response = self.client.get(f"/api/v1/scans/{self.scan.id}/results/{self.result.id}/")
+        response = self.client.get(
+            f"/api/v1/scans/{self.scan.id}/results/{self.result.id}/"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["category"], "website")
 
@@ -571,9 +688,18 @@ class ScanAPITests(APITestCase):
         response = self.client.get(f"/api/v1/scans/{self.scan.id}/")
         # Core legacy fields that MUST be present (additive check — new fields are allowed).
         expected_keys = {
-            "id", "website_id", "domain", "status", "trigger",
-            "health_score", "health_status", "failure_message",
-            "started_at", "completed_at", "created_at", "updated_at",
+            "id",
+            "website_id",
+            "domain",
+            "status",
+            "trigger",
+            "health_score",
+            "health_status",
+            "failure_message",
+            "started_at",
+            "completed_at",
+            "created_at",
+            "updated_at",
             "check_results",
         }
         self.assertTrue(
@@ -582,11 +708,20 @@ class ScanAPITests(APITestCase):
         )
 
     def test_check_result_response_contains_expected_fields(self) -> None:
-        response = self.client.get(f"/api/v1/scans/{self.scan.id}/results/{self.result.id}/")
+        response = self.client.get(
+            f"/api/v1/scans/{self.scan.id}/results/{self.result.id}/"
+        )
         expected_keys = {
-            "id", "category", "status", "score", "max_score",
-            "summary", "recommendation", "technical_details",
-            "created_at", "updated_at",
+            "id",
+            "category",
+            "status",
+            "score",
+            "max_score",
+            "summary",
+            "recommendation",
+            "technical_details",
+            "created_at",
+            "updated_at",
         }
         self.assertEqual(set(response.data.keys()), expected_keys)
 
@@ -594,15 +729,31 @@ class ScanAPITests(APITestCase):
 
     def test_unauthenticated_scan_access_rejected(self) -> None:
         self.client.credentials()  # Clear auth
-        self.assertEqual(self.client.get("/api/v1/scans/").status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.client.get(f"/api/v1/scans/{self.scan.id}/").status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            self.client.get("/api/v1/scans/").status_code, status.HTTP_401_UNAUTHORIZED
+        )
+        self.assertEqual(
+            self.client.get(f"/api/v1/scans/{self.scan.id}/").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
 
     # ── Scans are read-only (no create/update/delete via /scans/) ──
 
     def test_scan_viewset_is_read_only(self) -> None:
-        self.assertEqual(self.client.post("/api/v1/scans/", {}, format="json").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(self.client.put(f"/api/v1/scans/{self.scan.id}/", {}, format="json").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(self.client.delete(f"/api/v1/scans/{self.scan.id}/").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(
+            self.client.post("/api/v1/scans/", {}, format="json").status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+        self.assertEqual(
+            self.client.put(
+                f"/api/v1/scans/{self.scan.id}/", {}, format="json"
+            ).status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+        self.assertEqual(
+            self.client.delete(f"/api/v1/scans/{self.scan.id}/").status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     # ── Nonexistent scan ──
 

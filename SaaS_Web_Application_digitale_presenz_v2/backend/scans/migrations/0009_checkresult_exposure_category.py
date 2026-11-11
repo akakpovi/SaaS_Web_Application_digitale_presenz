@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("scans", "0008_scan_journey_stage_scan_quota_charged_scanjourney_and_more"),
     ]

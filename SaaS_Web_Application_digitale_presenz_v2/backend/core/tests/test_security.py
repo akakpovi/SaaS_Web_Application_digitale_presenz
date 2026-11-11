@@ -34,7 +34,7 @@ def addrinfo_ipv6(*addresses: str) -> list[tuple]:
     return [
         (
             10,  # socket.AF_INET6
-            1,   # socket.SOCK_STREAM
+            1,  # socket.SOCK_STREAM
             6,
             "",
             (address, 0, 0, 0),
@@ -85,9 +85,7 @@ class SecurityTests(unittest.TestCase):
 
         for value in invalid_values:
             with self.subTest(value=value):
-                with self.assertRaises(
-                    DomainValidationError
-                ):
+                with self.assertRaises(DomainValidationError):
                     validate_domain_for_scan(value)
 
     def test_validate_domain_for_scan_internal_suffixes(
@@ -106,9 +104,7 @@ class SecurityTests(unittest.TestCase):
 
         for domain in blocked:
             with self.subTest(domain=domain):
-                with self.assertRaises(
-                    DomainValidationError
-                ):
+                with self.assertRaises(DomainValidationError):
                     validate_domain_for_scan(domain)
 
     def test_validate_domain_for_scan_metadata_hostnames(
@@ -124,9 +120,7 @@ class SecurityTests(unittest.TestCase):
 
         for value in blocked:
             with self.subTest(value=value):
-                with self.assertRaises(
-                    DomainValidationError
-                ):
+                with self.assertRaises(DomainValidationError):
                     validate_domain_for_scan(value)
 
     def test_validate_domain_for_scan_raw_ip(self) -> None:
@@ -147,9 +141,7 @@ class SecurityTests(unittest.TestCase):
 
         for value in addresses:
             with self.subTest(value=value):
-                with self.assertRaises(
-                    DomainValidationError
-                ):
+                with self.assertRaises(DomainValidationError):
                     validate_domain_for_scan(value)
 
     # ------------------------------------------------------------------
@@ -165,9 +157,7 @@ class SecurityTests(unittest.TestCase):
 
         for value in safe:
             with self.subTest(value=value):
-                self.assertTrue(
-                    _is_ip_safe(value)
-                )
+                self.assertTrue(_is_ip_safe(value))
 
         blocked = [
             "127.0.0.1",
@@ -187,14 +177,10 @@ class SecurityTests(unittest.TestCase):
 
         for value in blocked:
             with self.subTest(value=value):
-                self.assertFalse(
-                    _is_ip_safe(value)
-                )
+                self.assertFalse(_is_ip_safe(value))
 
     def test_invalid_ip_is_not_safe(self) -> None:
-        self.assertFalse(
-            _is_ip_safe("not-an-ip")
-        )
+        self.assertFalse(_is_ip_safe("not-an-ip"))
 
     # ------------------------------------------------------------------
     # DNS resolution protection
@@ -205,16 +191,12 @@ class SecurityTests(unittest.TestCase):
         self,
         mock_getaddrinfo: MagicMock,
     ) -> None:
-        mock_getaddrinfo.return_value = (
-            addrinfo_ipv4(
-                "8.8.8.8",
-                "1.1.1.1",
-            )
+        mock_getaddrinfo.return_value = addrinfo_ipv4(
+            "8.8.8.8",
+            "1.1.1.1",
         )
 
-        result = _resolve_and_validate(
-            "example.com"
-        )
+        result = _resolve_and_validate("example.com")
 
         self.assertEqual(
             result,
@@ -229,15 +211,9 @@ class SecurityTests(unittest.TestCase):
         self,
         mock_getaddrinfo: MagicMock,
     ) -> None:
-        mock_getaddrinfo.return_value = (
-            addrinfo_ipv6(
-                "2001:4860:4860::8888"
-            )
-        )
+        mock_getaddrinfo.return_value = addrinfo_ipv6("2001:4860:4860::8888")
 
-        result = _resolve_and_validate(
-            "example.com"
-        )
+        result = _resolve_and_validate("example.com")
 
         self.assertEqual(
             result,
@@ -259,16 +235,10 @@ class SecurityTests(unittest.TestCase):
 
         for address in blocked_addresses:
             with self.subTest(address=address):
-                mock_getaddrinfo.return_value = (
-                    addrinfo_ipv4(address)
-                )
+                mock_getaddrinfo.return_value = addrinfo_ipv4(address)
 
-                with self.assertRaises(
-                    SSRFBlockedError
-                ):
-                    _resolve_and_validate(
-                        "attacker.example.com"
-                    )
+                with self.assertRaises(SSRFBlockedError):
+                    _resolve_and_validate("attacker.example.com")
 
     @patch("core.security.socket.getaddrinfo")
     def test_resolve_blocks_private_ipv6(
@@ -285,51 +255,35 @@ class SecurityTests(unittest.TestCase):
 
         for address in blocked_addresses:
             with self.subTest(address=address):
-                mock_getaddrinfo.return_value = (
-                    addrinfo_ipv6(address)
-                )
+                mock_getaddrinfo.return_value = addrinfo_ipv6(address)
 
-                with self.assertRaises(
-                    SSRFBlockedError
-                ):
-                    _resolve_and_validate(
-                        "attacker.example.com"
-                    )
+                with self.assertRaises(SSRFBlockedError):
+                    _resolve_and_validate("attacker.example.com")
 
     @patch("core.security.socket.getaddrinfo")
     def test_mixed_public_private_dns_is_rejected(
         self,
         mock_getaddrinfo: MagicMock,
     ) -> None:
-        mock_getaddrinfo.return_value = (
-            addrinfo_ipv4(
-                "8.8.8.8",
-                "127.0.0.1",
-            )
+        mock_getaddrinfo.return_value = addrinfo_ipv4(
+            "8.8.8.8",
+            "127.0.0.1",
         )
 
-        with self.assertRaises(
-            SSRFBlockedError
-        ):
-            _resolve_and_validate(
-                "mixed.example.com"
-            )
+        with self.assertRaises(SSRFBlockedError):
+            _resolve_and_validate("mixed.example.com")
 
     @patch("core.security.socket.getaddrinfo")
     def test_dns_duplicate_addresses_are_deduplicated(
         self,
         mock_getaddrinfo: MagicMock,
     ) -> None:
-        mock_getaddrinfo.return_value = (
-            addrinfo_ipv4(
-                "8.8.8.8",
-                "8.8.8.8",
-            )
+        mock_getaddrinfo.return_value = addrinfo_ipv4(
+            "8.8.8.8",
+            "8.8.8.8",
         )
 
-        result = _resolve_and_validate(
-            "example.com"
-        )
+        result = _resolve_and_validate("example.com")
 
         self.assertEqual(
             result,
@@ -343,12 +297,8 @@ class SecurityTests(unittest.TestCase):
     ) -> None:
         mock_getaddrinfo.return_value = []
 
-        with self.assertRaises(
-            SSRFBlockedError
-        ):
-            _resolve_and_validate(
-                "example.com"
-            )
+        with self.assertRaises(SSRFBlockedError):
+            _resolve_and_validate("example.com")
 
     # ------------------------------------------------------------------
     # URL/method/port safety
@@ -363,39 +313,23 @@ class SecurityTests(unittest.TestCase):
 
         for value in values:
             with self.subTest(value=value):
-                with self.assertRaises(
-                    DomainValidationError
-                ):
+                with self.assertRaises(DomainValidationError):
                     safe_request(value)
 
     def test_safe_request_blocks_arbitrary_port(self) -> None:
-        with self.assertRaises(
-            DomainValidationError
-        ):
-            safe_request(
-                "https://example.com:22/"
-            )
+        with self.assertRaises(DomainValidationError):
+            safe_request("https://example.com:22/")
 
     def test_safe_request_blocks_credentials(self) -> None:
-        with self.assertRaises(
-            DomainValidationError
-        ):
-            safe_request(
-                "https://user:password@example.com/"
-            )
+        with self.assertRaises(DomainValidationError):
+            safe_request("https://user:password@example.com/")
 
     def test_safe_request_blocks_fragment(self) -> None:
-        with self.assertRaises(
-            DomainValidationError
-        ):
-            safe_request(
-                "https://example.com/#secret"
-            )
+        with self.assertRaises(DomainValidationError):
+            safe_request("https://example.com/#secret")
 
     def test_safe_request_rejects_post_method(self) -> None:
-        with self.assertRaises(
-            DomainValidationError
-        ):
+        with self.assertRaises(DomainValidationError):
             safe_request(
                 "https://example.com/",
                 method="POST",
@@ -417,23 +351,15 @@ class SecurityTests(unittest.TestCase):
     ) -> None:
         response = MagicMock()
         response.status = 200
-        response.headers = {
-            "Content-Length": str(
-                (2 * 1024 * 1024) + 1
-            )
-        }
+        response.headers = {"Content-Length": str((2 * 1024 * 1024) + 1)}
         response.stream.return_value = []
 
         pool = MagicMock()
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            ResponseTooLargeError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(ResponseTooLargeError):
+            safe_request("https://example.com/")
 
     @patch(
         "core.security._resolve_and_validate",
@@ -458,12 +384,8 @@ class SecurityTests(unittest.TestCase):
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            ResponseTooLargeError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(ResponseTooLargeError):
+            safe_request("https://example.com/")
 
     @patch(
         "core.security._resolve_and_validate",
@@ -478,20 +400,15 @@ class SecurityTests(unittest.TestCase):
         response = MagicMock()
         response.status = 302
         response.headers = {
-            "Location":
-                "http://metadata.google.internal/latest/meta-data/"
+            "Location": "http://metadata.google.internal/latest/meta-data/"
         }
 
         pool = MagicMock()
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            DomainValidationError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(DomainValidationError):
+            safe_request("https://example.com/")
 
     @patch(
         "core.security._resolve_and_validate",
@@ -505,21 +422,14 @@ class SecurityTests(unittest.TestCase):
     ) -> None:
         response = MagicMock()
         response.status = 302
-        response.headers = {
-            "Location":
-                "http://127.0.0.1/admin"
-        }
+        response.headers = {"Location": "http://127.0.0.1/admin"}
 
         pool = MagicMock()
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            DomainValidationError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(DomainValidationError):
+            safe_request("https://example.com/")
 
     @patch(
         "core.security._resolve_and_validate",
@@ -533,21 +443,14 @@ class SecurityTests(unittest.TestCase):
     ) -> None:
         response = MagicMock()
         response.status = 302
-        response.headers = {
-            "Location":
-                "https://example.com:22/"
-        }
+        response.headers = {"Location": "https://example.com:22/"}
 
         pool = MagicMock()
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            SSRFBlockedError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(SSRFBlockedError):
+            safe_request("https://example.com/")
 
     @patch(
         "core.security._resolve_and_validate",
@@ -561,21 +464,14 @@ class SecurityTests(unittest.TestCase):
     ) -> None:
         response = MagicMock()
         response.status = 302
-        response.headers = {
-            "Location":
-                "file:///etc/passwd"
-        }
+        response.headers = {"Location": "file:///etc/passwd"}
 
         pool = MagicMock()
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        with self.assertRaises(
-            SSRFBlockedError
-        ):
-            safe_request(
-                "https://example.com/"
-            )
+        with self.assertRaises(SSRFBlockedError):
+            safe_request("https://example.com/")
 
     # ------------------------------------------------------------------
     # TLS hostname / SNI pinning
@@ -600,9 +496,7 @@ class SecurityTests(unittest.TestCase):
         pool.request.return_value = response
         mock_pool_class.return_value = pool
 
-        result = safe_request(
-            "https://example.com/"
-        )
+        result = safe_request("https://example.com/")
 
         self.assertEqual(
             result.status_code,
@@ -611,9 +505,7 @@ class SecurityTests(unittest.TestCase):
 
         mock_pool_class.assert_called_once()
 
-        kwargs = (
-            mock_pool_class.call_args.kwargs
-        )
+        kwargs = mock_pool_class.call_args.kwargs
 
         self.assertEqual(
             kwargs["host"],
@@ -632,9 +524,7 @@ class SecurityTests(unittest.TestCase):
             "example.com",
         )
 
-        request_kwargs = (
-            pool.request.call_args.kwargs
-        )
+        request_kwargs = pool.request.call_args.kwargs
 
         self.assertEqual(
             request_kwargs["headers"]["Host"],

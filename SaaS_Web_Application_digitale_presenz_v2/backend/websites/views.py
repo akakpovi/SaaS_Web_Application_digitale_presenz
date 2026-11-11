@@ -25,7 +25,11 @@ from scans.tasks import run_authenticated_scan
 
 from .models import Website
 from .permissions import WebsiteRolePermission
-from .serializers import WebsiteDetailSerializer, WebsiteListSerializer, WebsiteSerializer
+from .serializers import (
+    WebsiteDetailSerializer,
+    WebsiteListSerializer,
+    WebsiteSerializer,
+)
 
 
 class WebsiteViewSet(viewsets.ModelViewSet):
@@ -49,10 +53,9 @@ class WebsiteViewSet(viewsets.ModelViewSet):
         user belongs to exactly one writable team organization it is used
         automatically; ambiguity is a 400 asking for ``organization_id``.
         """
-        raw_organization_id = (
-            (request.data or {}).get("organization_id")
-            or (request.data or {}).get("organization")
-        )
+        raw_organization_id = (request.data or {}).get("organization_id") or (
+            request.data or {}
+        ).get("organization")
         if raw_organization_id:
             try:
                 organization = Organization.objects.filter(
@@ -149,7 +152,9 @@ class WebsiteViewSet(viewsets.ModelViewSet):
         },
         responses={
             202: ScanSerializer,
-            409: OpenApiResponse(description="A scan is already active for this website."),
+            409: OpenApiResponse(
+                description="A scan is already active for this website."
+            ),
         },
         tags=["websites"],
     )
@@ -192,7 +197,7 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "detail": f"Invalid scan_type '{raw_scan_type}'. "
-                              f"Allowed values: {sorted(allowed)}."
+                    f"Allowed values: {sorted(allowed)}."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -225,10 +230,18 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     def active_scan(self, request: Request, pk: int = None) -> Response:
         """GET /api/v1/websites/{id}/active_scan/"""
         website = self.get_object()
-        scan = Scan.objects.filter(
-            website=website,
-            status__in=[Scan.Status.QUEUED, Scan.Status.RUNNING, Scan.Status.PENDING],
-        ).order_by("-created_at").first()
+        scan = (
+            Scan.objects.filter(
+                website=website,
+                status__in=[
+                    Scan.Status.QUEUED,
+                    Scan.Status.RUNNING,
+                    Scan.Status.PENDING,
+                ],
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
         if scan is None:
             return Response(

@@ -13,10 +13,15 @@ class PublicScanEmailI18nTests(TestCase):
     def setUp(self):
         self.website = Website.objects.create(domain="exemple-i18n.com", is_guest=True)
         self.scan = Scan.objects.create(
-            website=self.website, status="completed", health_score=82, is_guest=True,
+            website=self.website,
+            status="completed",
+            health_score=82,
+            is_guest=True,
         )
         self.lead = PublicLead.objects.create(
-            email="lead-i18n@example.com", url_scanned=f"https://{self.website.domain}", scan_id=str(self.scan.id),
+            email="lead-i18n@example.com",
+            url_scanned=f"https://{self.website.domain}",
+            scan_id=str(self.scan.id),
         )
 
     def _run_with_language(self, language_code):
@@ -27,12 +32,14 @@ class PublicScanEmailI18nTests(TestCase):
             return "<html><body>Mock Email Content</body></html>"
 
         with patch("notifications.tasks.render_to_string", side_effect=fake_render):
-            send_public_scan_report_email.apply(kwargs={
-                "lead_id": self.lead.id,
-                "scan_id": self.scan.id,
-                "email": self.lead.email,
-                "language_code": language_code,
-            }).get()
+            send_public_scan_report_email.apply(
+                kwargs={
+                    "lead_id": self.lead.id,
+                    "scan_id": self.scan.id,
+                    "email": self.lead.email,
+                    "language_code": language_code,
+                }
+            ).get()
 
         return captured
 

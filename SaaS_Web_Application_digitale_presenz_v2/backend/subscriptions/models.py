@@ -11,26 +11,26 @@ User = settings.AUTH_USER_MODEL
 
 class Plan(models.Model):
     class Tier(models.TextChoices):
-        FREE     = "free",     "Free"
-        PRO      = "pro",      "Pro"
+        FREE = "free", "Free"
+        PRO = "pro", "Pro"
         BUSINESS = "business", "Business"
-        AGENCY   = "agency",   "Agency"
+        AGENCY = "agency", "Agency"
 
-    tier         = models.CharField(max_length=10, choices=Tier.choices, unique=True)
-    name         = models.CharField(max_length=50)
-    description  = models.TextField(blank=True)
+    tier = models.CharField(max_length=10, choices=Tier.choices, unique=True)
+    name = models.CharField(max_length=50)
+    description = models.TextField(blank=True)
     price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    price_yearly  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price_yearly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # Limits
-    max_websites        = models.IntegerField(default=1)
+    max_websites = models.IntegerField(default=1)
     max_scans_per_month = models.IntegerField(default=10)
-    min_scan_interval   = models.CharField(max_length=4, default="24h")
-    can_export_reports  = models.BooleanField(default=False)
-    can_use_api         = models.BooleanField(default=False)
+    min_scan_interval = models.CharField(max_length=4, default="24h")
+    can_export_reports = models.BooleanField(default=False)
+    can_use_api = models.BooleanField(default=False)
     can_add_team_members = models.BooleanField(default=False)
-    max_team_members    = models.IntegerField(default=1)
-    max_alert_channels  = models.IntegerField(default=1)
+    max_team_members = models.IntegerField(default=1)
+    max_alert_channels = models.IntegerField(default=1)
 
     features = models.JSONField(default=list, help_text="List of feature strings")
     is_active = models.BooleanField(default=True)
@@ -39,11 +39,15 @@ class Plan(models.Model):
     # checkout can map a tier + billing cycle to the exact price the provider
     # will charge, without hard-coding anything in the frontend.
     external_price_id_monthly = models.CharField(
-        max_length=255, blank=True, default="",
+        max_length=255,
+        blank=True,
+        default="",
         help_text="Provider price ID for the monthly cycle (e.g. pri_...)",
     )
     external_price_id_yearly = models.CharField(
-        max_length=255, blank=True, default="",
+        max_length=255,
+        blank=True,
+        default="",
         help_text="Provider price ID for the yearly cycle (e.g. pri_...)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -59,34 +63,46 @@ class Plan(models.Model):
 
 class Subscription(models.Model):
     class Status(models.TextChoices):
-        ACTIVE    = "active",    "Active"
+        ACTIVE = "active", "Active"
         CANCELLED = "cancelled", "Cancelled"
-        PAST_DUE  = "past_due",  "Past Due"
-        TRIALING  = "trialing",  "Trialing"
-        EXPIRED   = "expired",   "Expired"
+        PAST_DUE = "past_due", "Past Due"
+        TRIALING = "trialing", "Trialing"
+        EXPIRED = "expired", "Expired"
 
     class BillingCycle(models.TextChoices):
         MONTHLY = "monthly", "Monthly"
-        YEARLY  = "yearly",  "Yearly"
+        YEARLY = "yearly", "Yearly"
 
-    id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subscription")
-    plan = models.ForeignKey(Plan, on_delete=models.PROTECT, related_name="subscriptions")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="subscription"
+    )
+    plan = models.ForeignKey(
+        Plan, on_delete=models.PROTECT, related_name="subscriptions"
+    )
 
-    status        = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
-    billing_cycle = models.CharField(max_length=8, choices=BillingCycle.choices, default=BillingCycle.MONTHLY)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.ACTIVE
+    )
+    billing_cycle = models.CharField(
+        max_length=8, choices=BillingCycle.choices, default=BillingCycle.MONTHLY
+    )
 
     # Dates
-    started_at    = models.DateTimeField(default=timezone.now)
+    started_at = models.DateTimeField(default=timezone.now)
     current_period_start = models.DateTimeField(null=True, blank=True)
-    current_period_end   = models.DateTimeField(null=True, blank=True)
-    cancelled_at  = models.DateTimeField(null=True, blank=True)
-    trial_end     = models.DateTimeField(null=True, blank=True)
+    current_period_end = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    trial_end = models.DateTimeField(null=True, blank=True)
 
     # Provider-independent billing fields
-    external_id        = models.CharField(max_length=255, blank=True, help_text="Billing provider subscription ID")
-    billing_provider   = models.CharField(max_length=50,  blank=True, help_text="e.g. stripe, paddle")
-    billing_metadata   = models.JSONField(default=dict)
+    external_id = models.CharField(
+        max_length=255, blank=True, help_text="Billing provider subscription ID"
+    )
+    billing_provider = models.CharField(
+        max_length=50, blank=True, help_text="e.g. stripe, paddle"
+    )
+    billing_metadata = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -137,7 +153,9 @@ class BillingEvent(models.Model):
     event_id = models.CharField(max_length=255)
     event_type = models.CharField(max_length=100, blank=True)
     payload = models.JSONField(default=dict)
-    status = models.CharField(max_length=12, choices=Status.choices, default=Status.RECEIVED)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.RECEIVED
+    )
     error = models.TextField(blank=True)
     received_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
@@ -171,9 +189,7 @@ class ApiKey(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="api_keys"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
     name = models.CharField(max_length=100)
     prefix = models.CharField(max_length=16, unique=True)
     hashed_key = models.CharField(max_length=64)

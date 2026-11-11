@@ -98,9 +98,7 @@ class AkaConfig:
         if isinstance(raw_models, str):
             raw_models = raw_models.split(",")
         normalized_models = tuple(
-            dict.fromkeys(
-                item.strip() for item in raw_models if item and item.strip()
-            )
+            dict.fromkeys(item.strip() for item in raw_models if item and item.strip())
         )
         if not normalized_models:
             raise ValueError("AKA_AI_MODELS must contain at least one model")
@@ -403,9 +401,7 @@ class AkaAIClient:
             started = self._clock()
 
             try:
-                status_code, response_headers, body = self._post(
-                    url, payload, headers
-                )
+                status_code, response_headers, body = self._post(url, payload, headers)
             except requests.Timeout:
                 error: AkaError = AkaTimeoutError("AKA AI request timed out")
                 if not self._can_retry(attempt):
@@ -428,9 +424,7 @@ class AkaAIClient:
 
             if status_code == 200:
                 try:
-                    completion = self._parse_completion(
-                        body, response_headers, started
-                    )
+                    completion = self._parse_completion(body, response_headers, started)
                 except AkaInvalidResponseError:
                     self._circuit.record_failure()
                     raise
@@ -444,9 +438,7 @@ class AkaAIClient:
                 self._circuit.record_success()
                 return completion
 
-            error = self._error_from_response(
-                status_code, response_headers, body
-            )
+            error = self._error_from_response(status_code, response_headers, body)
             if self._is_guest_response(response_headers, error):
                 self._reject_guest_response(
                     status_code,
@@ -481,9 +473,7 @@ class AkaAIClient:
             raw = raw.decode("ascii", "ignore")
         return str(raw).strip() or "unknown"
 
-    def _is_guest_response(
-        self, headers: Mapping[str, Any], error: AkaError
-    ) -> bool:
+    def _is_guest_response(self, headers: Mapping[str, Any], error: AkaError) -> bool:
         if self._guest_limit(headers) is not None:
             return True
         return (error.code or "").lower() == "guest_quota_exceeded"
@@ -534,9 +524,7 @@ class AkaAIClient:
         )
         self._sleep(delay)
 
-    def _retry_delay(
-        self, attempt: int, retry_after: float | None
-    ) -> float:
+    def _retry_delay(self, attempt: int, retry_after: float | None) -> float:
         if retry_after is not None:
             return max(0.0, retry_after)
         base = min(
@@ -593,9 +581,7 @@ class AkaAIClient:
 
         content = getattr(response, "content", b"") or b""
         if len(content) > limit:
-            raise AkaInvalidResponseError(
-                "AKA AI response exceeds the size limit"
-            )
+            raise AkaInvalidResponseError("AKA AI response exceeds the size limit")
         return content
 
     def _parse_completion(
@@ -607,35 +593,23 @@ class AkaAIClient:
         try:
             data = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise AkaInvalidResponseError(
-                "AKA AI returned invalid JSON"
-            ) from exc
+            raise AkaInvalidResponseError("AKA AI returned invalid JSON") from exc
 
         if not isinstance(data, dict):
-            raise AkaInvalidResponseError(
-                "AKA AI returned a non-object JSON payload"
-            )
+            raise AkaInvalidResponseError("AKA AI returned a non-object JSON payload")
 
         choices = data.get("choices")
         if not isinstance(choices, list) or not choices:
-            raise AkaInvalidResponseError(
-                "AKA AI returned no completion choices"
-            )
+            raise AkaInvalidResponseError("AKA AI returned no completion choices")
         first_choice = choices[0]
         if not isinstance(first_choice, dict):
-            raise AkaInvalidResponseError(
-                "AKA AI returned an invalid choice payload"
-            )
+            raise AkaInvalidResponseError("AKA AI returned an invalid choice payload")
         message = first_choice.get("message")
         if not isinstance(message, dict):
-            raise AkaInvalidResponseError(
-                "AKA AI returned no assistant message"
-            )
+            raise AkaInvalidResponseError("AKA AI returned no assistant message")
         content = message.get("content")
         if not isinstance(content, str) or not content.strip():
-            raise AkaInvalidResponseError(
-                "AKA AI returned an empty assistant message"
-            )
+            raise AkaInvalidResponseError("AKA AI returned an empty assistant message")
 
         usage = data.get("usage")
         if not isinstance(usage, dict):
@@ -648,19 +622,13 @@ class AkaAIClient:
             content=content,
             finish_reason=str(first_choice.get("finish_reason") or ""),
             prompt_tokens=self._int_or_none(usage.get("prompt_tokens")),
-            completion_tokens=self._int_or_none(
-                usage.get("completion_tokens")
-            ),
+            completion_tokens=self._int_or_none(usage.get("completion_tokens")),
             total_tokens=self._int_or_none(usage.get("total_tokens")),
             request_id=(
-                self._string_or_none(
-                    self._get_header(headers, "x-request-id")
-                )
+                self._string_or_none(self._get_header(headers, "x-request-id"))
                 or self._string_or_none(data.get("request_id"))
             ),
-            system_fingerprint=self._string_or_none(
-                data.get("system_fingerprint")
-            ),
+            system_fingerprint=self._string_or_none(data.get("system_fingerprint")),
             latency_ms=latency_ms,
         )
 
@@ -768,14 +736,10 @@ class AkaAIClient:
             return None
         if retry_at.tzinfo is None:
             retry_at = retry_at.replace(tzinfo=timezone.utc)
-        return max(
-            0.0, (retry_at - datetime.now(timezone.utc)).total_seconds()
-        )
+        return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
 
     @staticmethod
-    def _get_header(
-        headers: Mapping[str, Any], name: str
-    ) -> Any | None:
+    def _get_header(headers: Mapping[str, Any], name: str) -> Any | None:
         expected = name.lower()
         for key, value in headers.items():
             if str(key).lower() == expected:
@@ -810,10 +774,6 @@ class AkaAIClient:
             role = message.get("role")
             content = message.get("content")
             if role not in _ALLOWED_ROLES:
-                raise ValueError(
-                    "message role must be system, user, or assistant"
-                )
+                raise ValueError("message role must be system, user, or assistant")
             if not isinstance(content, str) or not content.strip():
-                raise ValueError(
-                    "message content must be a non-empty string"
-                )
+                raise ValueError("message content must be a non-empty string")

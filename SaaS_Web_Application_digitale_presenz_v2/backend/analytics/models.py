@@ -1,8 +1,11 @@
 from django.db import models
 from django.conf import settings
 
+
 class TrafficLog(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     path = models.CharField(max_length=500)
     method = models.CharField(max_length=10, default="GET")
     ip_hash = models.CharField(max_length=64, null=True, blank=True, db_index=True)
@@ -32,8 +35,12 @@ class AnalyticsEvent(models.Model):
         PWA_DISMISS = "pwa_dismiss", "PWA Dismiss"
         AFFILIATE_CLICK = "affiliate_click", "Affiliate Click"
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
-    event_type = models.CharField(max_length=50, choices=EventType.choices, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    event_type = models.CharField(
+        max_length=50, choices=EventType.choices, db_index=True
+    )
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -42,7 +49,9 @@ class AnalyticsEvent(models.Model):
 
 
 class AffiliateClick(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     partner = models.CharField(max_length=100)
     target_url = models.URLField()
     commission_eur = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)

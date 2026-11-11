@@ -43,7 +43,9 @@ class TeamManagementAPITests(APITestCase):
         self.admin = User.objects.create_user("admin@team.example", "Password123!")
         self.analyst = User.objects.create_user("analyst@team.example", "Password123!")
         self.viewer = User.objects.create_user("viewer@team.example", "Password123!")
-        self.outsider = User.objects.create_user("outsider@other.example", "Password123!")
+        self.outsider = User.objects.create_user(
+            "outsider@other.example", "Password123!"
+        )
 
         Subscription.objects.update_or_create(
             user=self.owner,
@@ -348,7 +350,11 @@ class TeamManagementAPITests(APITestCase):
             "Password123!",
         )
         self._auth(revoked_user)
-        token = parse_qs(urlparse(mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]).query)["token"][0]
+        token = parse_qs(
+            urlparse(
+                mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]
+            ).query
+        )["token"][0]
         self.assertEqual(
             self.client.post(
                 f"/api/v1/organizations/invitations/{token}/accept/"
@@ -371,7 +377,11 @@ class TeamManagementAPITests(APITestCase):
             format="json",
         )
         invitation = OrganizationInvitation.objects.get(email="intended@team.example")
-        token = parse_qs(urlparse(mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]).query)["token"][0]
+        token = parse_qs(
+            urlparse(
+                mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]
+            ).query
+        )["token"][0]
 
         wrong_user = User.objects.create_user("wrong@team.example", "Password123!")
         self._auth(wrong_user)
@@ -397,7 +407,11 @@ class TeamManagementAPITests(APITestCase):
             format="json",
         )
         invitation = OrganizationInvitation.objects.get(email="late@team.example")
-        token = parse_qs(urlparse(mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]).query)["token"][0]
+        token = parse_qs(
+            urlparse(
+                mail.outbox[0].body.split("Accept the invitation: ")[1].split()[0]
+            ).query
+        )["token"][0]
         invitation.expires_at = timezone.now() - timedelta(minutes=1)
         invitation.save(update_fields=["expires_at"])
 

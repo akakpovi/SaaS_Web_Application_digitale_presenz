@@ -26,13 +26,9 @@ class LinkedInOAuthClientTests(TestCase):
         LINKEDIN_OAUTH_AUTHORIZE_URL=(
             "https://www.linkedin.com/oauth/v2/authorization"
         ),
-        LINKEDIN_OAUTH_TOKEN_URL=(
-            "https://www.linkedin.com/oauth/v2/accessToken"
-        ),
+        LINKEDIN_OAUTH_TOKEN_URL=("https://www.linkedin.com/oauth/v2/accessToken"),
         LINKEDIN_OAUTH_USERINFO_URL="https://api.linkedin.com/v2/userinfo",
-        LINKEDIN_OAUTH_REVOKE_URL=(
-            "https://www.linkedin.com/oauth/v2/revoke"
-        ),
+        LINKEDIN_OAUTH_REVOKE_URL=("https://www.linkedin.com/oauth/v2/revoke"),
     )
     def test_defaults_target_the_real_linkedin_endpoints(self):
         client = LinkedInOAuthClient()
@@ -88,9 +84,7 @@ class LinkedInOAuthClientTests(TestCase):
 
     @override_settings(LINKEDIN_CLIENT_SECRET="")
     def test_missing_secret_never_performs_a_network_call(self):
-        with patch(
-            "integrations.providers.linkedin.requests.post"
-        ) as post:
+        with patch("integrations.providers.linkedin.requests.post") as post:
             with self.assertRaises(ProviderNotConfiguredError):
                 LinkedInOAuthClient().exchange_code(
                     code="authorization-code",
@@ -220,9 +214,7 @@ class LinkedInOAuthClientTests(TestCase):
             "integrations.providers.linkedin.requests.post",
             return_value=response,
         ) as post:
-            LinkedInOAuthClient().revoke_token(
-                access_token="mock-access-token"
-            )
+            LinkedInOAuthClient().revoke_token(access_token="mock-access-token")
 
         post.assert_called_once()
         args, kwargs = post.call_args
@@ -240,9 +232,7 @@ class LinkedInOAuthClientTests(TestCase):
             return_value=response,
         ):
             with self.assertRaises(ProviderRequestError) as captured:
-                LinkedInOAuthClient().revoke_token(
-                    access_token="mock-access-token"
-                )
+                LinkedInOAuthClient().revoke_token(access_token="mock-access-token")
 
         self.assertNotIn("mock-access-token", str(captured.exception))
         self.assertNotIn("client-secret", str(captured.exception))
@@ -317,9 +307,7 @@ class LinkedInOAuthClientTests(TestCase):
         self.assertNotIn("client-secret", str(captured.exception))
 
     def test_refresh_without_a_refresh_token_never_calls_the_provider(self):
-        with patch(
-            "integrations.providers.linkedin.requests.post"
-        ) as post:
+        with patch("integrations.providers.linkedin.requests.post") as post:
             with self.assertRaises(ProviderRequestError):
                 LinkedInOAuthClient().refresh_access_token(refresh_token="")
 

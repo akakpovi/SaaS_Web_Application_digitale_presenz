@@ -86,9 +86,7 @@ class AADBindingTests(TestCase):
             access_token="tenant-b-secret",
         )
 
-        connection_b.access_token_ciphertext = (
-            connection_a.access_token_ciphertext
-        )
+        connection_b.access_token_ciphertext = connection_a.access_token_ciphertext
         connection_b.key_version = connection_a.key_version
         connection_b.save(
             update_fields=["access_token_ciphertext", "key_version", "updated_at"]

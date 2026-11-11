@@ -1,4 +1,5 @@
 """Website availability scanner."""
+
 import logging
 from typing import Any
 
@@ -10,16 +11,18 @@ logger = logging.getLogger(__name__)
 
 class WebsiteScanner(BaseScanner):
     """Check website availability and HTTP status."""
-    
+
     name = "website"
     timeout = 15
-    
+
     def scan(self, domain: str) -> ScanResult:
         """Scan website availability."""
         try:
             url = f"https://{domain}"
-            response = safe_request(url, method="GET", connect_timeout=5.0, read_timeout=float(self.timeout))
-            
+            response = safe_request(
+                url, method="GET", connect_timeout=5.0, read_timeout=float(self.timeout)
+            )
+
             if response.status_code == 200:
                 return self._create_result(
                     score=20,
@@ -61,7 +64,7 @@ class WebsiteScanner(BaseScanner):
                     duration_ms=response.elapsed_ms,
                     status_code=response.status_code,
                 )
-                
+
         except DomainValidationError as e:
             return self._create_result(
                 score=0,

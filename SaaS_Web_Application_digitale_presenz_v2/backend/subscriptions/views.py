@@ -93,9 +93,7 @@ class CheckoutView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        plan = Plan.objects.filter(
-            tier=data["plan_tier"], is_active=True
-        ).first()
+        plan = Plan.objects.filter(tier=data["plan_tier"], is_active=True).first()
         if plan is None or plan.tier == Plan.Tier.FREE:
             return Response(
                 {
@@ -173,9 +171,7 @@ class UpgradeSubscriptionView(APIView):
             )
 
         # Validate the payload so clients get a useful error, then refuse.
-        UpgradeSubscriptionSerializer(data=request.data).is_valid(
-            raise_exception=True
-        )
+        UpgradeSubscriptionSerializer(data=request.data).is_valid(raise_exception=True)
         return Response(
             {
                 "detail": "Use /subscriptions/checkout/ to change plan. "
@@ -242,7 +238,10 @@ class PaddleWebhookView(APIView):
     def post(self, request) -> Response:
         if not billing.is_configured(require_api_key=False):
             return Response(
-                {"detail": "Billing is not configured.", "code": "billing_not_configured"},
+                {
+                    "detail": "Billing is not configured.",
+                    "code": "billing_not_configured",
+                },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -250,7 +249,10 @@ class PaddleWebhookView(APIView):
         if not secret:
             logger.error("Paddle webhook received but PADDLE_WEBHOOK_SECRET is unset")
             return Response(
-                {"detail": "Webhook secret is not configured.", "code": "webhook_not_configured"},
+                {
+                    "detail": "Webhook secret is not configured.",
+                    "code": "webhook_not_configured",
+                },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -275,7 +277,10 @@ class PaddleWebhookView(APIView):
         data = payload.get("data") or {}
         if not event_id or not event_type:
             return Response(
-                {"detail": "Missing event_id or event_type.", "code": "invalid_payload"},
+                {
+                    "detail": "Missing event_id or event_type.",
+                    "code": "invalid_payload",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

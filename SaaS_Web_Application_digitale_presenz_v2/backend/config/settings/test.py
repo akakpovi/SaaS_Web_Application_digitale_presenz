@@ -30,9 +30,7 @@ CONNECTOR_KEK_ACTIVE_VERSION = 1
 # network call is made: the provider client is patched in the tests.
 LINKEDIN_CLIENT_ID = "test-linkedin-client"
 LINKEDIN_CLIENT_SECRET = "test-linkedin-secret"
-LINKEDIN_REDIRECT_URI = (
-    "https://app.example/api/v1/social/oauth/linkedin/callback/"
-)
+LINKEDIN_REDIRECT_URI = "https://app.example/api/v1/social/oauth/linkedin/callback/"
 LINKEDIN_OAUTH_REVOKE_URL = "https://linkedin.test/revoke"
 LINKEDIN_OAUTH_SCOPES = "openid profile w_member_social"
 LINKEDIN_OAUTH_TIMEOUT = 5

@@ -1,4 +1,5 @@
 """Celery tasks for the public website checker."""
+
 from __future__ import annotations
 
 import logging

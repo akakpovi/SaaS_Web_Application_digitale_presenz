@@ -4,15 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scans', '0005_add_external_security_categories'),
+        ("scans", "0005_add_external_security_categories"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='scannerrun',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('running', 'Running'), ('completed', 'Completed'), ('partial', 'Partial (incomplete report)'), ('failed', 'Failed'), ('timeout', 'Timeout'), ('cancelled', 'Cancelled'), ('unavailable', 'Unavailable')], default='pending', max_length=16),
+            model_name="scannerrun",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("running", "Running"),
+                    ("completed", "Completed"),
+                    ("partial", "Partial (incomplete report)"),
+                    ("failed", "Failed"),
+                    ("timeout", "Timeout"),
+                    ("cancelled", "Cancelled"),
+                    ("unavailable", "Unavailable"),
+                ],
+                default="pending",
+                max_length=16,
+            ),
         ),
     ]

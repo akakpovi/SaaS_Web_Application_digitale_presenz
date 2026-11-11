@@ -52,12 +52,14 @@ logger = logging.getLogger(__name__)
 # Default Nmap flags for service detection scan.
 # We deliberately avoid -O (OS detection) which requires root.
 _DEFAULT_NMAP_FLAGS = [
-    "-sV",       # Service/version detection
-    "-sT",       # TCP connect scan (no root required)
-    "--top-ports", "1000",
-    "--open",    # Only show open ports
-    "-oX", "-",  # XML to stdout
-    "-T4",       # Aggressive timing (safe for remote)
+    "-sV",  # Service/version detection
+    "-sT",  # TCP connect scan (no root required)
+    "--top-ports",
+    "1000",
+    "--open",  # Only show open ports
+    "-oX",
+    "-",  # XML to stdout
+    "-T4",  # Aggressive timing (safe for remote)
 ]
 
 # NSE scripts to run for security checks (safe, non-intrusive)
@@ -205,7 +207,9 @@ class NmapScanner(BaseScanner):
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_nmap_xml(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
 
         open_ports = [p for p in parsed_results if p.get("state") == "open"]
@@ -219,46 +223,59 @@ class NmapScanner(BaseScanner):
             product = service.get("product", "")
             version = service.get("version", "")
 
-            findings.append(NormalizedFinding(
-                check_code=f"nmap.open_port.{port}",
-                category="security",
-                severity=Severity.INFO if port in expected_web_ports else Severity.MEDIUM,
-                status=FindingStatus.PASS if port in expected_web_ports else FindingStatus.WARNING,
-                title=f"Port {port}/{port_data.get('protocol', 'tcp')} open — {service_name}",
-                description=f"Port {port} is open running {product} {version}".strip(),
-                evidence=port_data,
-                recommendation=(
-                    f"Review whether port {port} should be publicly accessible."
-                    if port not in expected_web_ports else ""
-                ),
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"nmap.open_port.{port}",
+                    category="security",
+                    severity=Severity.INFO
+                    if port in expected_web_ports
+                    else Severity.MEDIUM,
+                    status=FindingStatus.PASS
+                    if port in expected_web_ports
+                    else FindingStatus.WARNING,
+                    title=f"Port {port}/{port_data.get('protocol', 'tcp')} open — {service_name}",
+                    description=f"Port {port} is open running {product} {version}".strip(),
+                    evidence=port_data,
+                    recommendation=(
+                        f"Review whether port {port} should be publicly accessible."
+                        if port not in expected_web_ports
+                        else ""
+                    ),
+                )
+            )
 
         if parsed_results:
-            findings.append(NormalizedFinding(
-                check_code="nmap.open_ports_summary",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.PASS,
-                title=f"Nmap scan complete: {len(open_ports)} open port(s)",
-                evidence={
-                    "open_ports": len(open_ports),
-                    "total_scanned": len(parsed_results),
-                },
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code="nmap.open_ports_summary",
+                    category="security",
+                    severity=Severity.INFO,
+                    status=FindingStatus.PASS,
+                    title=f"Nmap scan complete: {len(open_ports)} open port(s)",
+                    evidence={
+                        "open_ports": len(open_ports),
+                        "total_scanned": len(parsed_results),
+                    },
+                )
+            )
         else:
             # No XML at all: the report is unusable, not a proof of "no ports".
-            findings.append(NormalizedFinding(
-                check_code="nmap.no_results",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.UNKNOWN,
-                title="No Nmap results",
-                description="Nmap returned no port data.",
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code="nmap.no_results",
+                    category="security",
+                    severity=Severity.INFO,
+                    status=FindingStatus.UNKNOWN,
+                    title="No Nmap results",
+                    description="Nmap returned no port data.",
+                )
+            )
 
         return findings
 
-    def _build_nmap_command(self, target_ip: str, options: dict | None = None) -> list[str]:
+    def _build_nmap_command(
+        self, target_ip: str, options: dict | None = None
+    ) -> list[str]:
         """Build the Nmap command. *target_ip* is a pre-validated IP address."""
         cfg = getattr(settings, "SCANNER_CONFIG", {}).get("nmap", {})
         nse_enabled = cfg.get("nse_enabled", False)

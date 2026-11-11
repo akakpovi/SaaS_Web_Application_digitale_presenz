@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class PublicLead(models.Model):
     email = models.EmailField(db_index=True)
     url_scanned = models.CharField(max_length=255)

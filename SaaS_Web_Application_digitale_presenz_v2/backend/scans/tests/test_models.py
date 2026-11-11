@@ -16,9 +16,7 @@ class ScanJourneyModelTests(TestCase):
         self.user = User.objects.create_user(
             "journey-owner@example.com", "CorrectHorseBattery1!"
         )
-        self.website = Website.objects.create(
-            owner=self.user, domain="journey.example"
-        )
+        self.website = Website.objects.create(owner=self.user, domain="journey.example")
 
     def _journey(self, **kwargs) -> ScanJourney:
         defaults = {
@@ -72,18 +70,14 @@ class ScanJourneyModelTests(TestCase):
 
         active = self._journey(state=JourneyState.RUNNING)
 
-        self.assertEqual(
-            ScanJourney.objects.filter(website=self.website).count(), 2
-        )
+        self.assertEqual(ScanJourney.objects.filter(website=self.website).count(), 2)
         self.assertEqual(active.state, JourneyState.RUNNING)
 
     # ── One scan per journey stage ──
 
     def test_duplicate_scan_for_the_same_stage_is_rejected(self) -> None:
         journey = self._journey()
-        Scan.objects.create(
-            website=self.website, journey=journey, journey_stage=1
-        )
+        Scan.objects.create(website=self.website, journey=journey, journey_stage=1)
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():

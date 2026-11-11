@@ -107,7 +107,7 @@ TESTSSL_NESTED_JSON = (
     '{"id":"cipherlist_AVERAGE","severity":"LOW","finding":"offered"}'
     '],"cipherTests":['
     '{"id":"cipherlist_AVERAGE","severity":"LOW","finding":"offered"}'
-    ']}]}'
+    "]}]}"
 )
 
 TESTSSL_FULL_COVERAGE_JSON = (
@@ -219,6 +219,7 @@ def _execute(
             return_value=_fake_executor(run, recorder, error),
         )
     else:
+
         def _runner(*args, **kwargs):
             recorder.calls += 1
             if error is not None:
@@ -241,9 +242,11 @@ def _execute(
 
         probe_patch = nullcontext()
 
-    with patch.object(
-        type(scanner), "is_available", return_value=True
-    ), runner_patch, probe_patch:
+    with (
+        patch.object(type(scanner), "is_available", return_value=True),
+        runner_patch,
+        probe_patch,
+    ):
         outcome = scanner.execute("example.com")
     return outcome, recorder
 
@@ -309,7 +312,10 @@ class AdvancedScannerWiringTests(SimpleTestCase):
                 self.assertIsInstance(argv, list)
                 self.assertTrue(all(isinstance(part, str) for part in argv))
                 for token in expected:
-                    self.assertTrue(token in argv or (token == "testssl" and argv[0] == "testssl.sh"))
+                    self.assertTrue(
+                        token in argv
+                        or (token == "testssl" and argv[0] == "testssl.sh")
+                    )
 
     def test_gobuster_wordlist_is_the_image_wordlist(self):
         from django.conf import settings
@@ -351,9 +357,10 @@ class AdvancedScannerSingleRunTests(SimpleTestCase):
             recorder.calls += 1
             return _run(stdout=NMAP_XML, stderr="Nmap done")
 
-        with patch.object(
-            type(nmap_scanner), "is_available", return_value=True
-        ), patch.object(nmap_module, "run_tool", _runner):
+        with (
+            patch.object(type(nmap_scanner), "is_available", return_value=True),
+            patch.object(nmap_module, "run_tool", _runner),
+        ):
             result = nmap_scanner.scan("example.com")
             self.assertEqual(recorder.calls, 1)
             findings = nmap_scanner.scan_findings("example.com")
@@ -379,9 +386,7 @@ class AdvancedScannerCompletenessTests(SimpleTestCase):
                 # The diagnostic finding is what tells an operator why nothing
                 # was resolved, and it is never a vulnerability.
                 diagnostic = next(
-                    f
-                    for f in outcome.findings
-                    if f.check_code.endswith(".timeout")
+                    f for f in outcome.findings if f.check_code.endswith(".timeout")
                 )
                 self.assertEqual(diagnostic.status, FindingStatus.UNKNOWN)
                 self.assertEqual(diagnostic.severity, "info")
@@ -451,9 +456,7 @@ class AdvancedScannerCompletenessTests(SimpleTestCase):
                 )
                 self.assertTrue(
                     any(
-                        f.check_code.endswith(
-                            (".incomplete", ".unparsable_report")
-                        )
+                        f.check_code.endswith((".incomplete", ".unparsable_report"))
                         for f in outcome.findings
                     )
                 )
@@ -535,9 +538,7 @@ class AdvancedScannerFindingTests(SimpleTestCase):
     """Normalisation of real tool output shapes."""
 
     def test_nmap_ports_are_normalised(self):
-        outcome, _ = _execute(
-            nmap_scanner, _run(stdout=NMAP_XML, stderr="Nmap done")
-        )
+        outcome, _ = _execute(nmap_scanner, _run(stdout=NMAP_XML, stderr="Nmap done"))
         codes = {finding.check_code for finding in outcome.findings}
         self.assertIn("nmap.open_port.443", codes)
         self.assertIn("nmap.open_ports_summary", codes)
@@ -572,9 +573,7 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         outcome, _ = _execute(
             testssl_scanner, _run(stdout=TESTSSL_JSON, stderr="testssl done")
         )
-        high = next(
-            f for f in outcome.findings if f.check_code == "testssl.TLS1_0"
-        )
+        high = next(f for f in outcome.findings if f.check_code == "testssl.TLS1_0")
         self.assertEqual(high.severity, "high")
         self.assertEqual(high.status, FindingStatus.FAIL)
 
@@ -605,7 +604,9 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         )
         self.assertNotIn("testssl.", codes)
         for finding in outcome.findings:
-            self.assertTrue(finding.title.strip().endswith(finding.check_code.split(".", 1)[1]))
+            self.assertTrue(
+                finding.title.strip().endswith(finding.check_code.split(".", 1)[1])
+            )
 
     def test_testssl_full_coverage_is_not_silently_dropped(self):
         """Protocol, certificate, HSTS and vulnerability sections must all
@@ -621,9 +622,7 @@ class AdvancedScannerFindingTests(SimpleTestCase):
         parsed = parse_testssl_json(TESTSSL_FULL_COVERAGE_JSON)
         self.assertEqual({item["id"] for item in parsed}, expected)
 
-        outcome, _ = _execute(
-            testssl_scanner, _run(stdout=TESTSSL_FULL_COVERAGE_JSON)
-        )
+        outcome, _ = _execute(testssl_scanner, _run(stdout=TESTSSL_FULL_COVERAGE_JSON))
         self.assertEqual(
             {finding.check_code for finding in outcome.findings},
             {f"testssl.{check_id}" for check_id in expected},
@@ -774,9 +773,7 @@ class AdvancedScannerOrchestrationTests(TestCase):
         self.user = User.objects.create_user(
             "advanced-adapters@example.com", "CorrectHorseBattery1!"
         )
-        self.website = Website.objects.create(
-            owner=self.user, domain="example.com"
-        )
+        self.website = Website.objects.create(owner=self.user, domain="example.com")
 
     def _run_scan(self, run: ToolRun):
         from scans.models import Scan
@@ -805,17 +802,17 @@ class AdvancedScannerOrchestrationTests(TestCase):
 
         # ``is_available`` is patched because the test worker has no Docker
         # socket; the adapter itself is the real nmap implementation.
-        with patch(
-            "scans.services.steps_builder.build_initial_steps", return_value=[step]
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ), patch.object(
-            NmapScanner, "is_available", return_value=True
-        ), patch.object(
-            nmap_module, "run_tool", _runner
-        ), patch(
-            "scans.services.scoring.recalculate_scan_health"
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps", return_value=[step]
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch.object(NmapScanner, "is_available", return_value=True),
+            patch.object(nmap_module, "run_tool", _runner),
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             ScanOrchestrator(scan.id).run()
 
@@ -850,9 +847,7 @@ class AdvancedScannerOrchestrationTests(TestCase):
         self.assertFalse(run.metadata["scan_complete"])
 
     def test_partial_run_is_partial_and_keeps_its_reason(self):
-        scan, runner = self._run_scan(
-            _run(stdout=NMAP_XML, exit_code=1)
-        )
+        scan, runner = self._run_scan(_run(stdout=NMAP_XML, exit_code=1))
         self.assertEqual(runner.calls, 1)
         self.assertNotEqual(scan.status, "completed")
         step = next(s for s in scan.steps if s["key"] == "nmap")

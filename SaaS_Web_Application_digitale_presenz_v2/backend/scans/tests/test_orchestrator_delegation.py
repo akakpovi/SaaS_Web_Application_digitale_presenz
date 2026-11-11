@@ -113,10 +113,13 @@ class CentralSSRFGateTests(TestCase):
 
         scan = Scan.objects.create(website=website, status=Scan.Status.QUEUED)
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("testssl", "testssl")],
-        ), patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("testssl", "testssl")],
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             ScanOrchestrator(scan.id).run()
 
         scanner.scan.assert_not_called()
@@ -150,16 +153,17 @@ class CentralSSRFGateTests(TestCase):
 
         scan = Scan.objects.create(website=website, status=Scan.Status.QUEUED)
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("nmap", "nmap")],
-        ), patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("nmap", "nmap")],
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             ScanOrchestrator(scan.id).run()
 
         scanner.scan.assert_not_called()
-        self.assertEqual(
-            ScannerRun.objects.get(scan=scan).metadata["reason"], "ssrf"
-        )
+        self.assertEqual(ScannerRun.objects.get(scan=scan).metadata["reason"], "ssrf")
 
     @patch("scanners.registry.ScannerRegistry")
     def test_internal_scanners_do_not_require_the_gate(self, mock_registry):
@@ -178,25 +182,23 @@ class CentralSSRFGateTests(TestCase):
             website=_website(self.user), status=Scan.Status.QUEUED
         )
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("website", "website")],
-        ), patch(
-            "scanners.security.target_validator.validate_target"
-        ) as mock_validate, patch(
-            "scans.services.scoring.recalculate_scan_health"
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("website", "website")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target"
+            ) as mock_validate,
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             ScanOrchestrator(scan.id).run()
 
         mock_validate.assert_not_called()
-        self.assertEqual(
-            ScannerRun.objects.get(scan=scan).status, "completed"
-        )
+        self.assertEqual(ScannerRun.objects.get(scan=scan).status, "completed")
 
     @patch("scanners.registry.ScannerRegistry")
-    def test_unavailable_tool_is_reported_before_any_dns_lookup(
-        self, mock_registry
-    ):
+    def test_unavailable_tool_is_reported_before_any_dns_lookup(self, mock_registry):
         scanner = MagicMock()
         scanner.name = "lighthouse"
         scanner.scanner_type = ScannerType.CLI
@@ -208,13 +210,15 @@ class CentralSSRFGateTests(TestCase):
             website=_website(self.user), status=Scan.Status.QUEUED
         )
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("lighthouse", "lighthouse")],
-        ), patch(
-            "scanners.security.target_validator.validate_target"
-        ) as mock_validate, patch(
-            "scans.services.scoring.recalculate_scan_health"
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("lighthouse", "lighthouse")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target"
+            ) as mock_validate,
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             ScanOrchestrator(scan.id).run()
 
@@ -258,9 +262,7 @@ class NucleiProfileBudgetTests(TestCase):
             SCANNER_CONFIG=self._nuclei_config("standard", 150),
             SCANNER_SANDBOX={"max_timeout": 300},
         ):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "nuclei"), 150
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "nuclei"), 150)
 
     def test_thorough_profile_keeps_its_own_budget(self):
         scan = Scan.objects.create(
@@ -274,9 +276,7 @@ class NucleiProfileBudgetTests(TestCase):
             SCANNER_CONFIG=self._nuclei_config("thorough", 178),
             SCANNER_SANDBOX={"max_timeout": 300},
         ):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "nuclei"), 178
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "nuclei"), 178)
 
     def test_profile_budget_is_clamped_by_sandbox_max(self):
         scan = Scan.objects.create(
@@ -290,9 +290,7 @@ class NucleiProfileBudgetTests(TestCase):
             SCANNER_CONFIG=self._nuclei_config("thorough", 178),
             SCANNER_SANDBOX={"max_timeout": 120},
         ):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "nuclei"), 120
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "nuclei"), 120)
 
 
 class PartialRunStatusTests(TestCase):
@@ -326,16 +324,18 @@ class PartialRunStatusTests(TestCase):
         return scanner
 
     def _run_with(self, scanner: MagicMock) -> Scan:
-        with patch("scanners.registry.ScannerRegistry") as mock_registry, \
-             patch(
-                 "scans.services.steps_builder.build_initial_steps",
-                 return_value=[_step("nuclei", "nuclei")],
-             ), \
-             patch(
-                 "scanners.security.target_validator.validate_target",
-                 return_value=_target(),
-             ), \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scanners.registry.ScannerRegistry") as mock_registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("nuclei", "nuclei")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_registry.get.return_value = scanner
             scan = Scan.objects.create(
                 website=_website(self.user), status=Scan.Status.QUEUED
@@ -411,22 +411,24 @@ class ArchiveHookTests(TestCase):
         return scanner
 
     def _run(self, scanner: MagicMock):
-        with patch("scanners.registry.ScannerRegistry") as mock_registry, \
-             patch(
-                 "scans.services.steps_builder.build_initial_steps",
-                 return_value=[_step("nuclei", "nuclei")],
-             ), \
-             patch(
-                 "scanners.security.target_validator.validate_target",
-                 return_value=_target(),
-             ), \
-             patch("scans.services.scoring.recalculate_scan_health"), \
-             override_settings(
-                 SCANNER_ARCHIVE_ENABLED=True,
-                 SCANNER_ARCHIVE_DIR=str(self.archive_root),
-                 SCANNER_ARCHIVE_MAX_BYTES=1024 * 1024,
-                 SCANNER_ARCHIVE_RETENTION_DAYS=30,
-             ):
+        with (
+            patch("scanners.registry.ScannerRegistry") as mock_registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("nuclei", "nuclei")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+            override_settings(
+                SCANNER_ARCHIVE_ENABLED=True,
+                SCANNER_ARCHIVE_DIR=str(self.archive_root),
+                SCANNER_ARCHIVE_MAX_BYTES=1024 * 1024,
+                SCANNER_ARCHIVE_RETENTION_DAYS=30,
+            ),
+        ):
             mock_registry.get.return_value = scanner
             scan = Scan.objects.create(
                 website=_website(self.user), status=Scan.Status.QUEUED
@@ -445,13 +447,16 @@ class ArchiveHookTests(TestCase):
 
     def test_archive_failure_is_recorded_but_does_not_block_ingestion(self):
         scanner = self._scanner()
-        with patch(
-            "scanners.artifacts.archive_report",
-            side_effect=RuntimeError("storage offline"),
-        ), patch(
-            "advisory.services.scan_ingestion.ingest_scan_findings",
-            return_value=None,
-        ) as ingest:
+        with (
+            patch(
+                "scanners.artifacts.archive_report",
+                side_effect=RuntimeError("storage offline"),
+            ),
+            patch(
+                "advisory.services.scan_ingestion.ingest_scan_findings",
+                return_value=None,
+            ) as ingest,
+        ):
             scan = self._run(scanner)
 
         scan.refresh_from_db()
@@ -500,14 +505,16 @@ class DelegationContextTests(TestCase):
             website=_website(self.user), status=Scan.Status.QUEUED
         )
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("recording", "recording")],
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ) as mock_validate, patch(
-            "scans.services.scoring.recalculate_scan_health"
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("recording", "recording")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ) as mock_validate,
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             ScanOrchestrator(scan.id).run()
 
@@ -542,9 +549,7 @@ class DelegationContextTests(TestCase):
             SCANNER_CONFIG={"lighthouse": {"timeout": 120}},
             SCANNER_SANDBOX={"max_timeout": 300},
         ):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "lighthouse"), 10
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "lighthouse"), 10)
 
     def test_effective_timeout_is_clamped_by_sandbox_max(self):
         scan = Scan.objects.create(
@@ -560,9 +565,7 @@ class DelegationContextTests(TestCase):
             SCANNER_CONFIG={"lighthouse": {"timeout": 120}},
             SCANNER_SANDBOX={"max_timeout": 45},
         ):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "lighthouse"), 45
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "lighthouse"), 45)
 
     def test_exhausted_budget_skips_all_remaining_steps(self):
         scan = Scan.objects.create(
@@ -640,22 +643,23 @@ class CheckResultDelegationTests(TestCase):
             website=_website(self.user), status=Scan.Status.QUEUED
         )
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[
-                _step("performance", "performance", 50),
-                _step("lighthouse", "lighthouse", 50),
-            ],
-        ), patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[
+                    _step("performance", "performance", 50),
+                    _step("lighthouse", "lighthouse", 50),
+                ],
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             ScanOrchestrator(scan.id).run()
 
         result = CheckResult.objects.get(scan=scan, category="performance")
         self.assertEqual(result.score, 13)
         self.assertEqual(result.summary, "Lighthouse performance 87/100, SEO 100/100")
         self.assertEqual(result.technical_details["scanner"], "lighthouse")
-        self.assertEqual(
-            result.technical_details["previous_measurement"]["score"], 11
-        )
+        self.assertEqual(result.technical_details["previous_measurement"]["score"], 11)
 
         finding = Finding.objects.get(
             scanner_run__scan=scan, check_code="lighthouse.seo_score"
@@ -698,16 +702,20 @@ class CheckResultDelegationTests(TestCase):
             website=_website(self.user), status=Scan.Status.QUEUED
         )
 
-        with patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[
-                _step("performance", "performance", 50),
-                _step("lighthouse", "lighthouse", 50),
-            ],
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ), patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[
+                    _step("performance", "performance", 50),
+                    _step("lighthouse", "lighthouse", 50),
+                ],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             ScanOrchestrator(scan.id).run()
 
         result = CheckResult.objects.get(scan=scan, category="performance")
@@ -753,17 +761,18 @@ class ExternalCheckResultMappingTests(TestCase):
         self.website = _website(self.user)
 
     def _run(self, scanner: MagicMock, key: str) -> Scan:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.QUEUED
-        )
-        with patch("scanners.registry.ScannerRegistry") as mock_registry, patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step(key, key)],
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ), patch(
-            "scans.services.scoring.recalculate_scan_health"
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
+        with (
+            patch("scanners.registry.ScannerRegistry") as mock_registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step(key, key)],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             mock_registry.get.return_value = scanner
             ScanOrchestrator(scan.id).run()

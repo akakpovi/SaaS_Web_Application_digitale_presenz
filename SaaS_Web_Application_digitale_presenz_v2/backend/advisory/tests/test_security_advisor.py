@@ -222,7 +222,9 @@ class SecurityFindingModelTests(TestCase):
         findings = security_advisor.open_findings_for(self.organization)
 
         self.assertEqual([finding.pk for finding in findings], [critical.pk, medium.pk])
-        self.assertNotIn("Other tenant finding", {f.vulnerability_name for f in findings})
+        self.assertNotIn(
+            "Other tenant finding", {f.vulnerability_name for f in findings}
+        )
 
 
 @override_settings(AKA_AI_MAX_PROMPT_CHARS=60_000)
@@ -368,9 +370,7 @@ class AdvisorChatApiTests(APITestCase):
         self.assertIn("Exposed admin panel", prompt)
         self.assertIn("GET /admin -> 200", prompt)
         self.assertNotIn("OTHER-TENANT-SECRET", prompt)
-        self.assertNotIn(
-            "Must never be sent to another organization.", prompt
-        )
+        self.assertNotIn("Must never be sent to another organization.", prompt)
 
     def test_resolved_findings_are_not_sent(self):
         self.finding.resolve()
@@ -570,4 +570,6 @@ class AdvisorChatApiTests(APITestCase):
             finding.vulnerability_name
             for finding in security_advisor.open_findings_for(self.organization)
         ]
-        self.assertLess(names.index(newer.vulnerability_name), names.index(older.vulnerability_name))
+        self.assertLess(
+            names.index(newer.vulnerability_name), names.index(older.vulnerability_name)
+        )

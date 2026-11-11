@@ -38,12 +38,18 @@ class WebsiteSerializer(serializers.ModelSerializer):
     def validate_domain(self, value):
         raw = (value or "").strip()
         if not raw:
-            raise serializers.ValidationError("Enter a valid domain name without a scheme, path, or port.")
+            raise serializers.ValidationError(
+                "Enter a valid domain name without a scheme, path, or port."
+            )
         if "://" in raw or "/" in raw or ":" in raw:
-            raise serializers.ValidationError("Enter a valid domain name without a scheme, path, or port.")
+            raise serializers.ValidationError(
+                "Enter a valid domain name without a scheme, path, or port."
+            )
         domain = raw.rstrip(".").lower()
         if not DOMAIN_REGEX.match(domain):
-            raise serializers.ValidationError("Enter a valid domain name without a scheme, path, or port.")
+            raise serializers.ValidationError(
+                "Enter a valid domain name without a scheme, path, or port."
+            )
         request = self.context.get("request")
         organization = self.context.get("organization")
         owner = getattr(request, "user", None) if request else None
@@ -68,7 +74,7 @@ class WebsiteSerializer(serializers.ModelSerializer):
         return domain
 
     def get_last_scan(self, obj):
-        return Scan.objects.filter(website=obj).order_by('-created_at').first()
+        return Scan.objects.filter(website=obj).order_by("-created_at").first()
 
     def get_health_scan(self, obj):
         """Latest scan that actually produced a health score.
@@ -81,7 +87,7 @@ class WebsiteSerializer(serializers.ModelSerializer):
         """
         return (
             Scan.objects.filter(website=obj, health_score__isnull=False)
-            .order_by('-created_at')
+            .order_by("-created_at")
             .first()
         )
 

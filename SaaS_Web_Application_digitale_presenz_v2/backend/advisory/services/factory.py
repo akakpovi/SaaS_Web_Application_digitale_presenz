@@ -26,9 +26,7 @@ CREDENTIALS_INVALID_CACHE_KEY = "advisory:aka_credentials_invalid"
 
 def _credentials_cooldown_seconds() -> int:
     try:
-        return max(
-            60, int(getattr(settings, "AKA_AI_AUTH_FAILURE_COOLDOWN", 900))
-        )
+        return max(60, int(getattr(settings, "AKA_AI_AUTH_FAILURE_COOLDOWN", 900)))
     except (TypeError, ValueError):
         return 900
 
@@ -77,20 +75,14 @@ def build_aka_client(**client_kwargs: Any) -> AkaAIClient:
     if isinstance(raw_models, str):
         raw_models = raw_models.split(",")
     models = tuple(
-        dict.fromkeys(
-            str(model).strip() for model in raw_models if str(model).strip()
-        )
+        dict.fromkeys(str(model).strip() for model in raw_models if str(model).strip())
     )
     if not models:
-        raise ImproperlyConfigured(
-            "AKA_AI_MODELS must contain at least one model."
-        )
+        raise ImproperlyConfigured("AKA_AI_MODELS must contain at least one model.")
 
     config = AkaConfig(
         api_key=api_key,
-        base_url=getattr(
-            settings, "AKA_AI_BASE_URL", "https://ai.elomaiapp.com"
-        ),
+        base_url=getattr(settings, "AKA_AI_BASE_URL", "https://ai.elomaiapp.com"),
         models=models,
         max_retries=getattr(settings, "AKA_AI_MAX_RETRIES", 2),
         connect_timeout=getattr(settings, "AKA_AI_CONNECT_TIMEOUT", 3.0),
@@ -100,12 +92,8 @@ def build_aka_client(**client_kwargs: Any) -> AkaAIClient:
         max_retry_after=getattr(settings, "AKA_AI_MAX_RETRY_AFTER", 300.0),
         temperature=getattr(settings, "AKA_AI_TEMPERATURE", 0.2),
         max_tokens=getattr(settings, "AKA_AI_MAX_TOKENS", 900),
-        max_response_bytes=getattr(
-            settings, "AKA_AI_MAX_RESPONSE_BYTES", 1_000_000
-        ),
-        user_agent=getattr(
-            settings, "AKA_AI_USER_AGENT", "Presence-AI-Advisor/1.0"
-        ),
+        max_response_bytes=getattr(settings, "AKA_AI_MAX_RESPONSE_BYTES", 1_000_000),
+        user_agent=getattr(settings, "AKA_AI_USER_AGENT", "Presence-AI-Advisor/1.0"),
         circuit_failure_threshold=getattr(
             settings, "AKA_AI_CIRCUIT_FAILURE_THRESHOLD", 5
         ),

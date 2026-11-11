@@ -74,7 +74,9 @@ class FakeClient:
         self.config = SimpleNamespace(models=models or tuple(outcomes))
         self.calls: list[dict[str, Any]] = []
 
-    def chat(self, messages: list[dict[str, str]], *, model: str | None = None, **kwargs: Any):
+    def chat(
+        self, messages: list[dict[str, str]], *, model: str | None = None, **kwargs: Any
+    ):
         self.calls.append({"messages": messages, "model": model})
         outcome = self.outcomes[model]
         if isinstance(outcome, BaseException):
@@ -254,7 +256,9 @@ class AdvisorServiceTests(AdvisorTestCase):
         )
 
         self.assertFalse(result.used_fallback)
-        self.assertEqual([call["model"] for call in client.calls], ["model-a", "model-b"])
+        self.assertEqual(
+            [call["model"] for call in client.calls], ["model-a", "model-b"]
+        )
         self.assertEqual(result.run.status, AIRecommendationRun.Status.SUCCEEDED)
         self.assertEqual(result.run.model_used, "model-b")
         self.assertEqual(len(result.recommendations), 1)
@@ -287,7 +291,9 @@ class AdvisorServiceTests(AdvisorTestCase):
 
         self.assertFalse(result.used_fallback)
         self.assertEqual(result.run.model_used, "model-b")
-        self.assertEqual([call["model"] for call in client.calls], ["model-a", "model-b"])
+        self.assertEqual(
+            [call["model"] for call in client.calls], ["model-a", "model-b"]
+        )
 
     def test_exhausted_rate_limit_fails_over_to_next_model(self) -> None:
         client = FakeClient(
@@ -313,7 +319,9 @@ class AdvisorServiceTests(AdvisorTestCase):
 
         self.assertFalse(result.used_fallback)
         self.assertEqual(result.run.model_used, "model-b")
-        self.assertEqual([call["model"] for call in client.calls], ["model-a", "model-b"])
+        self.assertEqual(
+            [call["model"] for call in client.calls], ["model-a", "model-b"]
+        )
 
     def test_invalid_json_on_first_model_fails_over_to_second(self) -> None:
         client = FakeClient(

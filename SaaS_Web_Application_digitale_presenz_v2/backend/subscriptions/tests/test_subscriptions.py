@@ -59,7 +59,7 @@ class SubscriptionMethodsTest(TestCase):
     def setUp(self):
         create_plans()
         self.user = User.objects.create_user(email="sub3@test.com", password="pass1234")
-        self.sub  = Subscription.objects.get(user=self.user)
+        self.sub = Subscription.objects.get(user=self.user)
 
     def test_is_active_true(self):
         self.assertTrue(self.sub.is_active)
@@ -89,7 +89,9 @@ class UpgradeEndpointTest(TestCase):
 
     def setUp(self):
         create_plans()
-        self.user = User.objects.create_user(email="upgrade@test.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="upgrade@test.com", password="pass1234"
+        )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 

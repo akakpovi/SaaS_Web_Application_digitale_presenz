@@ -21,6 +21,7 @@ class WhiteLabelPDFReportView(APIView):
     GET /api/v1/reports/pdf/<scan_id>/
     Génération PDF Marque Blanche avec WeasyPrint.
     """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, scan_id: int):
@@ -29,27 +30,37 @@ class WhiteLabelPDFReportView(APIView):
         assert_feature(request.user, "can_export_reports")
         try:
             scan = (
-                Scan.objects
-                .select_related("website")
+                Scan.objects.select_related("website")
                 .prefetch_related("check_results")
                 .get(pk=scan_id)
             )
         except (Scan.DoesNotExist, ValueError):
-            return Response({"detail": "Scan introuvable."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Scan introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if scan.website.owner and scan.website.owner != request.user:
-            return Response({"detail": "Accès non autorisé à ce rapport."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Accès non autorisé à ce rapport."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         logo_url = request.query_params.get("logo_url", "")
         lang = request.query_params.get("lang", "fr")
 
         checks = scan.check_results.all()
-        critical_count = sum(1 for c in checks if c.status == HealthStatus.CRITICAL.value)
+        critical_count = sum(
+            1 for c in checks if c.status == HealthStatus.CRITICAL.value
+        )
         warning_count = sum(1 for c in checks if c.status == HealthStatus.WARNING.value)
-        passed_count = sum(1 for c in checks if c.status in [HealthStatus.HEALTHY.value, "passed"])
+        passed_count = sum(
+            1 for c in checks if c.status in [HealthStatus.HEALTHY.value, "passed"]
+        )
 
         score = scan.health_score or 0
-        score_color = "#16a34a" if score >= 80 else ("#d97706" if score >= 50 else "#dc2626")
+        score_color = (
+            "#16a34a" if score >= 80 else ("#d97706" if score >= 50 else "#dc2626")
+        )
 
         context = {
             "domain": scan.website.domain,
@@ -76,6 +87,7 @@ class WhiteLabelPDFReportView(APIView):
 
         try:
             from weasyprint import HTML
+
             pdf_bytes = HTML(string=html_string).write_pdf()
             response = HttpResponse(pdf_bytes, content_type="application/pdf")
             filename = f"rapport-presence-{scan.website.domain}-{scan.id}.pdf"
@@ -177,11 +189,15 @@ class ReportDetailView(APIView):
     def get(self, request, pk: int):
         scan = Scan.objects.filter(id=pk, website__owner=request.user).first()
         if not scan:
-            return Response({"detail": "Rapport introuvable."}, status=status.HTTP_404_NOT_FOUND)
-        return Response({
-            "id": scan.id,
-            "scan_id": scan.id,
-            "domain": scan.website.domain,
-            "score": scan.health_score,
-            "created_at": scan.created_at.isoformat() if scan.created_at else None,
-        })
+            return Response(
+                {"detail": "Rapport introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response(
+            {
+                "id": scan.id,
+                "scan_id": scan.id,
+                "domain": scan.website.domain,
+                "score": scan.health_score,
+                "created_at": scan.created_at.isoformat() if scan.created_at else None,
+            }
+        )

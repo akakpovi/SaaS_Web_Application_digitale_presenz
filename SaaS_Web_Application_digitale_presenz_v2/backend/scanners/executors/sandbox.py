@@ -77,6 +77,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
+
 class SandboxMode:
     PROCESS = "process"
     DOCKER = "docker"
@@ -104,6 +105,7 @@ class SandboxBusyError(SandboxError):
 # ---------------------------------------------------------------------------
 # Limits
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SandboxLimits:
@@ -141,6 +143,7 @@ class SandboxLimits:
 # ---------------------------------------------------------------------------
 # Settings helpers
 # ---------------------------------------------------------------------------
+
 
 def _sandbox_settings() -> dict[str, Any]:
     return getattr(settings, "SCANNER_SANDBOX", {}) or {}
@@ -224,10 +227,7 @@ def shared_work_dir() -> str:
     directory into the worker, adapters create their output files there so the
     ``docker run --mount`` reference resolves to a real host path.
     """
-    raw = (
-        (getattr(settings, "SCANNER_SANDBOX", {}) or {}).get("shared_work_dir")
-        or ""
-    )
+    raw = (getattr(settings, "SCANNER_SANDBOX", {}) or {}).get("shared_work_dir") or ""
     path = str(raw).strip()
     if not path:
         return ""
@@ -291,9 +291,7 @@ def _validate_bind_mounts(
     for host_path, container_path in mounts:
         host = os.path.realpath(str(host_path))
         if not any(host == root or host.startswith(root + os.sep) for root in roots):
-            raise SandboxError(
-                f"Refusing bind mount outside {roots}: {host_path!r}"
-            )
+            raise SandboxError(f"Refusing bind mount outside {roots}: {host_path!r}")
         if not os.path.isdir(host):
             raise SandboxError(f"Bind mount source is not a directory: {host_path!r}")
 
@@ -307,6 +305,7 @@ def _validate_bind_mounts(
 # ---------------------------------------------------------------------------
 # Process helpers
 # ---------------------------------------------------------------------------
+
 
 def _kill_process_group(pid: int) -> None:
     """Kill *pid* and every process in its group, ignoring races."""
@@ -355,7 +354,7 @@ def _process_group_rss_bytes(pgid: int) -> int:
             close_paren = stat_line.rfind(")")
             if close_paren == -1:
                 continue
-            fields = stat_line[close_paren + 2:].split()
+            fields = stat_line[close_paren + 2 :].split()
             if len(fields) < 3:
                 continue
             # fields[0] = state, fields[1] = ppid, fields[2] = pgrp
@@ -445,6 +444,7 @@ def _make_preexec(limits: SandboxLimits):
 # Executor
 # ---------------------------------------------------------------------------
 
+
 class SandboxedCommandExecutor:
     """Executes external scanner commands under strict resource limits."""
 
@@ -504,9 +504,11 @@ class SandboxedCommandExecutor:
             image = self.docker_image_for(scanner_name)
             if not image:
                 return False
-            pull_policy = str(
-                _docker_settings().get("pull_policy", "never") or "never"
-            ).strip().lower()
+            pull_policy = (
+                str(_docker_settings().get("pull_policy", "never") or "never")
+                .strip()
+                .lower()
+            )
             if pull_policy != "never":
                 return True
             return docker_image_present(image, binary=self.docker_binary)
@@ -536,24 +538,15 @@ class SandboxedCommandExecutor:
 
         default_timeout = int(cfg.get("default_timeout", 60) or 60)
         configured_timeout = int(
-            timeout
-            or scanner_cfg.get("timeout")
-            or default_timeout
+            timeout or scanner_cfg.get("timeout") or default_timeout
         )
         max_timeout = int(cfg.get("max_timeout", 300) or 300)
 
         timeout_s = max(1, min(configured_timeout, max_timeout))
 
-        cpu_seconds = int(
-            per_scanner.get("cpu_seconds")
-            or timeout_s + 5
-        )
-        memory_mb = int(
-            per_scanner.get("memory_mb", cfg.get("default_memory_mb", 512))
-        )
-        pids_limit = int(
-            per_scanner.get("pids_limit", 0) or 0
-        )
+        cpu_seconds = int(per_scanner.get("cpu_seconds") or timeout_s + 5)
+        memory_mb = int(per_scanner.get("memory_mb", cfg.get("default_memory_mb", 512)))
+        pids_limit = int(per_scanner.get("pids_limit", 0) or 0)
         file_size_mb = int(
             per_scanner.get("file_size_mb", cfg.get("default_file_size_mb", 64))
         )
@@ -609,9 +602,7 @@ class SandboxedCommandExecutor:
             int(_sandbox_settings().get("max_timeout", 300) or 300)
         )
 
-        slot_key = self._acquire_slot(
-            scanner_name, effective_limits.timeout_s
-        )
+        slot_key = self._acquire_slot(scanner_name, effective_limits.timeout_s)
         try:
             if self.mode == SandboxMode.DOCKER:
                 return self._run_docker(
@@ -647,9 +638,7 @@ class SandboxedCommandExecutor:
         disabled or the cache is unreachable (fail open: a cache outage must
         not block every scan).
         """
-        max_concurrency = int(
-            _sandbox_settings().get("max_concurrency", 0) or 0
-        )
+        max_concurrency = int(_sandbox_settings().get("max_concurrency", 0) or 0)
         if max_concurrency <= 0:
             return None
 
@@ -993,9 +982,7 @@ class SandboxedCommandExecutor:
             # The wall-clock budget includes container startup: the configured
             # timeout is the real upper bound the orchestrator and Celery see,
             # not an extra grace period on top of it.
-            stdout_bytes, stderr_bytes = proc.communicate(
-                timeout=limits.timeout_s
-            )
+            stdout_bytes, stderr_bytes = proc.communicate(timeout=limits.timeout_s)
         except subprocess.TimeoutExpired:
             timed_out = True
             killed_reason = "timeout"
@@ -1048,9 +1035,7 @@ class SandboxedCommandExecutor:
                 check=False,
             )
         except Exception:
-            logger.warning(
-                "Could not remove sandbox container %s", container_name
-            )
+            logger.warning("Could not remove sandbox container %s", container_name)
 
 
 def get_sandbox_executor() -> SandboxedCommandExecutor:

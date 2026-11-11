@@ -31,9 +31,7 @@ class LinkedInOAuthClient:
         self.client_secret = str(
             getattr(settings, "LINKEDIN_CLIENT_SECRET", "")
         ).strip()
-        self.redirect_uri = str(
-            getattr(settings, "LINKEDIN_REDIRECT_URI", "")
-        ).strip()
+        self.redirect_uri = str(getattr(settings, "LINKEDIN_REDIRECT_URI", "")).strip()
         self.authorize_url = str(
             getattr(
                 settings,
@@ -70,17 +68,13 @@ class LinkedInOAuthClient:
             )
         ).strip()
         try:
-            self.timeout = float(
-                getattr(settings, "LINKEDIN_OAUTH_TIMEOUT", 10)
-            )
+            self.timeout = float(getattr(settings, "LINKEDIN_OAUTH_TIMEOUT", 10))
         except (TypeError, ValueError):
             self.timeout = 10.0
 
     def _require_configured(self) -> None:
         if not self.client_id or not self.client_secret or not self.redirect_uri:
-            raise ProviderNotConfiguredError(
-                "LinkedIn OAuth is not configured."
-            )
+            raise ProviderNotConfiguredError("LinkedIn OAuth is not configured.")
 
     def authorization_url(self, state: str, code_challenge: str) -> str:
         self._require_configured()

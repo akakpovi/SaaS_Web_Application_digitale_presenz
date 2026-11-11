@@ -36,7 +36,7 @@ def _connector_keks_from_env() -> dict[int, str]:
     for name, value in os.environ.items():
         if not name.startswith(prefix):
             continue
-        suffix = name[len(prefix):]
+        suffix = name[len(prefix) :]
         if not suffix.isdigit():
             continue
         if value and value.strip():
@@ -55,8 +55,18 @@ except ValueError:
     # invalid configuration instead of raising a bare ValueError here.
     CONNECTOR_KEK_ACTIVE_VERSION = 0
 
-ALLOWED_HOSTS = [host.strip() for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,web,testserver").split(",") if host.strip()]
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,web,testserver").split(
+        ","
+    )
+    if host.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -101,37 +111,45 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
-TEMPLATES = [{
-    "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [],
-    "APP_DIRS": True,
-    "OPTIONS": {"context_processors": [
-        "django.template.context_processors.request",
-        "django.contrib.auth.context_processors.auth",
-        "django.contrib.messages.context_processors.messages",
-    ]},
-}]
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ]
+        },
+    }
+]
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {"default": {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": env("POSTGRES_DB", "presence"),
-    "USER": env("POSTGRES_USER", "presence"),
-    "PASSWORD": env("POSTGRES_PASSWORD", "presence"),
-    "HOST": env("POSTGRES_HOST", "localhost"),
-    "PORT": env("POSTGRES_PORT", "5432"),
-    "CONN_MAX_AGE": 60,
-    "CONN_HEALTH_CHECKS": True,
-}}
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB", "presence"),
+        "USER": env("POSTGRES_USER", "presence"),
+        "PASSWORD": env("POSTGRES_PASSWORD", "presence"),
+        "HOST": env("POSTGRES_HOST", "localhost"),
+        "PORT": env("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
+    }
+}
 
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
-CACHES = {"default": {
-    "BACKEND": "django_redis.cache.RedisCache",
-    "LOCATION": REDIS_URL,
-    "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-    "KEY_PREFIX": "presence",
-}}
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        "KEY_PREFIX": "presence",
+    }
+}
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
@@ -140,8 +158,8 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 600        # 10 min — covers even ZAP active scans
-CELERY_TASK_SOFT_TIME_LIMIT = 570   # 9.5 min — soft limit for graceful shutdown
+CELERY_TASK_TIME_LIMIT = 600  # 10 min — covers even ZAP active scans
+CELERY_TASK_SOFT_TIME_LIMIT = 570  # 9.5 min — soft limit for graceful shutdown
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE: dict[str, object] = {
@@ -262,17 +280,11 @@ LINKEDIN_OAUTH_TIMEOUT = float(env("LINKEDIN_OAUTH_TIMEOUT", "10"))
 OAUTH_STATE_TTL_SECONDS = int(env("OAUTH_STATE_TTL_SECONDS", "600"))
 # Scheduled refresh looks this far ahead.  Already-expired rows are included
 # too: a valid refresh token can still recover them.
-SOCIAL_TOKEN_REFRESH_WINDOW_HOURS = int(
-    env("SOCIAL_TOKEN_REFRESH_WINDOW_HOURS", "72")
-)
-SOCIAL_TOKEN_REFRESH_BATCH_SIZE = int(
-    env("SOCIAL_TOKEN_REFRESH_BATCH_SIZE", "200")
-)
+SOCIAL_TOKEN_REFRESH_WINDOW_HOURS = int(env("SOCIAL_TOKEN_REFRESH_WINDOW_HOURS", "72"))
+SOCIAL_TOKEN_REFRESH_BATCH_SIZE = int(env("SOCIAL_TOKEN_REFRESH_BATCH_SIZE", "200"))
 # Consecutive provider-side refresh failures before a connection is parked in
 # ERROR and removed from the Beat selection.
-SOCIAL_TOKEN_REFRESH_MAX_FAILURES = int(
-    env("SOCIAL_TOKEN_REFRESH_MAX_FAILURES", "3")
-)
+SOCIAL_TOKEN_REFRESH_MAX_FAILURES = int(env("SOCIAL_TOKEN_REFRESH_MAX_FAILURES", "3"))
 
 # ---- Billing ----
 # Fail closed: no paid plan may be granted until a checkout + webhook flow is
@@ -335,7 +347,12 @@ LOG_LEVEL = env("DJANGO_LOG_LEVEL", "INFO")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"json": {"()": JsonFormatter, "format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
+    "formatters": {
+        "json": {
+            "()": JsonFormatter,
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        }
+    },
     "filters": {
         "redact_oauth_query": {
             "()": "integrations.logging.OAuthQueryRedactionFilter",
@@ -366,41 +383,48 @@ LOGGING = {
 }
 
 # ---- Extended Celery Beat Schedule ----
-CELERY_BEAT_SCHEDULE.update({
-    # Crash recovery: both jobs are idempotent and bounded, so a five-minute
-    # cadence is cheap.  Their thresholds are configured above.
-    "reap-stale-ai-runs": {
-        "task": "advisory.tasks.reap_stale_ai_runs",
-        "schedule": 300.0,
-    },
-    "reap-stale-scans": {
-        "task": "scans.tasks.reap_stale_scans",
-        "schedule": 300.0,
-    },
-    "reap-stale-journeys": {
-        "task": "scans.tasks.reap_stale_journeys",
-        "schedule": 300.0,
-    },
-    # Standing credential check: catches a revoked/expired key before a
-    # customer scan silently falls back to deterministic recommendations.
-    "verify-aka-credentials": {
-        "task": "advisory.tasks.verify_aka_credentials",
-        "schedule": crontab(hour="*/6", minute=45),
-    },
-    "sync-reviews-hourly": {
-        "task": "reviews.tasks.sync_all_review_sources",
-        "schedule": 3600.0,
-    },
-    "track-mentions-daily": {
-        "task": "social.tasks.track_brand_mentions",
-        "schedule": 86400.0,
-        "args": [],
-    },
-})
+CELERY_BEAT_SCHEDULE.update(
+    {
+        # Crash recovery: both jobs are idempotent and bounded, so a five-minute
+        # cadence is cheap.  Their thresholds are configured above.
+        "reap-stale-ai-runs": {
+            "task": "advisory.tasks.reap_stale_ai_runs",
+            "schedule": 300.0,
+        },
+        "reap-stale-scans": {
+            "task": "scans.tasks.reap_stale_scans",
+            "schedule": 300.0,
+        },
+        "reap-stale-journeys": {
+            "task": "scans.tasks.reap_stale_journeys",
+            "schedule": 300.0,
+        },
+        # Standing credential check: catches a revoked/expired key before a
+        # customer scan silently falls back to deterministic recommendations.
+        "verify-aka-credentials": {
+            "task": "advisory.tasks.verify_aka_credentials",
+            "schedule": crontab(hour="*/6", minute=45),
+        },
+        "sync-reviews-hourly": {
+            "task": "reviews.tasks.sync_all_review_sources",
+            "schedule": 3600.0,
+        },
+        "track-mentions-daily": {
+            "task": "social.tasks.track_brand_mentions",
+            "schedule": 86400.0,
+            "args": [],
+        },
+    }
+)
 
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in env("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in env("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
+
 
 # ---- Scanner Engine configuration ----
 # All timeouts in seconds.  Override via SCANNER_TIMEOUT_<NAME> env vars.
@@ -421,9 +445,7 @@ def _env_float(name: str, default: float) -> float:
 def _env_list(name: str, default: str) -> list[str]:
     """Parse an ordered comma-separated env var, dropping duplicates."""
     raw = env(name, default)
-    return list(
-        dict.fromkeys(item.strip() for item in raw.split(",") if item.strip())
-    )
+    return list(dict.fromkeys(item.strip() for item in raw.split(",") if item.strip()))
 
 
 # ---- AI Growth Advisor (AKA IA) ------------------------------------------
@@ -445,12 +467,8 @@ AKA_AI_TEMPERATURE = _env_float("AKA_AI_TEMPERATURE", 0.2)
 AKA_AI_MAX_TOKENS = _env_int("AKA_AI_MAX_TOKENS", 900)
 AKA_AI_MAX_RESPONSE_BYTES = _env_int("AKA_AI_MAX_RESPONSE_BYTES", 1_000_000)
 AKA_AI_USER_AGENT = env("AKA_AI_USER_AGENT", "Presence-AI-Advisor/1.0")
-AKA_AI_CIRCUIT_FAILURE_THRESHOLD = _env_int(
-    "AKA_AI_CIRCUIT_FAILURE_THRESHOLD", 5
-)
-AKA_AI_CIRCUIT_RECOVERY_SECONDS = _env_float(
-    "AKA_AI_CIRCUIT_RECOVERY_SECONDS", 300.0
-)
+AKA_AI_CIRCUIT_FAILURE_THRESHOLD = _env_int("AKA_AI_CIRCUIT_FAILURE_THRESHOLD", 5)
+AKA_AI_CIRCUIT_RECOVERY_SECONDS = _env_float("AKA_AI_CIRCUIT_RECOVERY_SECONDS", 300.0)
 AI_ADVISOR_ENABLED = env_bool("AI_ADVISOR_ENABLED", False)
 AKA_AI_MAX_PROMPT_CHARS = _env_int("AKA_AI_MAX_PROMPT_CHARS", 60_000)
 AI_ADVISOR_RETRY_MAX_SECONDS = _env_int("AI_ADVISOR_RETRY_MAX_SECONDS", 900)
@@ -463,12 +481,8 @@ AKA_AI_AUTH_FAILURE_COOLDOWN = _env_int("AKA_AI_AUTH_FAILURE_COOLDOWN", 900)
 # Scans have no heartbeat beyond their progress updates; the default is the
 # Celery hard limit (600 s) plus a 5-minute margin.  Lower values are floored
 # to 300 s in the reaper itself.
-SCAN_REAP_RUNNING_AFTER_SECONDS = _env_int(
-    "SCAN_REAP_RUNNING_AFTER_SECONDS", 900
-)
-SCAN_REAP_QUEUED_AFTER_SECONDS = _env_int(
-    "SCAN_REAP_QUEUED_AFTER_SECONDS", 900
-)
+SCAN_REAP_RUNNING_AFTER_SECONDS = _env_int("SCAN_REAP_RUNNING_AFTER_SECONDS", 900)
+SCAN_REAP_QUEUED_AFTER_SECONDS = _env_int("SCAN_REAP_QUEUED_AFTER_SECONDS", 900)
 
 
 # ---- Advanced security tier (ZAP / Nuclei) --------------------------------
@@ -485,9 +499,10 @@ SCANNER_ADVANCED_SECURITY_ENABLED: bool = env_bool(
 # so a scheduled scan never runs `latest`.  The sandbox uses
 # `--pull never`, so a missing image is reported as an unavailable scanner
 # rather than silently pulled during a scan.
-SCANNER_TOOLS_IMAGE: Final = env(
-    "SCANNER_TOOLS_IMAGE", "presence-scanner-tools:2026-10-27"
-).strip() or "presence-scanner-tools:2026-10-27"
+SCANNER_TOOLS_IMAGE: Final = (
+    env("SCANNER_TOOLS_IMAGE", "presence-scanner-tools:2026-10-27").strip()
+    or "presence-scanner-tools:2026-10-27"
+)
 
 # ---- Progressive scan journey, stage 2 (scenario C) -----------------------
 # The stage-2 budget is deliberately separate from the classic 540 s budget:
@@ -517,15 +532,16 @@ def _env_image(name: str, default: str) -> str:
     value = os.environ.get(name)
     return (value or "").strip() or default
 
+
 SCANNER_CONFIG: dict = {
     # Internal Python scanners
-    "website":          {"timeout": _env_int("SCANNER_TIMEOUT_WEBSITE", 15)},
-    "ssl":              {"timeout": _env_int("SCANNER_TIMEOUT_SSL", 15)},
-    "dns":              {"timeout": _env_int("SCANNER_TIMEOUT_DNS", 10)},
-    "email_security":   {"timeout": _env_int("SCANNER_TIMEOUT_EMAIL_SECURITY", 15)},
+    "website": {"timeout": _env_int("SCANNER_TIMEOUT_WEBSITE", 15)},
+    "ssl": {"timeout": _env_int("SCANNER_TIMEOUT_SSL", 15)},
+    "dns": {"timeout": _env_int("SCANNER_TIMEOUT_DNS", 10)},
+    "email_security": {"timeout": _env_int("SCANNER_TIMEOUT_EMAIL_SECURITY", 15)},
     "security_headers": {"timeout": _env_int("SCANNER_TIMEOUT_SECURITY_HEADERS", 15)},
-    "performance":      {"timeout": _env_int("SCANNER_TIMEOUT_PERFORMANCE", 15)},
-    "uptime":           {"timeout": _env_int("SCANNER_TIMEOUT_UPTIME", 10)},
+    "performance": {"timeout": _env_int("SCANNER_TIMEOUT_PERFORMANCE", 15)},
+    "uptime": {"timeout": _env_int("SCANNER_TIMEOUT_UPTIME", 10)},
     # External CLI tool adapters
     # The six advanced scanners run in the shared `presence-scanner-tools`
     # sandbox image.  Their budgets are deliberately smaller than the previous
@@ -534,7 +550,7 @@ SCANNER_CONFIG: dict = {
     # so every tool must be individually bounded and must be able to close its
     # own report before the sandbox kills the container.  A step whose timeout
     # is reached is reported as such — never as a completed scan.
-    "nmap":        {
+    "nmap": {
         "timeout": _env_int("SCANNER_TIMEOUT_NMAP", 75),
         "nse_enabled": env_bool("SCANNER_NMAP_NSE_ENABLED", False),
         "sandbox": {
@@ -543,7 +559,7 @@ SCANNER_CONFIG: dict = {
             "pids_limit": _env_int("SCANNER_NMAP_PIDS", 128),
         },
     },
-    "nikto":       {
+    "nikto": {
         # Measured on the reference Cloudflare-fronted target (2026-10-28):
         # the default run reaches its own ``-maxtime`` after 88 s; raising
         # ``-maxtime`` to 150 s still ends at 154 s with
@@ -557,13 +573,11 @@ SCANNER_CONFIG: dict = {
             "cpu_seconds": _env_int("SCANNER_NIKTO_CPU_SECONDS", 150),
         },
     },
-    "nuclei":      {
+    "nuclei": {
         # Active profile.  ``standard`` is the only one used by scheduled and
         # manual automatic scans; ``deep`` is opt-in for a dedicated worker
         # because it needs a much larger scan budget.
-        "profile": os.environ.get(
-            "SCANNER_NUCLEI_PROFILE", "standard"
-        ).strip().lower(),
+        "profile": os.environ.get("SCANNER_NUCLEI_PROFILE", "standard").strip().lower(),
         # Kept for backward compatibility (tests, older deployments).  The
         # selected profile below overrides these values.
         "timeout": _env_int("SCANNER_TIMEOUT_NUCLEI", 150),
@@ -739,9 +753,7 @@ SCANNER_CONFIG: dict = {
         # Host path containing the template repository.  In Docker mode it
         # is bind-mounted read-only at /nuclei-templates; the official Nuclei
         # image ships the binary only, not the templates.
-        "templates_path": os.environ.get(
-            "SCANNER_NUCLEI_TEMPLATES_PATH", ""
-        ).strip(),
+        "templates_path": os.environ.get("SCANNER_NUCLEI_TEMPLATES_PATH", "").strip(),
         # Host directory holding the scenario-C selection
         # (``selected/`` + ``presence/``).  In Docker mode it is bind-mounted
         # read-only at /opt/scanner-templates; process mode resolves the two
@@ -752,9 +764,7 @@ SCANNER_CONFIG: dict = {
         ).strip(),
         # Deployment-reported versions stored in archive metadata.  Empty is
         # honest (``unknown``) rather than a guessed or stale value.
-        "binary_version": os.environ.get(
-            "SCANNER_NUCLEI_BINARY_VERSION", ""
-        ).strip(),
+        "binary_version": os.environ.get("SCANNER_NUCLEI_BINARY_VERSION", "").strip(),
         "templates_version": os.environ.get(
             "SCANNER_NUCLEI_TEMPLATES_VERSION", ""
         ).strip(),
@@ -764,14 +774,14 @@ SCANNER_CONFIG: dict = {
             "memory_mb": _env_int("SCANNER_NUCLEI_MEMORY_MB", 1536),
         },
     },
-    "whatweb":     {
+    "whatweb": {
         "timeout": _env_int("SCANNER_TIMEOUT_WHATWEB", 25),
         "sandbox": {
             "memory_mb": _env_int("SCANNER_WHATWEB_MEMORY_MB", 384),
             "cpu_seconds": _env_int("SCANNER_WHATWEB_CPU_SECONDS", 45),
         },
     },
-    "testssl":     {
+    "testssl": {
         # testssl 3.0.8: ``--std`` alone only tests cipher categories.  The
         # adapter therefore adds --protocols, --server-defaults (certificate),
         # --headers (HSTS) and --vulnerable, and limits the run to the first
@@ -825,7 +835,7 @@ SCANNER_CONFIG: dict = {
             "open_files": _env_int("SCANNER_LIGHTHOUSE_OPEN_FILES", 4096),
         },
     },
-    "dnsrecon":    {
+    "dnsrecon": {
         "timeout": _env_int("SCANNER_TIMEOUT_DNSRECON", 30),
         # Per-query budget for the standard enumeration (NS/SOA/A/AAAA/MX/SRV).
         "lifetime_seconds": _env_int("SCANNER_DNSRECON_LIFETIME_SECONDS", 8),
@@ -834,7 +844,7 @@ SCANNER_CONFIG: dict = {
             "cpu_seconds": _env_int("SCANNER_DNSRECON_CPU_SECONDS", 45),
         },
     },
-    "gobuster":    {
+    "gobuster": {
         "timeout": _env_int("SCANNER_TIMEOUT_GOBUSTER", 45),
         # Debian's dirb package ships the wordlist; it is versioned with the
         # sandbox image and never supplied by scan input.
@@ -848,9 +858,7 @@ SCANNER_CONFIG: dict = {
             "/opt/scanner-wordlists/presence-extra.txt",
         ).strip(),
         "threads": _env_int("SCANNER_GOBUSTER_THREADS", 10),
-        "request_timeout": os.environ.get(
-            "SCANNER_GOBUSTER_REQUEST_TIMEOUT", "10s"
-        ),
+        "request_timeout": os.environ.get("SCANNER_GOBUSTER_REQUEST_TIMEOUT", "10s"),
         # A SPA answers 200 for random paths; probe one before the run and
         # pass its body length to gobuster --exclude-length.  This turns the
         # previous exit-1 into an enumeration that can actually find paths,
@@ -863,10 +871,12 @@ SCANNER_CONFIG: dict = {
     },
     "feroxbuster": {
         "timeout": _env_int("SCANNER_TIMEOUT_FEROXBUSTER", 120),
-        "wordlist": os.environ.get("SCANNER_FEROXBUSTER_WORDLIST", "/usr/share/wordlists/dirb/common.txt"),
+        "wordlist": os.environ.get(
+            "SCANNER_FEROXBUSTER_WORDLIST", "/usr/share/wordlists/dirb/common.txt"
+        ),
         "threads": _env_int("SCANNER_FEROXBUSTER_THREADS", 10),
     },
-    "zap":         {
+    "zap": {
         "timeout": _env_int("SCANNER_TIMEOUT_ZAP", 300),
         # "auto" prefers the sandboxed Docker image when Docker mode and an
         # image are configured, and falls back to the REST sidecar otherwise.
@@ -897,9 +907,7 @@ SCANNER_SANDBOX: dict = {
     "default_memory_mb": _env_int("SCANNER_SANDBOX_DEFAULT_MEMORY_MB", 512),
     "default_file_size_mb": _env_int("SCANNER_SANDBOX_DEFAULT_FILE_SIZE_MB", 64),
     "default_open_files": _env_int("SCANNER_SANDBOX_DEFAULT_OPEN_FILES", 1024),
-    "max_output_bytes": _env_int(
-        "SCANNER_SANDBOX_MAX_OUTPUT_BYTES", 5 * 1024 * 1024
-    ),
+    "max_output_bytes": _env_int("SCANNER_SANDBOX_MAX_OUTPUT_BYTES", 5 * 1024 * 1024),
     # Cross-worker semaphore stored in Redis. 0 disables the gate.
     "max_concurrency": _env_int("SCANNER_SANDBOX_MAX_CONCURRENCY", 2),
     # Directory the worker and the Docker daemon both see, used for the files
@@ -916,9 +924,7 @@ SCANNER_SANDBOX: dict = {
         "user": env("SCANNER_SANDBOX_DOCKER_USER", ""),
         # Never pull at scan time: the image must be pre-pulled on the VPS.
         "pull_policy": env("SCANNER_SANDBOX_DOCKER_PULL", "never"),
-        "start_grace_seconds": _env_int(
-            "SCANNER_SANDBOX_DOCKER_START_GRACE", 20
-        ),
+        "start_grace_seconds": _env_int("SCANNER_SANDBOX_DOCKER_START_GRACE", 20),
         "images": {
             # Lighthouse/Chromium and ZAP keep their own images: the first is
             # optional (see steps_builder) and the second is a 2 GB vendor
@@ -929,8 +935,12 @@ SCANNER_SANDBOX: dict = {
             "nmap": _env_image("SCANNER_DOCKER_IMAGE_NMAP", SCANNER_TOOLS_IMAGE),
             "nikto": _env_image("SCANNER_DOCKER_IMAGE_NIKTO", SCANNER_TOOLS_IMAGE),
             "whatweb": _env_image("SCANNER_DOCKER_IMAGE_WHATWEB", SCANNER_TOOLS_IMAGE),
-            "dnsrecon": _env_image("SCANNER_DOCKER_IMAGE_DNSRECON", SCANNER_TOOLS_IMAGE),
-            "gobuster": _env_image("SCANNER_DOCKER_IMAGE_GOBUSTER", SCANNER_TOOLS_IMAGE),
+            "dnsrecon": _env_image(
+                "SCANNER_DOCKER_IMAGE_DNSRECON", SCANNER_TOOLS_IMAGE
+            ),
+            "gobuster": _env_image(
+                "SCANNER_DOCKER_IMAGE_GOBUSTER", SCANNER_TOOLS_IMAGE
+            ),
             "nuclei": env("SCANNER_DOCKER_IMAGE_NUCLEI", ""),
             "zap": env("SCANNER_DOCKER_IMAGE_ZAP", ""),
         },
@@ -938,9 +948,7 @@ SCANNER_SANDBOX: dict = {
 }
 
 # Hard wall-clock budget for a whole scan, shared by all steps.
-SCAN_TOTAL_TIME_BUDGET_SECONDS: int = _env_int(
-    "SCAN_TOTAL_TIME_BUDGET_SECONDS", 540
-)
+SCAN_TOTAL_TIME_BUDGET_SECONDS: int = _env_int("SCAN_TOTAL_TIME_BUDGET_SECONDS", 540)
 
 # Maximum concurrent authenticated scans per user.
 MAX_CONCURRENT_SCANS_PER_USER: int = _env_int("MAX_CONCURRENT_SCANS_PER_USER", 1)
@@ -971,7 +979,9 @@ REDDIT_USER_AGENT = env(
 SCANNER_MAX_RAW_OUTPUT: int = _env_int("SCANNER_MAX_RAW_OUTPUT", 50_000)
 
 # Maximum subprocess output before truncation (bytes).
-SCANNER_MAX_SUBPROCESS_OUTPUT: int = _env_int("SCANNER_MAX_SUBPROCESS_OUTPUT", 10 * 1024 * 1024)
+SCANNER_MAX_SUBPROCESS_OUTPUT: int = _env_int(
+    "SCANNER_MAX_SUBPROCESS_OUTPUT", 10 * 1024 * 1024
+)
 
 # ---- Raw scanner report archives -----------------------------------------
 # Private copy of the raw JSONL, including partial output from a timeout.
@@ -995,20 +1005,19 @@ SCANNER_ARCHIVE_SCANNERS: tuple[str, ...] = (
 SCANNER_ARCHIVE_DIR: str = env(
     "SCANNER_ARCHIVE_DIR", str(BASE_DIR / "scanner-archives")
 )
-SCANNER_ARCHIVE_MAX_BYTES: int = _env_int(
-    "SCANNER_ARCHIVE_MAX_BYTES", 8 * 1024 * 1024
-)
-SCANNER_ARCHIVE_RETENTION_DAYS: int = _env_int(
-    "SCANNER_ARCHIVE_RETENTION_DAYS", 30
-)
+SCANNER_ARCHIVE_MAX_BYTES: int = _env_int("SCANNER_ARCHIVE_MAX_BYTES", 8 * 1024 * 1024)
+SCANNER_ARCHIVE_RETENTION_DAYS: int = _env_int("SCANNER_ARCHIVE_RETENTION_DAYS", 30)
 
 
 # === PHASE2_RATE_LIMIT_I18N_PATCH ===
 # 🆕 Phase 2 (Sept 2026) — Rate-limiting public scan 5/h + support i18n emails
-REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_CLASSES", [
-    "rest_framework.throttling.AnonRateThrottle",
-    "rest_framework.throttling.UserRateThrottle",
-])
+REST_FRAMEWORK.setdefault(
+    "DEFAULT_THROTTLE_CLASSES",
+    [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+)
 REST_FRAMEWORK.setdefault("DEFAULT_THROTTLE_RATES", {})
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["public_scan"] = "5/hour"
 REST_FRAMEWORK["NUM_PROXIES"] = 1  # Nginx reverse-proxy → vraie IP via X-Forwarded-For

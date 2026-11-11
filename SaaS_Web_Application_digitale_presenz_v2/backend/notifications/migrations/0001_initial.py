@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,22 +14,64 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='NotificationChannel',
+            name="NotificationChannel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('channel_type', models.CharField(choices=[('email', 'Email'), ('slack', 'Slack'), ('discord', 'Discord'), ('webhook', 'Webhook'), ('sms', 'SMS')], max_length=10)),
-                ('name', models.CharField(max_length=100)),
-                ('enabled', models.BooleanField(default=True)),
-                ('config', models.JSONField(default=dict, help_text='e.g. {"webhook_url": "https://..."}')),
-                ('severities', models.JSONField(default=list, help_text='["critical","warning"] or [] = all')),
-                ('alert_types', models.JSONField(default=list, help_text='["ssl_expired"] or [] = all')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notification_channels', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "channel_type",
+                    models.CharField(
+                        choices=[
+                            ("email", "Email"),
+                            ("slack", "Slack"),
+                            ("discord", "Discord"),
+                            ("webhook", "Webhook"),
+                            ("sms", "SMS"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("enabled", models.BooleanField(default=True)),
+                (
+                    "config",
+                    models.JSONField(
+                        default=dict, help_text='e.g. {"webhook_url": "https://..."}'
+                    ),
+                ),
+                (
+                    "severities",
+                    models.JSONField(
+                        default=list, help_text='["critical","warning"] or [] = all'
+                    ),
+                ),
+                (
+                    "alert_types",
+                    models.JSONField(
+                        default=list, help_text='["ssl_expired"] or [] = all'
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notification_channels",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Notification Channel',
-                'ordering': ['channel_type', 'name'],
+                "verbose_name": "Notification Channel",
+                "ordering": ["channel_type", "name"],
             },
         ),
     ]

@@ -37,7 +37,9 @@ REFRESH_MAX_FAILURES = 3
 
 def _max_refresh_failures() -> int:
     try:
-        value = int(getattr(settings, "SOCIAL_TOKEN_REFRESH_MAX_FAILURES", REFRESH_MAX_FAILURES))
+        value = int(
+            getattr(settings, "SOCIAL_TOKEN_REFRESH_MAX_FAILURES", REFRESH_MAX_FAILURES)
+        )
     except (TypeError, ValueError):
         return REFRESH_MAX_FAILURES
     return max(1, min(value, 100))

@@ -22,9 +22,7 @@ class ScannerTimeoutError(ScannerError):
     def __init__(self, scanner_name: str, timeout_s: int) -> None:
         self.scanner_name = scanner_name
         self.timeout_s = timeout_s
-        super().__init__(
-            f"Scanner '{scanner_name}' timed out after {timeout_s}s."
-        )
+        super().__init__(f"Scanner '{scanner_name}' timed out after {timeout_s}s.")
 
 
 class ScannerOutputTooLargeError(ScannerError):
@@ -33,9 +31,7 @@ class ScannerOutputTooLargeError(ScannerError):
     def __init__(self, scanner_name: str, max_bytes: int) -> None:
         self.scanner_name = scanner_name
         self.max_bytes = max_bytes
-        super().__init__(
-            f"Scanner '{scanner_name}' output exceeded {max_bytes} bytes."
-        )
+        super().__init__(f"Scanner '{scanner_name}' output exceeded {max_bytes} bytes.")
 
 
 class TargetValidationError(ScannerError):

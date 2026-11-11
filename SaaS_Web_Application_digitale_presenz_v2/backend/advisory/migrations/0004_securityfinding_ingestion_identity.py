@@ -35,7 +35,6 @@ def noop(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("advisory", "0003_securityfinding"),
     ]

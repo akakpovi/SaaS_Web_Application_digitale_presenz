@@ -67,7 +67,9 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ HTTP
 
-    def _request(self, method: str, path: str, payload: dict | None = None, params=None) -> dict:
+    def _request(
+        self, method: str, path: str, payload: dict | None = None, params=None
+    ) -> dict:
         base = (settings.PADDLE_API_URL or "https://sandbox-api.paddle.com").rstrip("/")
         url = f"{base}{path}"
         try:
@@ -167,7 +169,9 @@ class Command(BaseCommand):
         )
         price_id = created.get("id")
         if not price_id:
-            raise PaddleApiError(f"Paddle returned no price ID for {plan.name}/{cycle}.")
+            raise PaddleApiError(
+                f"Paddle returned no price ID for {plan.name}/{cycle}."
+            )
         self.stdout.write(f"  price {plan.name}/{cycle}: {price_id} (created)")
         return price_id
 
@@ -227,9 +231,13 @@ class Command(BaseCommand):
                 f"Refusing to modify {settings.PADDLE_API_URL!r} without --allow-live."
             )
 
-        plans = Plan.objects.filter(tier__in=[Plan.Tier.PRO, Plan.Tier.BUSINESS, Plan.Tier.AGENCY])
+        plans = Plan.objects.filter(
+            tier__in=[Plan.Tier.PRO, Plan.Tier.BUSINESS, Plan.Tier.AGENCY]
+        )
         if not plans.exists():
-            raise CommandError("No paid plan found. Run `manage.py create_plans` first.")
+            raise CommandError(
+                "No paid plan found. Run `manage.py create_plans` first."
+            )
 
         self.stdout.write(
             f"Paddle environment: {settings.PADDLE_ENVIRONMENT} ({settings.PADDLE_API_URL})"

@@ -110,51 +110,61 @@ class RecommendationEngine:
         from scans.models import Finding
 
         recommendations: list[Recommendation] = []
-        findings = Finding.objects.filter(
-            scanner_run__scan=self.scan,
-            status__in=["fail", "warning"],
-        ).exclude(recommendation="").select_related("scanner_run")
+        findings = (
+            Finding.objects.filter(
+                scanner_run__scan=self.scan,
+                status__in=["fail", "warning"],
+            )
+            .exclude(recommendation="")
+            .select_related("scanner_run")
+        )
 
         for finding in findings:
             if not finding.recommendation:
                 continue
             priority = _map_severity_to_priority(finding.severity)
-            effort = "low" if finding.severity == "info" else (
-                "high" if finding.severity in ("high", "critical") else "medium"
+            effort = (
+                "low"
+                if finding.severity == "info"
+                else ("high" if finding.severity in ("high", "critical") else "medium")
             )
-            recommendations.append(Recommendation(
-                priority=priority,
-                category=finding.category,
-                title=finding.title,
-                description=finding.description,
-                action=finding.recommendation,
-                impact=self._severity_to_impact(finding.severity),
-                effort=effort,
-                reference_url=finding.reference_url,
-                check_code=finding.check_code,
-            ))
+            recommendations.append(
+                Recommendation(
+                    priority=priority,
+                    category=finding.category,
+                    title=finding.title,
+                    description=finding.description,
+                    action=finding.recommendation,
+                    impact=self._severity_to_impact(finding.severity),
+                    effort=effort,
+                    reference_url=finding.reference_url,
+                    check_code=finding.check_code,
+                )
+            )
 
         return recommendations
 
     def _from_check_results(self) -> list[Recommendation]:
         """Generate recommendations from CheckResult records."""
         recommendations: list[Recommendation] = []
-        check_results = self.scan.check_results.exclude(
-            recommendation=""
-        ).exclude(status="healthy")
+        check_results = self.scan.check_results.exclude(recommendation="").exclude(
+            status="healthy"
+        )
 
         for result in check_results:
             priority = _map_status_to_priority(result.status)
-            recommendations.append(Recommendation(
-                priority=priority,
-                category=result.category,
-                title=f"Improve {result.category.replace('_', ' ').title()}",
-                description=result.summary,
-                action=result.recommendation,
-                impact=self._status_to_impact(result.status),
-                effort="medium",
-                check_code=f"{result.category}.overall",
-            ))
+            recommendations.append(
+                Recommendation(
+                    priority=priority,
+                    category=result.category,
+                    title=f"Improve {result.category.replace('_', ' ').title()}",
+                    description=result.summary,
+                    action=result.recommendation,
+                    impact=self._status_to_impact(result.status),
+                    effort="medium",
+                    check_code=f"{result.category}.overall",
+                )
+            )
 
         return recommendations
 

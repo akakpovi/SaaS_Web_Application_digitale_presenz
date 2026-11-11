@@ -2,8 +2,8 @@ from django.db import migrations, models
 import django.db.models.deletion
 from django.conf import settings
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
@@ -14,18 +14,41 @@ class Migration(migrations.Migration):
         migrations.SeparateDatabaseAndState(
             state_operations=[
                 migrations.CreateModel(
-                    name='PublicLead',
+                    name="PublicLead",
                     fields=[
-                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('email', models.EmailField(db_index=True, max_length=254)),
-                        ('url_scanned', models.CharField(max_length=255)),
-                        ('scan_id', models.CharField(blank=True, max_length=100, null=True)),
-                        ('email_sent', models.BooleanField(default=False)),
-                        ('email_delivered_at', models.DateTimeField(blank=True, null=True)),
-                        ('created_at', models.DateTimeField(auto_now_add=True)),
-                        ('converted_to_user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='public_leads', to=settings.AUTH_USER_MODEL)),
+                        (
+                            "id",
+                            models.BigAutoField(
+                                auto_created=True,
+                                primary_key=True,
+                                serialize=False,
+                                verbose_name="ID",
+                            ),
+                        ),
+                        ("email", models.EmailField(db_index=True, max_length=254)),
+                        ("url_scanned", models.CharField(max_length=255)),
+                        (
+                            "scan_id",
+                            models.CharField(blank=True, max_length=100, null=True),
+                        ),
+                        ("email_sent", models.BooleanField(default=False)),
+                        (
+                            "email_delivered_at",
+                            models.DateTimeField(blank=True, null=True),
+                        ),
+                        ("created_at", models.DateTimeField(auto_now_add=True)),
+                        (
+                            "converted_to_user",
+                            models.ForeignKey(
+                                blank=True,
+                                null=True,
+                                on_delete=django.db.models.deletion.SET_NULL,
+                                related_name="public_leads",
+                                to=settings.AUTH_USER_MODEL,
+                            ),
+                        ),
                     ],
-                    options={'ordering': ['-created_at']},
+                    options={"ordering": ["-created_at"]},
                 ),
             ],
             database_operations=[
@@ -47,8 +70,8 @@ class Migration(migrations.Migration):
                     """,
                     reverse_sql="""
                     DROP TABLE IF EXISTS public_checker_publiclead;
-                    """
+                    """,
                 )
-            ]
+            ],
         )
     ]

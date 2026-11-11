@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("integrations", "0002_oauthstate_code_verifier_ciphertext_and_more"),
@@ -27,7 +26,10 @@ class Migration(migrations.Migration):
                         serialize=False,
                     ),
                 ),
-                ("actor_email", models.EmailField(blank=True, default="", max_length=254)),
+                (
+                    "actor_email",
+                    models.EmailField(blank=True, default="", max_length=254),
+                ),
                 (
                     "action",
                     models.CharField(

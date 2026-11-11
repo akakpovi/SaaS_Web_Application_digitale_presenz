@@ -6,14 +6,14 @@ from decimal import Decimal
 
 @dataclass
 class ReviewData:
-    external_id:  str
-    author_name:  str
-    rating:       Decimal | None
-    text:         str
-    review_date:  datetime | None
+    external_id: str
+    author_name: str
+    rating: Decimal | None
+    text: str
+    review_date: datetime | None
     author_photo: str = ""
-    language:     str = ""
-    raw_data:     dict = field(default_factory=dict)
+    language: str = ""
+    raw_data: dict = field(default_factory=dict)
 
 
 class ReviewProvider(ABC):

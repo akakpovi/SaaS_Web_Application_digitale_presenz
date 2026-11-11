@@ -8,6 +8,7 @@ from reviews.services.sentiment import get_analyzer
 
 logger = logging.getLogger(__name__)
 
+
 class BulkImporter:
     def __init__(self, job: ReviewImportJob) -> None:
         self.job = job
@@ -32,9 +33,11 @@ class BulkImporter:
                     self.job.imported_count += 1
                 except Exception as exc:
                     self.job.failed_count += 1
-                    self.job.errors.append(f"Row {i+1}: {exc}")
+                    self.job.errors.append(f"Row {i + 1}: {exc}")
                 if (i + 1) % 50 == 0:
-                    self.job.save(update_fields=["imported_count", "failed_count", "errors"])
+                    self.job.save(
+                        update_fields=["imported_count", "failed_count", "errors"]
+                    )
 
             self.job.status = ReviewImportJob.Status.COMPLETED
             self.job.completed_at = timezone.now()
@@ -44,7 +47,11 @@ class BulkImporter:
             self.job.errors.append(str(exc))
         finally:
             self.job.save()
-        return {"total": self.job.total_rows, "imported": self.job.imported_count, "failed": self.job.failed_count}
+        return {
+            "total": self.job.total_rows,
+            "imported": self.job.imported_count,
+            "failed": self.job.failed_count,
+        }
 
     def _create_review(self, row: dict) -> None:
         author = row.get("author") or row.get("author_name") or row.get("name", "")

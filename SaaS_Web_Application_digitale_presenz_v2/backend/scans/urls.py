@@ -12,6 +12,10 @@ check_result_detail = CheckResultViewSet.as_view({"get": "retrieve"})
 
 urlpatterns = [
     path("scans/<int:scan_pk>/results/", check_result_list, name="scan-results-list"),
-    path("scans/<int:scan_pk>/results/<int:pk>/", check_result_detail, name="scan-results-detail"),
+    path(
+        "scans/<int:scan_pk>/results/<int:pk>/",
+        check_result_detail,
+        name="scan-results-detail",
+    ),
     *router.urls,
 ]

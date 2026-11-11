@@ -35,7 +35,11 @@ from rest_framework_simplejwt.tokens import AccessToken
 from accounts.models import User
 from scanners.base import FindingStatus, NormalizedFinding, ScanResult, Severity
 from scans.models import CheckResult, Finding, HealthStatus, Scan, ScannerRun
-from scans.services.recommendation_engine import Priority, Recommendation, RecommendationEngine
+from scans.services.recommendation_engine import (
+    Priority,
+    Recommendation,
+    RecommendationEngine,
+)
 from scans.services.steps_builder import (
     StepStatus,
     build_initial_steps,
@@ -47,6 +51,7 @@ from websites.models import Website
 # ─────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────
+
 
 def make_user(email="owner@example.com"):
     return User.objects.create_user(email, "CorrectHorseBattery1!")
@@ -69,6 +74,7 @@ def auth_client(client, user):
 # ═══════════════════════════════════════════════════
 # ScannerRun model tests
 # ═══════════════════════════════════════════════════
+
 
 class ScannerRunModelTests(TestCase):
     def setUp(self):
@@ -137,6 +143,7 @@ class ScannerRunModelTests(TestCase):
 # Finding model tests
 # ═══════════════════════════════════════════════════
 
+
 class FindingModelTests(TestCase):
     def setUp(self):
         self.user = make_user()
@@ -189,6 +196,7 @@ class FindingModelTests(TestCase):
 # New Scan fields
 # ═══════════════════════════════════════════════════
 
+
 class ScanNewFieldsTests(TestCase):
     def setUp(self):
         self.user = make_user()
@@ -199,7 +207,11 @@ class ScanNewFieldsTests(TestCase):
         self.assertEqual(scan.scan_type, Scan.ScanType.HEALTH)
 
     def test_scan_type_choices(self):
-        for scan_type in [Scan.ScanType.HEALTH, Scan.ScanType.SECURITY, Scan.ScanType.FULL]:
+        for scan_type in [
+            Scan.ScanType.HEALTH,
+            Scan.ScanType.SECURITY,
+            Scan.ScanType.FULL,
+        ]:
             scan = Scan.objects.create(website=self.website, scan_type=scan_type)
             self.assertEqual(scan.scan_type, scan_type)
 
@@ -247,6 +259,7 @@ class ScanNewFieldsTests(TestCase):
     def test_duration_seconds(self):
         from django.utils import timezone
         from datetime import timedelta
+
         scan = Scan.objects.create(website=self.website, status=Scan.Status.RUNNING)
         now = timezone.now()
         scan.started_at = now - timedelta(seconds=30)
@@ -264,11 +277,19 @@ class ScanNewFieldsTests(TestCase):
 # Steps builder tests
 # ═══════════════════════════════════════════════════
 
+
 class StepsBuilderTests(TestCase):
     def test_health_steps_contains_core_scanners(self):
         steps = build_initial_steps("health")
         keys = [s["key"] for s in steps]
-        for expected in ["website", "ssl", "dns", "email_security", "security_headers", "performance"]:
+        for expected in [
+            "website",
+            "ssl",
+            "dns",
+            "email_security",
+            "security_headers",
+            "performance",
+        ]:
             self.assertIn(expected, keys)
 
     def test_security_steps_contains_external_tools(self):
@@ -343,23 +364,35 @@ class StepsBuilderTests(TestCase):
 # Scanner Registry tests
 # ═══════════════════════════════════════════════════
 
+
 class ScannerRegistryTests(TestCase):
     def test_registry_can_retrieve_internal_scanners(self):
         from scanners.registry import ScannerRegistry
+
         # These must be registered after import
         import scanners  # noqa: F401 - triggers registration
-        for name in ["website", "ssl", "dns", "email_security", "security_headers", "performance"]:
+
+        for name in [
+            "website",
+            "ssl",
+            "dns",
+            "email_security",
+            "security_headers",
+            "performance",
+        ]:
             scanner = ScannerRegistry.get(name)
             self.assertEqual(scanner.name, name)
 
     def test_registry_raises_key_error_for_unknown_scanner(self):
         from scanners.registry import ScannerRegistry
+
         with self.assertRaises(KeyError):
             ScannerRegistry.get("does_not_exist_xyz")
 
     def test_registry_list_contains_all_registered_scanners(self):
         from scanners.registry import ScannerRegistry
         import scanners  # noqa: F401
+
         all_scanners = ScannerRegistry.all()
         names = [s.name for s in all_scanners]
         for expected in ["website", "ssl", "dns", "nmap", "nikto"]:
@@ -368,14 +401,25 @@ class ScannerRegistryTests(TestCase):
     def test_internal_scanners_always_available(self):
         from scanners.registry import ScannerRegistry
         import scanners  # noqa: F401
-        for name in ["website", "ssl", "dns", "email_security", "security_headers", "performance"]:
+
+        for name in [
+            "website",
+            "ssl",
+            "dns",
+            "email_security",
+            "security_headers",
+            "performance",
+        ]:
             scanner = ScannerRegistry.get(name)
-            self.assertTrue(scanner.is_available(), f"{name} should always be available")
+            self.assertTrue(
+                scanner.is_available(), f"{name} should always be available"
+            )
 
 
 # ═══════════════════════════════════════════════════
 # Orchestrator lifecycle tests (mocked scanners)
 # ═══════════════════════════════════════════════════
+
 
 class OrchestratorLifecycleTests(TestCase):
     def setUp(self):
@@ -425,7 +469,9 @@ class OrchestratorLifecycleTests(TestCase):
             scan_obj.save(update_fields=["steps", "updated_at"])
 
         with patch.object(
-            ScanOrchestrator, "_run_all_steps", autospec=True,
+            ScanOrchestrator,
+            "_run_all_steps",
+            autospec=True,
             side_effect=finish_steps,
         ):
             orchestrator = ScanOrchestrator(scan_id=scan.id)
@@ -452,15 +498,31 @@ class OrchestratorLifecycleTests(TestCase):
         )
         # Patch steps to only 2 steps for speed
         from scans.services.steps_builder import build_initial_steps
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "website", "label": "Website", "scanner": "website",
-                 "weight": 50, "status": "pending", "progress": 0},
-                {"key": "ssl", "label": "SSL", "scanner": "ssl",
-                 "weight": 50, "status": "pending", "progress": 0},
+                {
+                    "key": "website",
+                    "label": "Website",
+                    "scanner": "website",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
+                {
+                    "key": "ssl",
+                    "label": "SSL",
+                    "scanner": "ssl",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         self.assertEqual(ScannerRun.objects.filter(scan=scan).count(), 2)
@@ -483,15 +545,30 @@ class OrchestratorLifecycleTests(TestCase):
             status=Scan.Status.QUEUED,
             scan_type=Scan.ScanType.HEALTH,
         )
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "website", "label": "Website", "scanner": "website",
-                 "weight": 50, "status": "pending", "progress": 0},
-                {"key": "ssl", "label": "SSL", "scanner": "ssl",
-                 "weight": 50, "status": "pending", "progress": 0},
+                {
+                    "key": "website",
+                    "label": "Website",
+                    "scanner": "website",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
+                {
+                    "key": "ssl",
+                    "label": "SSL",
+                    "scanner": "ssl",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         scan.refresh_from_db()
@@ -514,13 +591,22 @@ class OrchestratorLifecycleTests(TestCase):
             status=Scan.Status.QUEUED,
             scan_type=Scan.ScanType.SECURITY,
         )
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "nmap", "label": "Nmap", "scanner": "nmap",
-                 "weight": 100, "status": "pending", "progress": 0},
+                {
+                    "key": "nmap",
+                    "label": "Nmap",
+                    "scanner": "nmap",
+                    "weight": 100,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         scan.refresh_from_db()
@@ -542,13 +628,22 @@ class OrchestratorLifecycleTests(TestCase):
             status=Scan.Status.QUEUED,
             scan_type=Scan.ScanType.HEALTH,
         )
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "website", "label": "Website", "scanner": "website",
-                 "weight": 100, "status": "pending", "progress": 0},
+                {
+                    "key": "website",
+                    "label": "Website",
+                    "scanner": "website",
+                    "weight": 100,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         scan.refresh_from_db()
@@ -556,6 +651,7 @@ class OrchestratorLifecycleTests(TestCase):
 
     def test_orchestrator_handles_nonexistent_scan_gracefully(self):
         from scans.services.orchestrator import ScanOrchestrator
+
         # Should not raise
         ScanOrchestrator(scan_id=999999).run()
 
@@ -566,6 +662,7 @@ class OrchestratorLifecycleTests(TestCase):
         )
         with patch("scans.services.steps_builder.build_initial_steps") as mock_steps:
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
             mock_steps.assert_not_called()
 
@@ -592,17 +689,38 @@ class OrchestratorLifecycleTests(TestCase):
         )
         self.scan_ref = [scan.id]
 
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "website", "label": "Website", "scanner": "website",
-                 "weight": 50, "status": "pending", "progress": 0},
-                {"key": "ssl", "label": "SSL", "scanner": "ssl",
-                 "weight": 50, "status": "pending", "progress": 0},
-                {"key": "dns", "label": "DNS", "scanner": "dns",
-                 "weight": 50, "status": "pending", "progress": 0},
+                {
+                    "key": "website",
+                    "label": "Website",
+                    "scanner": "website",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
+                {
+                    "key": "ssl",
+                    "label": "SSL",
+                    "scanner": "ssl",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
+                {
+                    "key": "dns",
+                    "label": "DNS",
+                    "scanner": "dns",
+                    "weight": 50,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         # Only the first scanner run should have been created
@@ -636,17 +754,28 @@ class OrchestratorLifecycleTests(TestCase):
             website=self.website,
             status=Scan.Status.QUEUED,
         )
-        with patch("scans.services.steps_builder.build_initial_steps") as mock_steps, \
-             patch("scans.services.scoring.recalculate_scan_health"):
+        with (
+            patch("scans.services.steps_builder.build_initial_steps") as mock_steps,
+            patch("scans.services.scoring.recalculate_scan_health"),
+        ):
             mock_steps.return_value = [
-                {"key": "ssl", "label": "SSL", "scanner": "ssl",
-                 "weight": 100, "status": "pending", "progress": 0},
+                {
+                    "key": "ssl",
+                    "label": "SSL",
+                    "scanner": "ssl",
+                    "weight": 100,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             from scans.services.orchestrator import ScanOrchestrator
+
             ScanOrchestrator(scan_id=scan.id).run()
 
         self.assertEqual(Finding.objects.filter(scanner_run__scan=scan).count(), 2)
-        finding = Finding.objects.get(check_code="ssl.cert_expiry", scanner_run__scan=scan)
+        finding = Finding.objects.get(
+            check_code="ssl.cert_expiry", scanner_run__scan=scan
+        )
         self.assertEqual(finding.severity, "medium")
         self.assertEqual(finding.status, "warning")
 
@@ -654,6 +783,7 @@ class OrchestratorLifecycleTests(TestCase):
 # ═══════════════════════════════════════════════════
 # End-to-end scoring pipeline tests (scoring NOT mocked)
 # ═══════════════════════════════════════════════════
+
 
 class ScoringPipelineE2ETests(TestCase):
     """Full scanner → ScannerRun.metadata → CheckResult → health_score pipeline.
@@ -716,6 +846,7 @@ class ScoringPipelineE2ETests(TestCase):
         )
 
         from scans.services.orchestrator import ScanOrchestrator
+
         # NOTE: recalculate_scan_health / calculate_health_score are NOT mocked here.
         ScanOrchestrator(scan_id=scan.id).run()
 
@@ -752,6 +883,7 @@ class ScoringPipelineE2ETests(TestCase):
 
         # ── D. Provenance: stored value == live calculate_health_score() ──
         from scans.services.scoring import calculate_health_score
+
         recomputed = calculate_health_score(scan.check_results.all())
         self.assertEqual(recomputed.score, 81)
         self.assertEqual(recomputed.status, HealthStatus.CRITICAL)
@@ -759,6 +891,7 @@ class ScoringPipelineE2ETests(TestCase):
 
         # ── E. Uptime is NOT part of the weighted score ──
         from scans.services.scoring import CHECK_WEIGHTS
+
         self.assertNotIn("uptime", CHECK_WEIGHTS)
 
 
@@ -766,13 +899,16 @@ class ScoringPipelineE2ETests(TestCase):
 # Recommendation engine tests
 # ═══════════════════════════════════════════════════
 
+
 class RecommendationEngineTests(TestCase):
     def setUp(self):
         self.user = make_user()
         self.website = make_website(self.user)
         self.scan = make_scan(self.website)
 
-    def _add_check_result(self, category, score, result_status, recommendation="Fix this."):
+    def _add_check_result(
+        self, category, score, result_status, recommendation="Fix this."
+    ):
         return CheckResult.objects.create(
             scan=self.scan,
             category=category,
@@ -861,6 +997,7 @@ class RecommendationEngineTests(TestCase):
 # ═══════════════════════════════════════════════════
 # Website scan API tests (trigger_scan + active_scan)
 # ═══════════════════════════════════════════════════
+
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class WebsiteScanAPITests(APITestCase):
@@ -991,13 +1128,16 @@ class WebsiteScanAPITests(APITestCase):
 
     def test_active_scan_other_user_website_returns_404(self):
         Scan.objects.create(website=self.other_website, status=Scan.Status.RUNNING)
-        response = self.client.get(f"/api/v1/websites/{self.other_website.id}/active_scan/")
+        response = self.client.get(
+            f"/api/v1/websites/{self.other_website.id}/active_scan/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # ═══════════════════════════════════════════════════
 # Scan API sub-endpoints (scanner-runs, findings, recs)
 # ═══════════════════════════════════════════════════
+
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class ScanSubEndpointTests(APITestCase):
@@ -1057,7 +1197,9 @@ class ScanSubEndpointTests(APITestCase):
             severity="high",
             status="warning",
         )
-        response = self.client.get(f"/api/v1/scans/{self.scan.id}/findings/?severity=high")
+        response = self.client.get(
+            f"/api/v1/scans/{self.scan.id}/findings/?severity=high"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["severity"], "high")
@@ -1089,12 +1231,16 @@ class ScanSubEndpointTests(APITestCase):
         )
 
     def test_findings_filter_by_category(self):
-        response = self.client.get(f"/api/v1/scans/{self.scan.id}/findings/?category=ssl")
+        response = self.client.get(
+            f"/api/v1/scans/{self.scan.id}/findings/?category=ssl"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
     def test_findings_filter_by_status(self):
-        response = self.client.get(f"/api/v1/scans/{self.scan.id}/findings/?status=pass")
+        response = self.client.get(
+            f"/api/v1/scans/{self.scan.id}/findings/?status=pass"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
@@ -1111,13 +1257,16 @@ class ScanSubEndpointTests(APITestCase):
         self.assertIsInstance(response.data["recommendations"], list)
 
     def test_recommendations_does_not_expose_other_users(self):
-        response = self.client.get(f"/api/v1/scans/{self.other_scan.id}/recommendations/")
+        response = self.client.get(
+            f"/api/v1/scans/{self.other_scan.id}/recommendations/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # ═══════════════════════════════════════════════════
 # Scan list filtering tests
 # ═══════════════════════════════════════════════════
+
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class ScanListFilterTests(APITestCase):
@@ -1193,6 +1342,7 @@ class ScanListFilterTests(APITestCase):
 # Single-execution guarantee (P0-01)
 # ═══════════════════════════════════════════════════
 
+
 class SingleExecutionTests(TestCase):
     """A scanner must be executed once per scan, not twice.
 
@@ -1241,8 +1391,14 @@ class SingleExecutionTests(TestCase):
 
         with patch("scans.services.steps_builder.build_initial_steps") as mock_steps:
             mock_steps.return_value = [
-                {"key": "website", "label": "Website", "scanner": "website",
-                 "weight": 20, "status": "pending", "progress": 0},
+                {
+                    "key": "website",
+                    "label": "Website",
+                    "scanner": "website",
+                    "weight": 20,
+                    "status": "pending",
+                    "progress": 0,
+                },
             ]
             ScanOrchestrator(scan_id=scan.id).run()
 
@@ -1252,7 +1408,9 @@ class SingleExecutionTests(TestCase):
         # And the artefacts were still persisted from that single run.
         scan.refresh_from_db()
         self.assertEqual(scan.status, Scan.Status.COMPLETED)
-        check = CheckResult.objects.get(scan=scan, category=CheckResult.Category.WEBSITE)
+        check = CheckResult.objects.get(
+            scan=scan, category=CheckResult.Category.WEBSITE
+        )
         self.assertEqual(check.score, 20)
         findings = Finding.objects.filter(scanner_run__scan=scan)
         self.assertEqual(findings.count(), 1)
@@ -1266,9 +1424,7 @@ class SingleExecutionTests(TestCase):
         scanner = self._make_counting_scanner()
 
         first = scanner.scan("single-execution.example.com")
-        findings = scanner.scan_findings(
-            "single-execution.example.com", result=first
-        )
+        findings = scanner.scan_findings("single-execution.example.com", result=first)
 
         self.assertEqual(type(scanner).scan_calls, 1)
         self.assertEqual(len(findings), 1)

@@ -12,7 +12,15 @@ class CheckResultInline(admin.TabularInline):
 
 @admin.register(Scan)
 class ScanAdmin(admin.ModelAdmin):
-    list_display = ("id", "website", "status", "trigger", "health_score", "health_status", "created_at")
+    list_display = (
+        "id",
+        "website",
+        "status",
+        "trigger",
+        "health_score",
+        "health_status",
+        "created_at",
+    )
     list_filter = ("status", "trigger", "health_status", "created_at")
     search_fields = ("website__domain",)
     readonly_fields = ("created_at", "updated_at", "started_at", "completed_at")

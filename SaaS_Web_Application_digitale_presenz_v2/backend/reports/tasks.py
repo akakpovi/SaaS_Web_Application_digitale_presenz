@@ -18,7 +18,9 @@ def generate_report(self, report_id: str) -> dict:
         report.status = Report.Status.PENDING
         report.save(update_fields=["status", "updated_at"])
 
-        data = generate_report_data(report.website, report.period_start, report.period_end)
+        data = generate_report_data(
+            report.website, report.period_start, report.period_end
+        )
 
         for field, value in data.items():
             setattr(report, field, value)
@@ -27,7 +29,9 @@ def generate_report(self, report_id: str) -> dict:
         report.generated_at = timezone.now()
         report.save()
 
-        logger.info("Report %s generated successfully for %s", report_id, report.website.domain)
+        logger.info(
+            "Report %s generated successfully for %s", report_id, report.website.domain
+        )
         return {"status": "generated", "report_id": str(report_id)}
 
     except Report.DoesNotExist:
@@ -37,6 +41,7 @@ def generate_report(self, report_id: str) -> dict:
         logger.exception("generate_report failed for %s", report_id)
         try:
             from reports.models import Report
+
             Report.objects.filter(id=report_id).update(status=Report.Status.FAILED)
         except Exception:
             pass
@@ -56,7 +61,7 @@ def generate_monthly_reports() -> dict:
     today = date.today()
     # Previous month
     first_of_this_month = today.replace(day=1)
-    last_of_prev_month  = first_of_this_month - timedelta(days=1)
+    last_of_prev_month = first_of_this_month - timedelta(days=1)
     first_of_prev_month = last_of_prev_month.replace(day=1)
 
     websites = Website.objects.filter(is_active=True).select_related("owner")
@@ -68,9 +73,9 @@ def generate_monthly_reports() -> dict:
             period=Report.Period.MONTHLY,
             period_start=first_of_prev_month,
             defaults={
-                "user":       website.owner,
+                "user": website.owner,
                 "period_end": last_of_prev_month,
-                "status":     Report.Status.PENDING,
+                "status": Report.Status.PENDING,
             },
         )
         if was_created:

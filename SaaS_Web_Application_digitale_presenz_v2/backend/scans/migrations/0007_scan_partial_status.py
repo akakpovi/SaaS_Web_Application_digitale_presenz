@@ -4,24 +4,51 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scans', '0006_scannerrun_partial_status'),
-        ('websites', '0006_website_websites_we_organiz_d596c4_idx_and_more'),
+        ("scans", "0006_scannerrun_partial_status"),
+        ("websites", "0006_website_websites_we_organiz_d596c4_idx_and_more"),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='scan',
-            name='scan_status_valid',
+            model_name="scan",
+            name="scan_status_valid",
         ),
         migrations.AlterField(
-            model_name='scan',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('partial', 'Partial (incomplete coverage)'), ('failed', 'Failed'), ('cancelled', 'Cancelled')], default='pending', max_length=16),
+            model_name="scan",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("queued", "Queued"),
+                    ("running", "Running"),
+                    ("completed", "Completed"),
+                    ("partial", "Partial (incomplete coverage)"),
+                    ("failed", "Failed"),
+                    ("cancelled", "Cancelled"),
+                ],
+                default="pending",
+                max_length=16,
+            ),
         ),
         migrations.AddConstraint(
-            model_name='scan',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['pending', 'queued', 'running', 'completed', 'partial', 'failed', 'cancelled'])), name='scan_status_valid'),
+            model_name="scan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "status__in",
+                        [
+                            "pending",
+                            "queued",
+                            "running",
+                            "completed",
+                            "partial",
+                            "failed",
+                            "cancelled",
+                        ],
+                    )
+                ),
+                name="scan_status_valid",
+            ),
         ),
     ]

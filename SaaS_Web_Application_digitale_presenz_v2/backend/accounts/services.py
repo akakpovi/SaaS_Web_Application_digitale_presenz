@@ -12,7 +12,10 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 
 from .emails import render_account_email
 from .models import User
@@ -44,7 +47,9 @@ def send_verification_email(user: User) -> bool:
             fail_silently=False,
         )
     except Exception:
-        logger.exception("verification_email_delivery_failed", extra={"user_id": user.pk})
+        logger.exception(
+            "verification_email_delivery_failed", extra={"user_id": user.pk}
+        )
         return False
     return True
 
@@ -67,7 +72,9 @@ def send_password_reset_email(user: User) -> bool:
             fail_silently=False,
         )
     except Exception:
-        logger.exception("password_reset_email_delivery_failed", extra={"user_id": user.pk})
+        logger.exception(
+            "password_reset_email_delivery_failed", extra={"user_id": user.pk}
+        )
         return False
     return True
 
@@ -154,7 +161,9 @@ def _json_safe(value: Any) -> Any:
     return str(value)
 
 
-def serialize_instance(instance: Any, exclude: frozenset[str] = _EXPORT_EXCLUDED_FIELDS) -> dict[str, Any]:
+def serialize_instance(
+    instance: Any, exclude: frozenset[str] = _EXPORT_EXCLUDED_FIELDS
+) -> dict[str, Any]:
     """Turn a model instance into a JSON-safe dict of its concrete fields.
 
     Foreign keys are flattened to their primary key (``website`` → id) so the

@@ -316,10 +316,7 @@ class ZAPScanner(BaseScanner):
 
         parsed = parse_zap_json(report)
         findings = self.normalize(parsed)
-        high = [
-            item for item in parsed
-            if item.get("severity") in ("high", "critical")
-        ]
+        high = [item for item in parsed if item.get("severity") in ("high", "critical")]
         medium = [item for item in parsed if item.get("severity") == "medium"]
 
         if high:
@@ -334,8 +331,7 @@ class ZAPScanner(BaseScanner):
                 score=None,
                 status=status,
                 message=(
-                    f"ZAP found {len(parsed)} alert(s), "
-                    f"{len(high)} high/critical"
+                    f"ZAP found {len(parsed)} alert(s), {len(high)} high/critical"
                 ),
                 duration_ms=duration_ms,
                 transport=self._transport,
@@ -412,11 +408,11 @@ class ZAPScanner(BaseScanner):
                 # a duplicate mount with the configured /zap/wrk tmpfs.
                 mounts=[(workdir, "/zap/wrk")],
                 docker_tmpfs=[],
-            # The official zap-stable image writes ``zap.out`` under /zap
-            # and its configuration under /home/zap; a read-only root
-            # filesystem makes the baseline script abort before ZAP
-            # starts.  The container remains one-shot, capability-free
-            # and limited to the validated /zap/wrk bind mount.
+                # The official zap-stable image writes ``zap.out`` under /zap
+                # and its configuration under /home/zap; a read-only root
+                # filesystem makes the baseline script abort before ZAP
+                # starts.  The container remains one-shot, capability-free
+                # and limited to the validated /zap/wrk bind mount.
                 read_only=False,
                 env_extra={"HOME": "/tmp"},
             )
@@ -429,7 +425,9 @@ class ZAPScanner(BaseScanner):
 
             report = ""
             if os.path.isfile(report_path):
-                with open(report_path, "r", encoding="utf-8", errors="replace") as handle:
+                with open(
+                    report_path, "r", encoding="utf-8", errors="replace"
+                ) as handle:
                     report = handle.read()
 
             # Custom images may print the JSON report to stdout instead of
@@ -534,7 +532,9 @@ class ZAPScanner(BaseScanner):
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_zap_json(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         seen: set[tuple[str, str]] = set()
 
@@ -563,9 +563,7 @@ class ZAPScanner(BaseScanner):
             cwe = str(item.get("cweid", "") or "")
             reference = _first_reference_url(str(item.get("reference", "") or ""))
             if not reference and cwe:
-                reference = (
-                    f"https://cwe.mitre.org/data/definitions/{cwe}.html"
-                )
+                reference = f"https://cwe.mitre.org/data/definitions/{cwe}.html"
 
             findings.append(
                 NormalizedFinding(

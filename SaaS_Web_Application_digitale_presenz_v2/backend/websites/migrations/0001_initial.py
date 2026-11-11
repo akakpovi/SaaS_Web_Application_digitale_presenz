@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,19 +15,59 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Website',
+            name="Website",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('domain', models.CharField(max_length=253, validators=[django.core.validators.RegexValidator(message='Enter a valid domain name without a scheme, path, or port.', regex='^(?=.{1,253}$)(?!-)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$')])),
-                ('display_name', models.CharField(blank=True, max_length=150)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='websites', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "domain",
+                    models.CharField(
+                        max_length=253,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="Enter a valid domain name without a scheme, path, or port.",
+                                regex="^(?=.{1,253}$)(?!-)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$",
+                            )
+                        ],
+                    ),
+                ),
+                ("display_name", models.CharField(blank=True, max_length=150)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="websites",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['domain'],
-                'indexes': [models.Index(fields=['owner', 'domain'], name='websites_we_owner_i_3af32a_idx'), models.Index(fields=['owner', 'created_at'], name='websites_we_owner_i_cf070f_idx')],
-                'constraints': [models.UniqueConstraint(fields=('owner', 'domain'), name='unique_website_domain_per_owner')],
+                "ordering": ["domain"],
+                "indexes": [
+                    models.Index(
+                        fields=["owner", "domain"],
+                        name="websites_we_owner_i_3af32a_idx",
+                    ),
+                    models.Index(
+                        fields=["owner", "created_at"],
+                        name="websites_we_owner_i_cf070f_idx",
+                    ),
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("owner", "domain"),
+                        name="unique_website_domain_per_owner",
+                    )
+                ],
             },
         ),
     ]

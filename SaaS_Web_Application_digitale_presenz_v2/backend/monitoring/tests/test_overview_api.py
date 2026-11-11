@@ -16,7 +16,9 @@ class MonitoringOverviewApiTest(TestCase):
         self.user = User.objects.create_user("monitor@example.com", "CorrectHorse1!")
         self.other = User.objects.create_user("other@example.com", "CorrectHorse2!")
         self.website = Website.objects.create(owner=self.user, domain="monitor.example")
-        self.other_website = Website.objects.create(owner=self.other, domain="other.example")
+        self.other_website = Website.objects.create(
+            owner=self.other, domain="other.example"
+        )
 
         self.client = APIClient()
         self.client.credentials(
@@ -63,7 +65,9 @@ class MonitoringOverviewApiTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["summary"]["uptime_checks"], 3)
         self.assertEqual(response.data["summary"]["failed_checks"], 1)
-        self.assertAlmostEqual(response.data["summary"]["uptime_percent"], 66.67, places=2)
+        self.assertAlmostEqual(
+            response.data["summary"]["uptime_percent"], 66.67, places=2
+        )
         self.assertEqual(len(response.data["series"]), 1)
         self.assertEqual(response.data["series"][0]["checks"], 3)
         self.assertEqual(len(response.data["events"]), 3)
@@ -92,7 +96,9 @@ class MonitoringOverviewApiTest(TestCase):
         self._completed_scan(self.other_website, "down", score=10)
         response = self.client.get("/api/v1/monitoring/overview/?period=24H")
         self.assertEqual(response.data["summary"]["uptime_checks"], 0)
-        self.assertEqual([w["domain"] for w in response.data["websites"]], ["monitor.example"])
+        self.assertEqual(
+            [w["domain"] for w in response.data["websites"]], ["monitor.example"]
+        )
 
     def test_foreign_website_filter_is_404(self) -> None:
         response = self.client.get(

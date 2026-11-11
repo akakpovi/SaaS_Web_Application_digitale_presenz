@@ -194,16 +194,22 @@ class DnsreconScanner(BaseScanner):
         lifetime = int(cfg.get("lifetime_seconds", 8) or 8)
         return [
             "dnsrecon",
-            "-d", target,
-            "-t", "std",           # standard enumeration only
-            "-j", "/dev/stdout",   # JSON to stdout
-            "--lifetime", str(lifetime),
+            "-d",
+            target,
+            "-t",
+            "std",  # standard enumeration only
+            "-j",
+            "/dev/stdout",  # JSON to stdout
+            "--lifetime",
+            str(lifetime),
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return _parse_dnsrecon_json(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         record_types: dict[str, list[dict[str, Any]]] = {}
         for record in parsed_results:
@@ -215,14 +221,16 @@ class DnsreconScanner(BaseScanner):
             record_types.setdefault(rtype, []).append(record)
 
         for rtype, records in record_types.items():
-            findings.append(NormalizedFinding(
-                check_code=f"dnsrecon.{rtype.lower()}_records",
-                category="dns",
-                severity=Severity.INFO,
-                status=FindingStatus.PASS,
-                title=f"DNS {rtype} records ({len(records)} found)",
-                evidence={"records": records[:20]},  # Cap to avoid huge payloads
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"dnsrecon.{rtype.lower()}_records",
+                    category="dns",
+                    severity=Severity.INFO,
+                    status=FindingStatus.PASS,
+                    title=f"DNS {rtype} records ({len(records)} found)",
+                    evidence={"records": records[:20]},  # Cap to avoid huge payloads
+                )
+            )
 
         return findings
 

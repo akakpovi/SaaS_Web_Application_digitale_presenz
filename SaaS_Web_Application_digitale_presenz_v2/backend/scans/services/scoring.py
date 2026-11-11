@@ -79,10 +79,7 @@ def calculate_health_score(
             status=HealthStatus.NEUTRAL,
         )
 
-    score = sum(
-        result.score or 0
-        for result in weighted_results.values()
-    )
+    score = sum(result.score or 0 for result in weighted_results.values())
 
     # Defensive bound.
     score = max(0, min(100, score))
@@ -115,9 +112,7 @@ def calculate_health_score(
 
 
 def recalculate_scan_health(scan: Scan) -> HealthScore:
-    health = calculate_health_score(
-        scan.check_results.all()
-    )
+    health = calculate_health_score(scan.check_results.all())
 
     Scan.objects.filter(pk=scan.pk).update(
         health_score=health.score,

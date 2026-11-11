@@ -76,9 +76,7 @@ def seed_mock_connector_data(
 
         for connection_index in range(connections_per_org):
             provider = providers[connection_index % len(providers)]
-            external_account_id = (
-                f"mock-{prefix}-{org_index}-{connection_index}"
-            )
+            external_account_id = f"mock-{prefix}-{org_index}-{connection_index}"
             access_token = secrets.token_urlsafe(32)
             refresh_token = secrets.token_urlsafe(32)
             encrypted = encrypt_connection_tokens(
@@ -102,9 +100,7 @@ def seed_mock_connector_data(
                 },
             )
             connection.access_token_ciphertext = encrypted.access_token_ciphertext
-            connection.refresh_token_ciphertext = (
-                encrypted.refresh_token_ciphertext
-            )
+            connection.refresh_token_ciphertext = encrypted.refresh_token_ciphertext
             connection.key_version = encrypted.key_version
             connection.status = OAuthConnection.Status.ACTIVE
             connection.expires_at = expires_at
@@ -141,9 +137,7 @@ def count_mock_data(prefix: str = "loadtest") -> tuple[int, int]:
     ).values_list("id", flat=True)
     return (
         organization_ids.count(),
-        OAuthConnection.objects.filter(
-            organization_id__in=organization_ids
-        ).count(),
+        OAuthConnection.objects.filter(organization_id__in=organization_ids).count(),
     )
 
 

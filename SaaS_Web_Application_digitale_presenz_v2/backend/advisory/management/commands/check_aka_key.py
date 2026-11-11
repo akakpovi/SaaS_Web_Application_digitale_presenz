@@ -38,14 +38,10 @@ class Command(BaseCommand):
                 f"AKA client cannot be built: {exc.__class__.__name__}"
             ) from exc
 
-        messages = [
-            {"role": "user", "content": "Reply with the single word: pong"}
-        ]
+        messages = [{"role": "user", "content": "Reply with the single word: pong"}]
         try:
             with client:
-                completion = client.chat(
-                    messages, max_tokens=1, temperature=0
-                )
+                completion = client.chat(messages, max_tokens=1, temperature=0)
         except AkaAuthenticationError as exc:
             mark_aka_credentials_invalid("invalid_api_key")
             raise CommandError(

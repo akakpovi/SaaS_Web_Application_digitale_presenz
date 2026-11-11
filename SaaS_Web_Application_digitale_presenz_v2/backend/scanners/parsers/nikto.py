@@ -23,15 +23,17 @@ def parse_nikto_json(output: str) -> list[dict[str, Any]]:
             vulns = host_data.get("vulnerabilities", [])
             if isinstance(vulns, list):
                 for vuln in vulns:
-                    findings.append({
-                        "type": "vulnerability",
-                        "id": str(vuln.get("id", "")),
-                        "osvdb": str(vuln.get("osvdb", "")),
-                        "url": str(vuln.get("url", "")),
-                        "method": str(vuln.get("method", "GET")),
-                        "msg": str(vuln.get("msg", "")),
-                        "references": str(vuln.get("references", "")),
-                    })
+                    findings.append(
+                        {
+                            "type": "vulnerability",
+                            "id": str(vuln.get("id", "")),
+                            "osvdb": str(vuln.get("osvdb", "")),
+                            "url": str(vuln.get("url", "")),
+                            "method": str(vuln.get("method", "GET")),
+                            "msg": str(vuln.get("msg", "")),
+                            "references": str(vuln.get("references", "")),
+                        }
+                    )
     except (json.JSONDecodeError, KeyError, TypeError):
         pass
     return findings
@@ -110,14 +112,16 @@ def parse_nikto_text(output: str) -> list[dict[str, Any]]:
             continue
 
         numeric_id = identifier.split("-", 1)[1] if identifier else ""
-        findings.append({
-            "type": "vulnerability",
-            "id": identifier,
-            "osvdb": numeric_id,
-            "url": url,
-            "method": "GET",
-            "msg": msg,
-            "references": f"https://osvdb.org/{numeric_id}" if numeric_id else "",
-        })
+        findings.append(
+            {
+                "type": "vulnerability",
+                "id": identifier,
+                "osvdb": numeric_id,
+                "url": url,
+                "method": "GET",
+                "msg": msg,
+                "references": f"https://osvdb.org/{numeric_id}" if numeric_id else "",
+            }
+        )
 
     return findings

@@ -114,9 +114,7 @@ class ReapedScanUnblocksTriggerTests(APITestCase):
     )
     @patch("scans.tasks.run_authenticated_scan.delay")
     def test_trigger_returns_202_after_the_zombie_is_reaped(self, delay) -> None:
-        zombie = Scan.objects.create(
-            website=self.website, status=Scan.Status.RUNNING
-        )
+        zombie = Scan.objects.create(website=self.website, status=Scan.Status.RUNNING)
         Scan.objects.filter(pk=zombie.pk).update(
             updated_at=timezone.now() - timedelta(minutes=16)
         )

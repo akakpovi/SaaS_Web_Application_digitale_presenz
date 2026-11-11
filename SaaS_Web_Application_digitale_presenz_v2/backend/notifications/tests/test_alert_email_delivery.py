@@ -18,7 +18,9 @@ from notifications.models import NotificationChannel
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class NotificationChannelTestEndpointTests(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create_user(email="notify@example.com", password="pass1234!")
+        self.user = User.objects.create_user(
+            email="notify@example.com", password="pass1234!"
+        )
         token = RefreshToken.for_user(self.user).access_token
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         mail.outbox.clear()
@@ -31,7 +33,9 @@ class NotificationChannelTestEndpointTests(APITestCase):
     def test_test_endpoint_sends_a_real_email(self) -> None:
         channel = self._email_channel()
 
-        response = self.client.post(f"/api/v1/notifications/channels/{channel.pk}/test/")
+        response = self.client.post(
+            f"/api/v1/notifications/channels/{channel.pk}/test/"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
@@ -48,7 +52,9 @@ class NotificationChannelTestEndpointTests(APITestCase):
             EMAIL_TIMEOUT=1,
             EMAIL_USE_TLS=False,
         ):
-            response = self.client.post(f"/api/v1/notifications/channels/{channel.pk}/test/")
+            response = self.client.post(
+                f"/api/v1/notifications/channels/{channel.pk}/test/"
+            )
 
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(mail.outbox, [])
@@ -61,7 +67,9 @@ class NotificationChannelTestEndpointTests(APITestCase):
             config={},
         )
 
-        response = self.client.post(f"/api/v1/notifications/channels/{channel.pk}/test/")
+        response = self.client.post(
+            f"/api/v1/notifications/channels/{channel.pk}/test/"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -73,18 +81,24 @@ class NotificationChannelTestEndpointTests(APITestCase):
             config={},
         )
 
-        response = self.client.post(f"/api/v1/notifications/channels/{channel.pk}/test/")
+        response = self.client.post(
+            f"/api/v1/notifications/channels/{channel.pk}/test/"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("webhook_url", str(response.data))
 
     def test_cannot_test_another_users_channel(self) -> None:
-        outsider = User.objects.create_user(email="outsider@example.com", password="pass1234!")
+        outsider = User.objects.create_user(
+            email="outsider@example.com", password="pass1234!"
+        )
         channel = NotificationChannel.objects.get(
             user=outsider, channel_type=NotificationChannel.ChannelType.EMAIL
         )
 
-        response = self.client.post(f"/api/v1/notifications/channels/{channel.pk}/test/")
+        response = self.client.post(
+            f"/api/v1/notifications/channels/{channel.pk}/test/"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 

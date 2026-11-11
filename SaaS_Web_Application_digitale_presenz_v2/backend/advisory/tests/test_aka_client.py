@@ -212,9 +212,7 @@ class AkaClientSuccessTests(unittest.TestCase):
         self.assertEqual(len(session.calls), 1)
         call = session.calls[0]
         self.assertEqual(call["url"], "https://aka.test/v1/chat/completions")
-        self.assertEqual(
-            call["headers"]["Authorization"], f"Bearer {TEST_KEY}"
-        )
+        self.assertEqual(call["headers"]["Authorization"], f"Bearer {TEST_KEY}")
         self.assertEqual(call["timeout"], (1.0, 1.0))
         self.assertFalse(call["allow_redirects"])
         self.assertTrue(call["stream"])
@@ -329,9 +327,7 @@ class AkaClientErrorTests(unittest.TestCase):
             FakeResponse(500, payload={"error": {"message": "boom"}}),
             FakeResponse(payload=completion_payload()),
         )
-        client, sleeps = make_client(
-            session, config=make_config(max_retries=3)
-        )
+        client, sleeps = make_client(session, config=make_config(max_retries=3))
 
         result = client.chat(MESSAGES)
 
@@ -501,9 +497,7 @@ class AkaClientErrorTests(unittest.TestCase):
             requests.Timeout("slow"),
             requests.Timeout("slow"),
         )
-        client, sleeps = make_client(
-            session, config=make_config(max_retries=1)
-        )
+        client, sleeps = make_client(session, config=make_config(max_retries=1))
 
         with self.assertRaises(AkaTimeoutError):
             client.chat(MESSAGES)
@@ -522,9 +516,7 @@ class AkaClientErrorTests(unittest.TestCase):
         self.assertEqual(sleeps, [])
 
     def test_empty_choices_are_rejected(self) -> None:
-        session = FakeSession(
-            FakeResponse(200, payload={"choices": [], "usage": {}})
-        )
+        session = FakeSession(FakeResponse(200, payload={"choices": [], "usage": {}}))
         client, _ = make_client(session)
 
         with self.assertRaises(AkaInvalidResponseError):
@@ -534,9 +526,7 @@ class AkaClientErrorTests(unittest.TestCase):
 
     def test_oversized_response_is_rejected(self) -> None:
         session = FakeSession(FakeResponse(200, body=b"x" * 101))
-        client, _ = make_client(
-            session, config=make_config(max_response_bytes=100)
-        )
+        client, _ = make_client(session, config=make_config(max_response_bytes=100))
 
         with self.assertRaises(AkaInvalidResponseError):
             client.chat(MESSAGES)

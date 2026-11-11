@@ -25,22 +25,24 @@ def parse_nuclei_jsonl(output: str) -> list[dict[str, Any]]:
             continue
 
         info = item.get("info", {})
-        findings.append({
-            "type": "nuclei_template",
-            "template_id": item.get("template-id", ""),
-            "template_path": item.get("template-path", ""),
-            "name": info.get("name", ""),
-            "severity": info.get("severity", "info").lower(),
-            "tags": info.get("tags", []),
-            "description": info.get("description", ""),
-            "reference": info.get("reference", []),
-            "matched_at": item.get("matched-at", ""),
-            "matcher_name": item.get("matcher-name", ""),
-            "extracted_results": item.get("extracted-results", []),
-            "curl_command": item.get("curl-command", ""),
-            "host": item.get("host", ""),
-            "ip": item.get("ip", ""),
-            "timestamp": item.get("timestamp", ""),
-        })
+        findings.append(
+            {
+                "type": "nuclei_template",
+                "template_id": item.get("template-id", ""),
+                "template_path": item.get("template-path", ""),
+                "name": info.get("name", ""),
+                "severity": info.get("severity", "info").lower(),
+                "tags": info.get("tags", []),
+                "description": info.get("description", ""),
+                "reference": info.get("reference", []),
+                "matched_at": item.get("matched-at", ""),
+                "matcher_name": item.get("matcher-name", ""),
+                "extracted_results": item.get("extracted-results", []),
+                "curl_command": item.get("curl-command", ""),
+                "host": item.get("host", ""),
+                "ip": item.get("ip", ""),
+                "timestamp": item.get("timestamp", ""),
+            }
+        )
 
     return findings

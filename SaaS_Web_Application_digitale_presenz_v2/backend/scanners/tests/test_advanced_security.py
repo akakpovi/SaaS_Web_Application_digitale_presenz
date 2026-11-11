@@ -223,9 +223,7 @@ class NucleiProfilePolicyTests(SimpleTestCase):
 
         for name in ("standard", "thorough"):
             with self.subTest(profile=name):
-                self.assertLessEqual(
-                    cfg["profiles"][name]["timeout"], sandbox_max
-                )
+                self.assertLessEqual(cfg["profiles"][name]["timeout"], sandbox_max)
                 self.assertLess(
                     cfg["profiles"][name]["timeout"],
                     settings.CELERY_TASK_TIME_LIMIT,
@@ -263,19 +261,16 @@ class FeatureFlagTests(SimpleTestCase):
         executor.run.assert_not_called()
         self.assertEqual(outcome.result.status, "neutral")
         self.assertEqual(outcome.findings[0].check_code, "nuclei.disabled")
-        self.assertEqual(
-            outcome.findings[0].status, FindingStatus.NOT_APPLICABLE
-        )
+        self.assertEqual(outcome.findings[0].status, FindingStatus.NOT_APPLICABLE)
         self.assertFalse(scanner.is_available())
 
     @override_settings(SCANNER_ADVANCED_SECURITY_ENABLED=False)
     def test_zap_refuses_to_execute_when_disabled(self):
         scanner = ZAPScanner()
-        with patch(
-            "scanners.implementations.zap.http_requests.Session"
-        ) as mock_session, patch(
-            "scanners.implementations.zap.get_sandbox_executor"
-        ) as mock_executor:
+        with (
+            patch("scanners.implementations.zap.http_requests.Session") as mock_session,
+            patch("scanners.implementations.zap.get_sandbox_executor") as mock_executor,
+        ):
             outcome = scanner.execute("example.com")
 
         mock_session.assert_not_called()
@@ -470,7 +465,7 @@ class NucleiExecutionTests(SimpleTestCase):
             stdout="",
             stderr=(
                 "[INF] Skipped example.com:443 from target list as found "
-                "unresponsive permanently: cause=\"port closed or filtered\"\n"
+                'unresponsive permanently: cause="port closed or filtered"\n'
                 '{"percent":"1","requests":"23","templates":"1066"}'
             ),
             duration_ms=1200,
@@ -506,12 +501,8 @@ class NucleiExecutionTests(SimpleTestCase):
         outcome = self.scanner.execute("example.com", context=_context())
 
         self.assertFalse(outcome.result.details["scan_complete"])
-        self.assertEqual(
-            outcome.result.details["partial_reason"], "output_truncated"
-        )
-        self.assertEqual(
-            outcome.findings[0].check_code, "nuclei.output_truncated"
-        )
+        self.assertEqual(outcome.result.details["partial_reason"], "output_truncated")
+        self.assertEqual(outcome.findings[0].check_code, "nuclei.output_truncated")
         self.assertTrue(outcome.raw_report_meta["output_truncated"])
 
     def test_missing_stats_is_not_treated_as_a_complete_scan(self):
@@ -531,9 +522,7 @@ class NucleiExecutionTests(SimpleTestCase):
         outcome = self.scanner.execute("example.com", context=_context())
 
         self.assertEqual(outcome.result.status, "warning")
-        self.assertEqual(
-            outcome.findings[0].check_code, "nuclei.sandbox_unavailable"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "nuclei.sandbox_unavailable")
         # Regression: a sandbox failure must never look like a full run.
         self.assertFalse(outcome.result.details["scan_complete"])
         self.assertEqual(
@@ -584,9 +573,7 @@ class ZAPTests(SimpleTestCase):
             Path(host_dir, "zap-report.json").write_text(
                 json.dumps(ZAP_REPORT), encoding="utf-8"
             )
-            return CommandResult(
-                exit_code=1, stdout="", stderr="", duration_ms=1500
-            )
+            return CommandResult(exit_code=1, stdout="", stderr="", duration_ms=1500)
 
         executor.run.side_effect = fake_run
 
@@ -665,12 +652,16 @@ class ZAPTests(SimpleTestCase):
         )
         session.get.side_effect = [spider, status, alerts]
 
-        with override_settings(SCANNER_CONFIG=config), patch(
-            "scanners.implementations.zap.ZAPScanner._api_available",
-            return_value=True,
-        ), patch(
-            "scanners.implementations.zap.http_requests.Session",
-            return_value=session,
+        with (
+            override_settings(SCANNER_CONFIG=config),
+            patch(
+                "scanners.implementations.zap.ZAPScanner._api_available",
+                return_value=True,
+            ),
+            patch(
+                "scanners.implementations.zap.http_requests.Session",
+                return_value=session,
+            ),
         ):
             outcome = ZAPScanner().execute("example.com", context=_context())
 
@@ -692,12 +683,16 @@ class ZAPTests(SimpleTestCase):
         alerts.text = json.dumps({"alerts": []})
         session.get.side_effect = [spider, status, alerts]
 
-        with override_settings(SCANNER_CONFIG=config), patch(
-            "scanners.implementations.zap.ZAPScanner._api_available",
-            return_value=True,
-        ), patch(
-            "scanners.implementations.zap.http_requests.Session",
-            return_value=session,
+        with (
+            override_settings(SCANNER_CONFIG=config),
+            patch(
+                "scanners.implementations.zap.ZAPScanner._api_available",
+                return_value=True,
+            ),
+            patch(
+                "scanners.implementations.zap.http_requests.Session",
+                return_value=session,
+            ),
         ):
             ZAPScanner().execute("example.com", context=_context())
 

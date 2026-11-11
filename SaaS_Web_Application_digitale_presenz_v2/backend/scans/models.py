@@ -98,17 +98,19 @@ class Scan(models.Model):
         FULL = "full", "Full"
 
     website = models.ForeignKey(
-        "websites.Website",
-        on_delete=models.CASCADE,
-        related_name="scans"
+        "websites.Website", on_delete=models.CASCADE, related_name="scans"
     )
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
-    trigger = models.CharField(max_length=16, choices=Trigger.choices, default=Trigger.MANUAL)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    trigger = models.CharField(
+        max_length=16, choices=Trigger.choices, default=Trigger.MANUAL
+    )
     scan_type = models.CharField(
         max_length=16,
         choices=ScanType.choices,
         default=ScanType.HEALTH,
-        help_text="Type of scan: health (internal checks), security (external tools), or full."
+        help_text="Type of scan: health (internal checks), security (external tools), or full.",
     )
     journey = models.ForeignKey(
         ScanJourney,
@@ -121,22 +123,19 @@ class Scan(models.Model):
     quota_charged = models.BooleanField(default=True)
     health_score = models.PositiveSmallIntegerField(null=True, blank=True)
     health_status = models.CharField(
-        max_length=12,
-        choices=HealthStatus.choices,
-        default=HealthStatus.NEUTRAL
+        max_length=12, choices=HealthStatus.choices, default=HealthStatus.NEUTRAL
     )
     failure_message = models.CharField(max_length=500, blank=True)
 
     # Progress tracking
     progress = models.PositiveSmallIntegerField(
-        default=0,
-        help_text="Overall scan progress, 0–100."
+        default=0, help_text="Overall scan progress, 0–100."
     )
     current_step = models.CharField(
         max_length=128,
         blank=True,
         default="",
-        help_text="Human-readable label of the currently executing scanner step."
+        help_text="Human-readable label of the currently executing scanner step.",
     )
     steps = models.JSONField(
         default=list,
@@ -144,21 +143,21 @@ class Scan(models.Model):
         help_text=(
             "Ordered list of scanner steps with status/progress for real-time feed. "
             "Format: [{key, label, status, progress, duration_ms, error}]"
-        )
+        ),
     )
 
     # Guest architecture fields
     is_guest = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="True if performed by an unauthenticated visitor."
+        help_text="True if performed by an unauthenticated visitor.",
     )
     session_key = models.CharField(
         max_length=40,
         null=True,
         blank=True,
         db_index=True,
-        help_text="Django session key of the guest visitor."
+        help_text="Django session key of the guest visitor.",
     )
 
     queued_at = models.DateTimeField(null=True, blank=True)
@@ -180,7 +179,8 @@ class Scan(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=Q(health_score__isnull=True) | Q(health_score__gte=0, health_score__lte=100),
+                condition=Q(health_score__isnull=True)
+                | Q(health_score__gte=0, health_score__lte=100),
                 name="scan_health_score_range",
             ),
             models.UniqueConstraint(
@@ -230,11 +230,15 @@ class Scan(models.Model):
         Status.CANCELLED: set(),
     }
 
-    def transition_to(self, target: "Scan.Status", *, failure_message: str = "") -> None:
+    def transition_to(
+        self, target: "Scan.Status", *, failure_message: str = ""
+    ) -> None:
         if target == self.status:
             return
         if target not in self._TRANSITIONS.get(self.status, set()):
-            raise ValidationError({"status": f"Cannot transition from {self.status} to {target}."})
+            raise ValidationError(
+                {"status": f"Cannot transition from {self.status} to {target}."}
+            )
 
         now = timezone.now()
         self.status = target
@@ -303,9 +307,13 @@ class CheckResult(models.Model):
         NUCLEI = "nuclei", "Nuclei"
         EXPOSURE = "exposure", "Exposure"
 
-    scan = models.ForeignKey(Scan, on_delete=models.CASCADE, related_name="check_results")
+    scan = models.ForeignKey(
+        Scan, on_delete=models.CASCADE, related_name="check_results"
+    )
     category = models.CharField(max_length=32, choices=Category.choices)
-    status = models.CharField(max_length=12, choices=HealthStatus.choices, default=HealthStatus.NEUTRAL)
+    status = models.CharField(
+        max_length=12, choices=HealthStatus.choices, default=HealthStatus.NEUTRAL
+    )
     score = models.PositiveSmallIntegerField(null=True, blank=True)
     summary = models.TextField(blank=True)
     recommendation = models.TextField(blank=True)
@@ -316,27 +324,44 @@ class CheckResult(models.Model):
     class Meta:
         ordering = ["category"]
         constraints = [
-            models.UniqueConstraint(fields=["scan", "category"], name="unique_check_result_per_scan_category"),
-            models.CheckConstraint(condition=Q(score__isnull=True) | Q(score__gte=0, score__lte=20), name="check_result_score_range"),
+            models.UniqueConstraint(
+                fields=["scan", "category"],
+                name="unique_check_result_per_scan_category",
+            ),
+            models.CheckConstraint(
+                condition=Q(score__isnull=True) | Q(score__gte=0, score__lte=20),
+                name="check_result_score_range",
+            ),
         ]
-        indexes = [models.Index(fields=["scan", "category"]), models.Index(fields=["status"])]
+        indexes = [
+            models.Index(fields=["scan", "category"]),
+            models.Index(fields=["status"]),
+        ]
 
     def clean(self) -> None:
         from .services.scoring import CHECK_WEIGHTS
 
         if self.category not in CHECK_WEIGHTS:
             if self.score is not None:
-                raise ValidationError({
-                    "score": (
-                        "This category is tracked separately and cannot "
-                        "contribute to the health score."
-                    )
-                })
+                raise ValidationError(
+                    {
+                        "score": (
+                            "This category is tracked separately and cannot "
+                            "contribute to the health score."
+                        )
+                    }
+                )
             return
         if self.score is None:
-            raise ValidationError({"score": "A weighted health check requires a score."})
+            raise ValidationError(
+                {"score": "A weighted health check requires a score."}
+            )
         if self.score > CHECK_WEIGHTS[self.category]:
-            raise ValidationError({"score": f"Score cannot exceed {CHECK_WEIGHTS[self.category]} for this category."})
+            raise ValidationError(
+                {
+                    "score": f"Score cannot exceed {CHECK_WEIGHTS[self.category]} for this category."
+                }
+            )
 
 
 class ScannerRun(models.Model):
@@ -371,8 +396,12 @@ class ScannerRun(models.Model):
     duration_ms = models.PositiveIntegerField(null=True, blank=True)
     exit_code = models.SmallIntegerField(null=True, blank=True)
     error_message = models.TextField(blank=True)
-    raw_output = models.TextField(blank=True, help_text="Truncated raw tool output for debugging.")
-    metadata = models.JSONField(default=dict, blank=True, help_text="Scanner-specific metadata.")
+    raw_output = models.TextField(
+        blank=True, help_text="Truncated raw tool output for debugging."
+    )
+    metadata = models.JSONField(
+        default=dict, blank=True, help_text="Scanner-specific metadata."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -410,10 +439,17 @@ class ScannerRun(models.Model):
         self.raw_output = raw_output[:50_000]
         if metadata:
             self.metadata = metadata
-        self.save(update_fields=[
-            "status", "finished_at", "duration_ms",
-            "exit_code", "error_message", "raw_output", "metadata",
-        ])
+        self.save(
+            update_fields=[
+                "status",
+                "finished_at",
+                "duration_ms",
+                "exit_code",
+                "error_message",
+                "raw_output",
+                "metadata",
+            ]
+        )
 
 
 class Finding(models.Model):
@@ -448,8 +484,12 @@ class Finding(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    severity = models.CharField(max_length=16, choices=Severity.choices, default=Severity.INFO)
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNKNOWN)
+    severity = models.CharField(
+        max_length=16, choices=Severity.choices, default=Severity.INFO
+    )
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.UNKNOWN
+    )
     evidence = models.JSONField(default=dict, blank=True)
     detected_value = models.JSONField(null=True, blank=True)
     expected_value = models.JSONField(null=True, blank=True)

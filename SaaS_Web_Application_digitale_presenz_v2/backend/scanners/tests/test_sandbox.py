@@ -94,9 +94,7 @@ class SandboxLimitsTests(SimpleTestCase):
         with override_settings(
             SCANNER_SANDBOX={**SANDBOX_SETTINGS, "mode": "firejail"}
         ):
-            self.assertEqual(
-                SandboxedCommandExecutor().mode, SandboxMode.PROCESS
-            )
+            self.assertEqual(SandboxedCommandExecutor().mode, SandboxMode.PROCESS)
 
     def test_sandbox_status_reports_configuration(self):
         status = sandbox_status()
@@ -142,16 +140,13 @@ class SandboxProcessTests(SimpleTestCase):
         self.assertTrue(result.output_truncated)
         self.assertLessEqual(len(result.stdout), 64)
 
-    @unittest.skipUnless(
-        os.path.isdir("/proc"), "RSS watchdog requires Linux /proc"
-    )
+    @unittest.skipUnless(os.path.isdir("/proc"), "RSS watchdog requires Linux /proc")
     def test_memory_watchdog_kills_the_process(self):
         result = self.executor.run(
             [
                 sys.executable,
                 "-c",
-                "payload = bytearray(150 * 1024 * 1024); "
-                "import time; time.sleep(10)",
+                "payload = bytearray(150 * 1024 * 1024); import time; time.sleep(10)",
             ],
             limits=_limits(timeout_s=3, memory_mb=48),
             scanner_name="test",
@@ -159,9 +154,7 @@ class SandboxProcessTests(SimpleTestCase):
         self.assertTrue(result.memory_exceeded)
         self.assertEqual(result.killed_reason, "memory")
 
-    @unittest.skipUnless(
-        os.path.isdir("/proc"), "RSS watchdog requires Linux /proc"
-    )
+    @unittest.skipUnless(os.path.isdir("/proc"), "RSS watchdog requires Linux /proc")
     def test_process_group_rss_is_readable(self):
         self.assertGreater(_process_group_rss_bytes(os.getpgrp()), 0)
 
@@ -232,9 +225,7 @@ class SandboxDockerTests(SimpleTestCase):
             )
 
     def test_docker_missing_binary_fails_closed(self):
-        with patch(
-            "scanners.executors.sandbox.shutil.which", return_value=None
-        ):
+        with patch("scanners.executors.sandbox.shutil.which", return_value=None):
             with self.assertRaises(SandboxUnavailableError):
                 self.executor.run(
                     ["lighthouse", "https://example.com"],
@@ -270,9 +261,7 @@ class SandboxDockerTests(SimpleTestCase):
         from scanners.executors import sandbox as sandbox_module
 
         sandbox_module._DOCKER_IMAGE_CACHE.clear()
-        with patch(
-            "scanners.executors.sandbox.subprocess.run"
-        ) as run_mock:
+        with patch("scanners.executors.sandbox.subprocess.run") as run_mock:
             run_mock.return_value = SimpleNamespace(
                 returncode=0, stdout=b"sha256:deadbeef", stderr=b""
             )

@@ -7,7 +7,11 @@ from .base import NotificationProvider
 logger = logging.getLogger(__name__)
 
 SEVERITY_COLOR = {"critical": "danger", "warning": "warning", "info": "good"}
-SEVERITY_ICON  = {"critical": ":rotating_light:", "warning": ":warning:", "info": ":information_source:"}
+SEVERITY_ICON = {
+    "critical": ":rotating_light:",
+    "warning": ":warning:",
+    "info": ":information_source:",
+}
 
 
 class SlackNotificationProvider(NotificationProvider):
@@ -22,22 +26,28 @@ class SlackNotificationProvider(NotificationProvider):
         if not webhook_url:
             return False
 
-        icon  = SEVERITY_ICON.get(alert.severity, ":bell:")
+        icon = SEVERITY_ICON.get(alert.severity, ":bell:")
         color = SEVERITY_COLOR.get(alert.severity, "#cccccc")
         created_ts = int(alert.created_at.timestamp()) if alert.created_at else 0
 
         payload = {
             "text": f"{icon} *[{alert.severity.upper()}]* {alert.title}",
-            "attachments": [{
-                "color": color,
-                "fields": [
-                    {"title": "Website", "value": alert.website.domain, "short": True},
-                    {"title": "Type",    "value": alert.alert_type,     "short": True},
-                    {"title": "Message", "value": alert.message,        "short": False},
-                ],
-                "footer": "Presence SaaS",
-                "ts": created_ts,
-            }],
+            "attachments": [
+                {
+                    "color": color,
+                    "fields": [
+                        {
+                            "title": "Website",
+                            "value": alert.website.domain,
+                            "short": True,
+                        },
+                        {"title": "Type", "value": alert.alert_type, "short": True},
+                        {"title": "Message", "value": alert.message, "short": False},
+                    ],
+                    "footer": "Presence SaaS",
+                    "ts": created_ts,
+                }
+            ],
         }
         try:
             resp = requests.post(webhook_url, json=payload, timeout=10)

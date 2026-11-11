@@ -76,6 +76,7 @@ _WHITESPACE = re.compile(r"\s+")
 # Normalisation helpers
 # ---------------------------------------------------------------------------
 
+
 def _clean_text(value: str, limit: int = 1200) -> str:
     """Strip Lighthouse markdown links and normalise whitespace."""
     text = _MARKDOWN_LINK.sub(r"\1", value or "")
@@ -119,7 +120,11 @@ def _severity_from_threshold(audit_id: str, value: float | None) -> str | None:
 def _worst_severity(first: str, second: str | None) -> str:
     if second is None:
         return first
-    return first if _SEVERITY_RANK.get(first, 0) >= _SEVERITY_RANK.get(second, 0) else second
+    return (
+        first
+        if _SEVERITY_RANK.get(first, 0) >= _SEVERITY_RANK.get(second, 0)
+        else second
+    )
 
 
 class LighthouseScanner(BaseScanner):
@@ -148,7 +153,9 @@ class LighthouseScanner(BaseScanner):
     def categories(self) -> tuple[str, ...]:
         configured = self._cfg.get("categories") or ("performance", "seo")
         if isinstance(configured, str):
-            configured = [item.strip() for item in configured.split(",") if item.strip()]
+            configured = [
+                item.strip() for item in configured.split(",") if item.strip()
+            ]
         return tuple(configured) or ("performance", "seo")
 
     @property
@@ -411,9 +418,7 @@ class LighthouseScanner(BaseScanner):
         for category in self.categories:
             if category not in report.category_scores:
                 continue
-            findings.append(
-                self._category_finding(category, report, duration_ms)
-            )
+            findings.append(self._category_finding(category, report, duration_ms))
 
         audit_findings = [
             self._audit_to_finding(audit, report, duration_ms)
@@ -439,7 +444,11 @@ class LighthouseScanner(BaseScanner):
         raw_score = report.score_of(category)
         percent = report.percent_of(category)
         severity = _severity_from_score(raw_score)
-        status = _status_from_severity(severity) if raw_score is not None else FindingStatus.UNKNOWN
+        status = (
+            _status_from_severity(severity)
+            if raw_score is not None
+            else FindingStatus.UNKNOWN
+        )
         label = CATEGORY_LABELS.get(category, category.replace("-", " ").title())
         min_score = int(self._cfg.get("min_score", 90))
 
@@ -468,7 +477,9 @@ class LighthouseScanner(BaseScanner):
                 "expected_min": min_score,
                 "lighthouse_version": report.lighthouse_version,
                 "final_url": report.final_url,
-                "core_metrics": report.core_metrics() if category == "performance" else {},
+                "core_metrics": report.core_metrics()
+                if category == "performance"
+                else {},
             },
             detected_value=percent,
             expected_value=f">= {min_score}",
@@ -557,9 +568,7 @@ class LighthouseScanner(BaseScanner):
             status = "warning"
             message = "Lighthouse returned no performance score"
         else:
-            score = int(
-                round(max(0.0, min(1.0, performance)) * performance_weight)
-            )
+            score = int(round(max(0.0, min(1.0, performance)) * performance_weight))
             if performance >= _SCORE_HEALTHY:
                 status = "healthy"
             elif performance >= _SCORE_WARNING:
@@ -651,7 +660,9 @@ class LighthouseScanner(BaseScanner):
             check_code=code[:128],
             category="performance",
             severity=severity,
-            status=FindingStatus.FAIL if severity in (Severity.HIGH, Severity.CRITICAL) else FindingStatus.WARNING,
+            status=FindingStatus.FAIL
+            if severity in (Severity.HIGH, Severity.CRITICAL)
+            else FindingStatus.WARNING,
             title=title[:255],
             description=message[:2000],
             evidence=details or {},

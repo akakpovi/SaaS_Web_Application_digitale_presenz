@@ -21,9 +21,21 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", CurrentUserView.as_view(), name="auth-me"),
     path("export/", DataExportView.as_view(), name="auth-export"),
-    path("password/reset/", PasswordResetRequestView.as_view(), name="auth-password-reset"),
-    path("password/reset/confirm/", PasswordResetConfirmView.as_view(), name="auth-password-reset-confirm"),
+    path(
+        "password/reset/",
+        PasswordResetRequestView.as_view(),
+        name="auth-password-reset",
+    ),
+    path(
+        "password/reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="auth-password-reset-confirm",
+    ),
     path("email/verify/", EmailVerificationView.as_view(), name="auth-email-verify"),
-    path("email/verify/resend/", EmailVerificationResendView.as_view(), name="auth-email-verify-resend"),
+    path(
+        "email/verify/resend/",
+        EmailVerificationResendView.as_view(),
+        name="auth-email-verify-resend",
+    ),
     path("oauth/google/", GoogleOAuthView.as_view(), name="auth-google-oauth"),
 ]

@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import ReviewSource, Review, ResponseDraft, ReviewSentiment, ReviewImportJob
+from .models import (
+    ReviewSource,
+    Review,
+    ResponseDraft,
+    ReviewSentiment,
+    ReviewImportJob,
+)
 
 admin.site.register(ReviewSource)
 admin.site.register(Review)

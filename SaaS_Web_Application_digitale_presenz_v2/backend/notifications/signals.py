@@ -47,7 +47,9 @@ def ensure_default_email_channel(user) -> bool:
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_default_notification_channel(sender, instance, created: bool, **kwargs) -> None:
+def create_default_notification_channel(
+    sender, instance, created: bool, **kwargs
+) -> None:
     """Provision the default e-mail channel when a User is created."""
     if not created:
         return

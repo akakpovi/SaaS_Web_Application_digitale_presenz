@@ -15,14 +15,15 @@ logger = logging.getLogger(__name__)
     default_retry_delay=60,
     name="notifications.send_public_scan_report_email",
 )
-def send_public_scan_report_email(self, lead_id: int, scan_id: int, email: str, language_code: str = "en"):
+def send_public_scan_report_email(
+    self, lead_id: int, scan_id: int, email: str, language_code: str = "en"
+):
     from public_checker.models import PublicLead
     from scans.models import Scan
 
     try:
         scan = (
-            Scan.objects
-            .select_related("website")
+            Scan.objects.select_related("website")
             .prefetch_related("check_results")
             .get(id=scan_id)
         )
@@ -32,7 +33,14 @@ def send_public_scan_report_email(self, lead_id: int, scan_id: int, email: str, 
 
     lead = PublicLead.objects.filter(id=lead_id).first()
 
-    supported_languages = {code for code, _label in getattr(settings, "LANGUAGES", [("fr", "Français"), ("en", "English"), ("de", "Deutsch")])}
+    supported_languages = {
+        code
+        for code, _label in getattr(
+            settings,
+            "LANGUAGES",
+            [("fr", "Français"), ("en", "English"), ("de", "Deutsch")],
+        )
+    }
     if language_code not in supported_languages:
         language_code = settings.LANGUAGE_CODE.split("-")[0]
 
@@ -66,7 +74,9 @@ def send_public_scan_report_email(self, lead_id: int, scan_id: int, email: str, 
             lead.email_sent = True
             lead.save(update_fields=["email_sent"])
 
-        logger.info("✅ Rapport envoyé à %s (langue=%s, scan=%s)", email, language_code, scan_id)
+        logger.info(
+            "✅ Rapport envoyé à %s (langue=%s, scan=%s)", email, language_code, scan_id
+        )
     except Exception as exc:
         logger.warning("⚠️ Échec envoi rapport à %s : %s", email, exc)
         raise self.retry(exc=exc)

@@ -466,9 +466,7 @@ class StageCompletionTests(JourneyTestMixin, TestCase):
         self.assertEqual(second.expires_at, expires)
 
     def test_classic_scan_is_ignored(self) -> None:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.COMPLETED
-        )
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.COMPLETED)
         self.assertIsNone(JourneyService.on_stage_completed(scan.pk))
 
     def test_non_terminal_scan_is_ignored(self) -> None:
@@ -479,9 +477,7 @@ class StageCompletionTests(JourneyTestMixin, TestCase):
 
     def test_stale_stage_callback_is_ignored(self) -> None:
         journey = self._journey(current_stage=2)
-        stale = self._stage_scan(
-            journey, stage=1, status=Scan.Status.COMPLETED
-        )
+        stale = self._stage_scan(journey, stage=1, status=Scan.Status.COMPLETED)
         self._stage_scan(journey, stage=2, status=Scan.Status.RUNNING)
 
         journey = self._complete(journey, stale)
@@ -675,15 +671,11 @@ class ClaimScanTests(JourneyTestMixin, TestCase):
         self.assertIsNotNone(scan.started_at)
 
     def test_claim_on_running_returns_false(self) -> None:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.RUNNING
-        )
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.RUNNING)
         self.assertFalse(claim_scan(scan.pk))
 
     def test_claim_on_cancelled_returns_false(self) -> None:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.CANCELLED
-        )
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.CANCELLED)
         self.assertFalse(claim_scan(scan.pk))
 
     def test_claim_on_missing_scan_returns_false(self) -> None:
@@ -705,9 +697,7 @@ class JourneyTaskSideEffectTests(JourneyTestMixin, TestCase):
                 with mock.patch(
                     "advisory.tasks.generate_scan_recommendations_task.delay"
                 ) as advisor:
-                    with mock.patch(
-                        "alerts.tasks.report_scan_issue.delay"
-                    ) as coverage:
+                    with mock.patch("alerts.tasks.report_scan_issue.delay") as coverage:
                         result = run_authenticated_scan.apply(args=[scan.pk]).get()
         self.detect = detect
         self.advisor = advisor
@@ -724,9 +714,7 @@ class JourneyTaskSideEffectTests(JourneyTestMixin, TestCase):
         config = MonitoringConfig.objects.get(website=self.website)
         config.consecutive_failures = 3
         config.escalation_level = 2
-        config.save(
-            update_fields=["consecutive_failures", "escalation_level"]
-        )
+        config.save(update_fields=["consecutive_failures", "escalation_level"])
 
         result = self._run_task_ending(scan, Scan.Status.COMPLETED)
 
@@ -784,9 +772,7 @@ class JourneyTaskSideEffectTests(JourneyTestMixin, TestCase):
         self.assertEqual(config.consecutive_failures, 0)
 
     def test_classic_queued_scan_is_claimed_before_orchestration(self) -> None:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.QUEUED
-        )
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
 
         def fake_run(orchestrator_self):
             Scan.objects.filter(pk=orchestrator_self.scan_id).update(
@@ -872,15 +858,9 @@ class ConcurrentJourneyCreationTests(JourneyTestMixin, TransactionTestCase):
         )
         self.assertEqual(user.subscription.plan_id, plan.pk)
 
-        website_a = Website.objects.create(
-            owner=user, domain="journey-race-a.example"
-        )
-        website_b = Website.objects.create(
-            owner=user, domain="journey-race-b.example"
-        )
-        self.assertEqual(
-            website_a.organization_id, website_b.organization_id
-        )
+        website_a = Website.objects.create(owner=user, domain="journey-race-a.example")
+        website_b = Website.objects.create(owner=user, domain="journey-race-b.example")
+        self.assertEqual(website_a.organization_id, website_b.organization_id)
 
         def create_for(website):
             def call():
@@ -889,9 +869,7 @@ class ConcurrentJourneyCreationTests(JourneyTestMixin, TransactionTestCase):
 
             return call
 
-        results = _ConcurrentRunner.run(
-            [create_for(website_a), create_for(website_b)]
-        )
+        results = _ConcurrentRunner.run([create_for(website_a), create_for(website_b)])
 
         self.assertEqual(sorted(results), ["quota", "success"])
         self.assertEqual(ScanJourney.objects.count(), 1)
@@ -921,9 +899,7 @@ class ConcurrentAdvanceTests(JourneyTestMixin, TransactionTestCase):
 
 class ConcurrentClaimTests(JourneyTestMixin, TransactionTestCase):
     def test_two_simultaneous_claims_only_one_wins(self) -> None:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.QUEUED
-        )
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
 
         def claim():
             return claim_scan(scan.pk)

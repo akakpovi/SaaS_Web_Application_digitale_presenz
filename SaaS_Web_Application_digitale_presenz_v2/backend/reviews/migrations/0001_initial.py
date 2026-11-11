@@ -7,87 +7,194 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('websites', '0002_website_is_active'),
+        ("websites", "0002_website_is_active"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Review',
+            name="Review",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('external_id', models.CharField(blank=True, max_length=255)),
-                ('author_name', models.CharField(blank=True, max_length=150)),
-                ('author_photo', models.URLField(blank=True)),
-                ('rating', models.DecimalField(blank=True, decimal_places=1, max_digits=3, null=True)),
-                ('text', models.TextField(blank=True)),
-                ('sentiment', models.CharField(choices=[('positive', 'Positive'), ('neutral', 'Neutral'), ('negative', 'Negative')], default='neutral', max_length=10)),
-                ('language', models.CharField(blank=True, max_length=10)),
-                ('is_approved', models.BooleanField(default=False)),
-                ('review_date', models.DateTimeField(blank=True, null=True)),
-                ('raw_data', models.JSONField(default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("external_id", models.CharField(blank=True, max_length=255)),
+                ("author_name", models.CharField(blank=True, max_length=150)),
+                ("author_photo", models.URLField(blank=True)),
+                (
+                    "rating",
+                    models.DecimalField(
+                        blank=True, decimal_places=1, max_digits=3, null=True
+                    ),
+                ),
+                ("text", models.TextField(blank=True)),
+                (
+                    "sentiment",
+                    models.CharField(
+                        choices=[
+                            ("positive", "Positive"),
+                            ("neutral", "Neutral"),
+                            ("negative", "Negative"),
+                        ],
+                        default="neutral",
+                        max_length=10,
+                    ),
+                ),
+                ("language", models.CharField(blank=True, max_length=10)),
+                ("is_approved", models.BooleanField(default=False)),
+                ("review_date", models.DateTimeField(blank=True, null=True)),
+                ("raw_data", models.JSONField(default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Review',
-                'ordering': ['-review_date'],
+                "verbose_name": "Review",
+                "ordering": ["-review_date"],
             },
         ),
         migrations.CreateModel(
-            name='ResponseDraft',
+            name="ResponseDraft",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content', models.TextField()),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('approved', 'Approved'), ('sent', 'Sent')], default='draft', max_length=10)),
-                ('sent_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='response_drafts', to=settings.AUTH_USER_MODEL)),
-                ('review', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='response_draft', to='reviews.review')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("content", models.TextField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("approved", "Approved"),
+                            ("sent", "Sent"),
+                        ],
+                        default="draft",
+                        max_length=10,
+                    ),
+                ),
+                ("sent_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="response_drafts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "review",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="response_draft",
+                        to="reviews.review",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Response Draft',
+                "verbose_name": "Response Draft",
             },
         ),
         migrations.CreateModel(
-            name='ReviewSource',
+            name="ReviewSource",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider', models.CharField(choices=[('google', 'Google'), ('trustpilot', 'Trustpilot'), ('tripadvisor', 'TripAdvisor'), ('manual', 'Manual')], max_length=20)),
-                ('name', models.CharField(max_length=100)),
-                ('config', models.JSONField(default=dict, help_text='Provider-specific config (place_id, etc.)')),
-                ('enabled', models.BooleanField(default=True)),
-                ('last_synced_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='review_sources', to=settings.AUTH_USER_MODEL)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='review_sources', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "provider",
+                    models.CharField(
+                        choices=[
+                            ("google", "Google"),
+                            ("trustpilot", "Trustpilot"),
+                            ("tripadvisor", "TripAdvisor"),
+                            ("manual", "Manual"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                (
+                    "config",
+                    models.JSONField(
+                        default=dict,
+                        help_text="Provider-specific config (place_id, etc.)",
+                    ),
+                ),
+                ("enabled", models.BooleanField(default=True)),
+                ("last_synced_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="review_sources",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="review_sources",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Review Source',
-                'ordering': ['provider', 'name'],
+                "verbose_name": "Review Source",
+                "ordering": ["provider", "name"],
             },
         ),
         migrations.AddField(
-            model_name='review',
-            name='source',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reviews', to='reviews.reviewsource'),
+            model_name="review",
+            name="source",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reviews",
+                to="reviews.reviewsource",
+            ),
         ),
         migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['source', '-review_date'], name='reviews_rev_source__3423b6_idx'),
+            model_name="review",
+            index=models.Index(
+                fields=["source", "-review_date"], name="reviews_rev_source__3423b6_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['is_approved'], name='reviews_rev_is_appr_23bb75_idx'),
+            model_name="review",
+            index=models.Index(
+                fields=["is_approved"], name="reviews_rev_is_appr_23bb75_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='review',
-            constraint=models.UniqueConstraint(condition=models.Q(('external_id__gt', '')), fields=('source', 'external_id'), name='unique_review_external_id'),
+            model_name="review",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("external_id__gt", "")),
+                fields=("source", "external_id"),
+                name="unique_review_external_id",
+            ),
         ),
     ]

@@ -128,9 +128,7 @@ def parsed_report_for(
         description = _bounded(
             getattr(finding, "description", "") or "", MAX_DESCRIPTION_CHARS
         )
-        recommendation = _bounded(
-            getattr(finding, "recommendation", "") or "", 800
-        )
+        recommendation = _bounded(getattr(finding, "recommendation", "") or "", 800)
         if recommendation:
             description = _bounded(
                 f"{description}\n\nRecommendation: {recommendation}".strip(),

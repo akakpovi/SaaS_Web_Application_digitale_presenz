@@ -33,9 +33,7 @@ class AccountEmailLanguageTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
         self.assertEqual(message.to, ["de@example.com"])
-        self.assertEqual(
-            message.subject, "Bestätigen Sie Ihre Presence-E-Mail-Adresse"
-        )
+        self.assertEqual(message.subject, "Bestätigen Sie Ihre Presence-E-Mail-Adresse")
         self.assertIn("/verify-email?uid=", message.body)
         self.assertIn("E-Mail-Adresse", message.body)
 
@@ -46,9 +44,7 @@ class AccountEmailLanguageTests(TestCase):
 
         send_verification_email(user)
 
-        self.assertEqual(
-            mail.outbox[0].subject, "Verify your Presence email address"
-        )
+        self.assertEqual(mail.outbox[0].subject, "Verify your Presence email address")
         self.assertIn("/verify-email?uid=", mail.outbox[0].body)
 
     def test_language_outside_the_catalogue_falls_back_to_english(self):
@@ -60,9 +56,7 @@ class AccountEmailLanguageTests(TestCase):
         send_verification_email(user)
 
         self.assertEqual(normalize_language("fr"), "en")
-        self.assertEqual(
-            mail.outbox[0].subject, "Verify your Presence email address"
-        )
+        self.assertEqual(mail.outbox[0].subject, "Verify your Presence email address")
 
     def test_german_password_reset_email(self):
         user = User.objects.create_user(
@@ -124,9 +118,7 @@ class RegistrationLanguageTests(TestCase):
 
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(User.objects.get(email="default@example.com").language, "en")
-        self.assertEqual(
-            mail.outbox[0].subject, "Verify your Presence email address"
-        )
+        self.assertEqual(mail.outbox[0].subject, "Verify your Presence email address")
 
     def test_unsupported_language_code_is_rejected(self):
         response = self.client.post(

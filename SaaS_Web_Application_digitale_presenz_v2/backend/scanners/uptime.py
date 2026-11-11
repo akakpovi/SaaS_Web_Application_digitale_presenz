@@ -39,13 +39,9 @@ class UptimeScanner(BaseScanner):
             return self._create_result(
                 score=None,
                 status="critical",
-                message=(
-                    "Website returned a server error "
-                    f"({response.status_code})"
-                ),
+                message=(f"Website returned a server error ({response.status_code})"),
                 recommendation=(
-                    "Investigate server logs to determine "
-                    "the cause of the downtime."
+                    "Investigate server logs to determine the cause of the downtime."
                 ),
                 duration_ms=response.elapsed_ms,
                 current_status="down",
@@ -63,8 +59,7 @@ class UptimeScanner(BaseScanner):
                 status="critical",
                 message="Website could not be reached safely.",
                 recommendation=(
-                    "Ensure the domain resolves publicly and "
-                    "the website is reachable."
+                    "Ensure the domain resolves publicly and the website is reachable."
                 ),
                 current_status="down",
             )
@@ -80,8 +75,7 @@ class UptimeScanner(BaseScanner):
                 status="critical",
                 message="Website is currently offline",
                 recommendation=(
-                    "Ensure the server is running and "
-                    "reachable from the internet."
+                    "Ensure the server is running and reachable from the internet."
                 ),
                 current_status="down",
             )

@@ -38,7 +38,9 @@ class CreatePaddleSandboxTest(TestCase):
         self.created_products = 0
         self.created_prices = 0
 
-    def fake_request(self, method, url, json=None, params=None, headers=None, timeout=None):
+    def fake_request(
+        self, method, url, json=None, params=None, headers=None, timeout=None
+    ):
         path = url.split("sandbox-api.paddle.com", 1)[1]
         if method == "GET" and path.startswith("/products"):
             return fake_response([])
@@ -63,9 +65,7 @@ class CreatePaddleSandboxTest(TestCase):
             plan = Plan.objects.get(tier=tier)
             self.assertTrue(plan.external_price_id_monthly.startswith("pri_"))
             self.assertTrue(plan.external_price_id_yearly.startswith("pri_"))
-        self.assertFalse(
-            Plan.objects.get(tier="free").external_price_id_monthly
-        )
+        self.assertFalse(Plan.objects.get(tier="free").external_price_id_monthly)
 
     def test_missing_api_key_is_refused(self):
         with override_settings(PADDLE_API_KEY=""):
@@ -79,7 +79,9 @@ class CreatePaddleSandboxTest(TestCase):
 
     @patch("subscriptions.management.commands.create_paddle_sandbox.requests.request")
     def test_webhook_secret_is_written_but_never_printed(self, request_mock):
-        def side_effect(method, url, json=None, params=None, headers=None, timeout=None):
+        def side_effect(
+            method, url, json=None, params=None, headers=None, timeout=None
+        ):
             path = url.split("sandbox-api.paddle.com", 1)[1]
             if method == "GET" and path.startswith("/notification-settings"):
                 return fake_response([])

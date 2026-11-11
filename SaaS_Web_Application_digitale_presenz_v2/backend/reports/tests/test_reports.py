@@ -12,12 +12,13 @@ from websites.models import Website
 
 class ReportModelTest(TestCase):
     def setUp(self):
-        self.user    = User.objects.create_user(email="rep@test.com", password="pass1234")
+        self.user = User.objects.create_user(email="rep@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="report.com")
 
     def test_create_report(self):
         report = Report.objects.create(
-            user=self.user, website=self.website,
+            user=self.user,
+            website=self.website,
             period=Report.Period.MONTHLY,
             period_start=date(2024, 1, 1),
             period_end=date(2024, 1, 31),
@@ -43,15 +44,18 @@ class ReportModelTest(TestCase):
 
     def test_unique_constraint(self):
         from django.db import IntegrityError
+
         Report.objects.create(
-            user=self.user, website=self.website,
+            user=self.user,
+            website=self.website,
             period=Report.Period.MONTHLY,
             period_start=date(2024, 1, 1),
             period_end=date(2024, 1, 31),
         )
         with self.assertRaises(IntegrityError):
             Report.objects.create(
-                user=self.user, website=self.website,
+                user=self.user,
+                website=self.website,
                 period=Report.Period.MONTHLY,
                 period_start=date(2024, 1, 1),
                 period_end=date(2024, 1, 31),
@@ -60,7 +64,7 @@ class ReportModelTest(TestCase):
 
 class GenerateReportDataTest(TestCase):
     def setUp(self):
-        self.user    = User.objects.create_user(email="rep2@test.com", password="pass1234")
+        self.user = User.objects.create_user(email="rep2@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="report2.com")
 
     def test_no_scans_returns_empty(self):
@@ -76,8 +80,11 @@ class GenerateReportDataTest(TestCase):
             health_status="healthy",
         )
         CheckResult.objects.create(
-            scan=scan, category="ssl", status="healthy",
-            score=20, summary="SSL OK",
+            scan=scan,
+            category="ssl",
+            status="healthy",
+            score=20,
+            summary="SSL OK",
         )
         today = date.today()
         data = generate_report_data(self.website, today, today)

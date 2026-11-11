@@ -38,22 +38,38 @@ logger = logging.getLogger(__name__)
 class RegistrationView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=RegistrationSerializer, responses={201: UserSerializer}, tags=["authentication"])
+    @extend_schema(
+        request=RegistrationSerializer,
+        responses={201: UserSerializer},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = RegistrationSerializer(data=getattr(request, "data", {}))
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         send_verification_email(user)
         logger.info("user_registered", extra={"user_id": user.pk})
-        return Response({"user": UserSerializer(user).data, "detail": "Account created. Check your email to verify it."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "detail": "Account created. Check your email to verify it.",
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=PresenceTokenObtainPairSerializer, responses={200: OpenApiResponse(description="JWT token pair.")}, tags=["authentication"])
+    @extend_schema(
+        request=PresenceTokenObtainPairSerializer,
+        responses={200: OpenApiResponse(description="JWT token pair.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
-        serializer = PresenceTokenObtainPairSerializer(data=getattr(request, "data", {}))
+        serializer = PresenceTokenObtainPairSerializer(
+            data=getattr(request, "data", {})
+        )
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
 
@@ -61,7 +77,11 @@ class LoginView(APIView):
 class TokenRefreshView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=TokenRefreshSerializer, responses={200: OpenApiResponse(description="Refreshed JWT token pair.")}, tags=["authentication"])
+    @extend_schema(
+        request=TokenRefreshSerializer,
+        responses={200: OpenApiResponse(description="Refreshed JWT token pair.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = TokenRefreshSerializer(data=getattr(request, "data", {}))
         try:
@@ -76,7 +96,11 @@ class TokenRefreshView(APIView):
 
 
 class LogoutView(APIView):
-    @extend_schema(request=LogoutSerializer, responses={204: OpenApiResponse(description="Refresh token invalidated.")}, tags=["authentication"])
+    @extend_schema(
+        request=LogoutSerializer,
+        responses={204: OpenApiResponse(description="Refresh token invalidated.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = LogoutSerializer(data=getattr(request, "data", {}))
         serializer.is_valid(raise_exception=True)
@@ -105,7 +129,9 @@ class CurrentUserView(APIView):
         request=AccountDeletionSerializer,
         responses={
             200: OpenApiResponse(description="Account and all attached data erased."),
-            400: OpenApiResponse(description="Password confirmation missing or incorrect."),
+            400: OpenApiResponse(
+                description="Password confirmation missing or incorrect."
+            ),
         },
         tags=["authentication"],
     )
@@ -141,7 +167,11 @@ class DataExportView(APIView):
     """
 
     @extend_schema(
-        responses={200: OpenApiResponse(description="Machine-readable export of all account data.")},
+        responses={
+            200: OpenApiResponse(
+                description="Machine-readable export of all account data."
+            )
+        },
         tags=["authentication"],
     )
     def get(self, request: object) -> Response:
@@ -185,7 +215,11 @@ class ProfileView(APIView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=PasswordResetRequestSerializer, responses={202: OpenApiResponse(description="Reset request accepted.")}, tags=["authentication"])
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={202: OpenApiResponse(description="Reset request accepted.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = PasswordResetRequestSerializer(data=getattr(request, "data", {}))
         serializer.is_valid(raise_exception=True)
@@ -194,13 +228,20 @@ class PasswordResetRequestView(APIView):
         if user:
             send_password_reset_email(user)
         # Deliberately identical response for existing and unknown addresses.
-        return Response({"detail": "If that account exists, a reset link has been sent."}, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {"detail": "If that account exists, a reset link has been sent."},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=PasswordResetConfirmSerializer, responses={200: OpenApiResponse(description="Password changed.")}, tags=["authentication"])
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={200: OpenApiResponse(description="Password changed.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = PasswordResetConfirmSerializer(data=getattr(request, "data", {}))
         serializer.is_valid(raise_exception=True)
@@ -211,21 +252,36 @@ class PasswordResetConfirmView(APIView):
 class EmailVerificationView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(request=EmailVerificationSerializer, responses={200: UserSerializer}, tags=["authentication"])
+    @extend_schema(
+        request=EmailVerificationSerializer,
+        responses={200: UserSerializer},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         serializer = EmailVerificationSerializer(data=getattr(request, "data", {}))
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response({"user": UserSerializer(user).data, "detail": "Email address verified."})
+        return Response(
+            {"user": UserSerializer(user).data, "detail": "Email address verified."}
+        )
 
 
 class EmailVerificationResendView(APIView):
-    @extend_schema(request=None, responses={202: OpenApiResponse(description="Verification email request accepted.")}, tags=["authentication"])
+    @extend_schema(
+        request=None,
+        responses={
+            202: OpenApiResponse(description="Verification email request accepted.")
+        },
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         user: User = getattr(request, "user")
         if not user.is_email_verified:
             send_verification_email(user)
-        return Response({"detail": "If needed, a verification email has been sent."}, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {"detail": "If needed, a verification email has been sent."},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class GoogleOAuthView(APIView):
@@ -233,6 +289,10 @@ class GoogleOAuthView(APIView):
 
     permission_classes = [AllowAny]
 
-    @extend_schema(request=GoogleOAuthSerializer, responses={501: OpenApiResponse(description="Google OAuth is not configured.")}, tags=["authentication"])
+    @extend_schema(
+        request=GoogleOAuthSerializer,
+        responses={501: OpenApiResponse(description="Google OAuth is not configured.")},
+        tags=["authentication"],
+    )
     def post(self, request: object) -> Response:
         raise GoogleOAuthUnavailable("Google OAuth is not configured.")

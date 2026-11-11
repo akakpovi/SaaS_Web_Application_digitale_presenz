@@ -53,7 +53,11 @@ class ReviewSummaryApiTest(TestCase):
     def test_review_payload_exposes_draft_state(self) -> None:
         response = self.client.get("/api/v1/reviews/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        rows = response.data["results"] if isinstance(response.data, dict) else response.data
+        rows = (
+            response.data["results"]
+            if isinstance(response.data, dict)
+            else response.data
+        )
         self.assertEqual(len(rows), 1)
         self.assertTrue(rows[0]["needs_response"])
         self.assertFalse(rows[0]["has_response"])

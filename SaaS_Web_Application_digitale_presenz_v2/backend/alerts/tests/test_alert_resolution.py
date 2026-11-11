@@ -24,7 +24,9 @@ class AlertAutoResolutionTests(TestCase):
         self.user = User.objects.create_user(
             email="resolve@example.com", password="pass1234!"
         )
-        self.website = Website.objects.create(owner=self.user, domain="resolve-example.de")
+        self.website = Website.objects.create(
+            owner=self.user, domain="resolve-example.de"
+        )
 
     def _scan(self, status: Scan.Status = Scan.Status.COMPLETED) -> Scan:
         return Scan.objects.create(
@@ -111,7 +113,9 @@ class IncompleteScanAlertTests(TestCase):
         self.user = User.objects.create_user(
             email="partial-alert@example.com", password="pass1234!"
         )
-        self.website = Website.objects.create(owner=self.user, domain="partial-alert.de")
+        self.website = Website.objects.create(
+            owner=self.user, domain="partial-alert.de"
+        )
 
     def test_partial_scan_does_not_create_or_resolve_alerts(self) -> None:
         alert = Alert.objects.create(

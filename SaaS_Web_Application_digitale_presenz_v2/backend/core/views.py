@@ -20,19 +20,30 @@ class HealthCheckView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(description="All dependencies are reachable."),
-            503: OpenApiResponse(description="One or more dependencies are unavailable."),
+            503: OpenApiResponse(
+                description="One or more dependencies are unavailable."
+            ),
         },
         tags=["system"],
     )
     def get(self, request: object) -> Response:
-        dependencies = {"database": self._database_ready(), "redis": self._cache_ready()}
+        dependencies = {
+            "database": self._database_ready(),
+            "redis": self._cache_ready(),
+        }
         is_ready = all(dependencies.values())
         if not is_ready:
             logger.error("health_check_failed", extra={"dependencies": dependencies})
 
         return Response(
-            {"status": "ok" if is_ready else "unavailable", "service": "presence-api", "dependencies": dependencies},
-            status=status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+            {
+                "status": "ok" if is_ready else "unavailable",
+                "service": "presence-api",
+                "dependencies": dependencies,
+            },
+            status=status.HTTP_200_OK
+            if is_ready
+            else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
     @staticmethod
@@ -46,6 +57,9 @@ class HealthCheckView(APIView):
     @staticmethod
     def _cache_ready() -> bool:
         try:
-            return bool(cache.set("healthcheck", "ok", timeout=5) and cache.get("healthcheck") == "ok")
+            return bool(
+                cache.set("healthcheck", "ok", timeout=5)
+                and cache.get("healthcheck") == "ok"
+            )
         except Exception:  # Cache backend failures must return 503, not leak details.
             return False

@@ -2,10 +2,10 @@ from django.db import migrations, models
 import django.db.models.deletion
 from django.conf import settings
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('websites', '0002_website_is_active'),
+        ("websites", "0002_website_is_active"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -13,18 +13,18 @@ class Migration(migrations.Migration):
         migrations.SeparateDatabaseAndState(
             state_operations=[
                 migrations.AddField(
-                    model_name='website',
-                    name='is_guest',
+                    model_name="website",
+                    name="is_guest",
                     field=models.BooleanField(db_index=True, default=False),
                 ),
                 migrations.AlterField(
-                    model_name='website',
-                    name='owner',
+                    model_name="website",
+                    name="owner",
                     field=models.ForeignKey(
                         blank=True,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='websites',
+                        related_name="websites",
                         to=settings.AUTH_USER_MODEL,
                     ),
                 ),
@@ -37,8 +37,8 @@ class Migration(migrations.Migration):
                     """,
                     reverse_sql="""
                     ALTER TABLE websites_website DROP COLUMN IF EXISTS is_guest;
-                    """
+                    """,
                 )
-            ]
+            ],
         )
     ]

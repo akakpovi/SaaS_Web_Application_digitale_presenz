@@ -9,11 +9,11 @@ from websites.models import Website
 
 
 INTERVAL_MAP: Final[dict[str, timedelta]] = {
-    "5m":  timedelta(minutes=5),
+    "5m": timedelta(minutes=5),
     "15m": timedelta(minutes=15),
     "30m": timedelta(minutes=30),
-    "1h":  timedelta(hours=1),
-    "6h":  timedelta(hours=6),
+    "1h": timedelta(hours=1),
+    "6h": timedelta(hours=6),
     "24h": timedelta(hours=24),
 }
 
@@ -33,11 +33,11 @@ class MonitoringConfig(models.Model):
         FULL = "full", "Health + security"
 
     class Interval(models.TextChoices):
-        FIVE_MIN    = "5m",  "Every 5 minutes"
+        FIVE_MIN = "5m", "Every 5 minutes"
         FIFTEEN_MIN = "15m", "Every 15 minutes"
-        THIRTY_MIN  = "30m", "Every 30 minutes"
-        ONE_HOUR    = "1h",  "Every hour"
-        SIX_HOURS   = "6h",  "Every 6 hours"
+        THIRTY_MIN = "30m", "Every 30 minutes"
+        ONE_HOUR = "1h", "Every hour"
+        SIX_HOURS = "6h", "Every 6 hours"
         TWENTY_FOUR = "24h", "Every 24 hours"
 
     website = models.OneToOneField(
@@ -95,9 +95,13 @@ class MonitoringConfig(models.Model):
     def record_failure(self) -> None:
         self.consecutive_failures += 1
         self.escalation_level = 2 if self.consecutive_failures >= 3 else 1
-        self.save(update_fields=["consecutive_failures", "escalation_level", "updated_at"])
+        self.save(
+            update_fields=["consecutive_failures", "escalation_level", "updated_at"]
+        )
 
     def record_success(self) -> None:
         self.consecutive_failures = 0
         self.escalation_level = 0
-        self.save(update_fields=["consecutive_failures", "escalation_level", "updated_at"])
+        self.save(
+            update_fields=["consecutive_failures", "escalation_level", "updated_at"]
+        )

@@ -19,9 +19,13 @@ class TenantAccessAPITests(APITestCase):
     def setUp(self) -> None:
         self.owner = User.objects.create_user("owner@tenant.example", "Password123!")
         self.admin = User.objects.create_user("admin@tenant.example", "Password123!")
-        self.analyst = User.objects.create_user("analyst@tenant.example", "Password123!")
+        self.analyst = User.objects.create_user(
+            "analyst@tenant.example", "Password123!"
+        )
         self.viewer = User.objects.create_user("viewer@tenant.example", "Password123!")
-        self.outsider = User.objects.create_user("outsider@elsewhere.example", "Password123!")
+        self.outsider = User.objects.create_user(
+            "outsider@elsewhere.example", "Password123!"
+        )
 
         self.organization = Organization.objects.create(
             name="Tenant A",
@@ -139,9 +143,7 @@ class TenantAccessAPITests(APITestCase):
             {"display_name": "Hijacked"},
             format="json",
         )
-        delete_response = self.client.delete(
-            f"/api/v1/websites/{self.website.id}/"
-        )
+        delete_response = self.client.delete(f"/api/v1/websites/{self.website.id}/")
 
         self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
@@ -222,9 +224,7 @@ class TenantAccessAPITests(APITestCase):
     def test_analyst_cannot_delete_website(self) -> None:
         self._auth(self.analyst)
 
-        response = self.client.delete(
-            f"/api/v1/websites/{self.website.id}/"
-        )
+        response = self.client.delete(f"/api/v1/websites/{self.website.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(Website.objects.filter(pk=self.website.pk).exists())
@@ -232,9 +232,7 @@ class TenantAccessAPITests(APITestCase):
     def test_admin_can_delete_website(self) -> None:
         self._auth(self.admin)
 
-        response = self.client.delete(
-            f"/api/v1/websites/{self.website.id}/"
-        )
+        response = self.client.delete(f"/api/v1/websites/{self.website.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Website.objects.filter(pk=self.website.pk).exists())
@@ -311,9 +309,7 @@ class TenantAccessAPITests(APITestCase):
     def test_cross_tenant_check_results_do_not_leak(self) -> None:
         self._auth(self.viewer)
 
-        response = self.client.get(
-            f"/api/v1/scans/{self.other_scan.id}/results/"
-        )
+        response = self.client.get(f"/api/v1/scans/{self.other_scan.id}/results/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"], [])

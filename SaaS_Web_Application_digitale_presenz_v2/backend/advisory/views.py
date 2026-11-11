@@ -223,15 +223,11 @@ class OrganizationAdvisorChatView(APIView):
     def post(self, request: Request, organization_id) -> Response:
         organization = Organization.objects.filter(pk=organization_id).first()
         if organization is None:
-            return Response(
-                _ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response(_ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND)
         role = role_for_organization(request.user, organization)
         if role is None:
             # Same 404 as a missing organization: no tenant enumeration.
-            return Response(
-                _ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response(_ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND)
         if role not in WRITE_ROLES:
             return Response(
                 {
@@ -330,7 +326,9 @@ class AssetScanReportImportView(APIView):
         },
         responses={
             200: OpenApiResponse(description="Ingestion counters for the asset."),
-            400: OpenApiResponse(description="Missing, oversized or unrecognised report."),
+            400: OpenApiResponse(
+                description="Missing, oversized or unrecognised report."
+            ),
             403: OpenApiResponse(description="Role does not allow importing reports."),
             404: OpenApiResponse(description="Unknown organization or asset."),
         },
@@ -339,15 +337,11 @@ class AssetScanReportImportView(APIView):
     def post(self, request: Request, organization_id, asset_id) -> Response:
         organization = Organization.objects.filter(pk=organization_id).first()
         if organization is None:
-            return Response(
-                _ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response(_ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND)
         role = role_for_organization(request.user, organization)
         if role is None:
             # Same answer as a missing organization: no tenant enumeration.
-            return Response(
-                _ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response(_ORGANIZATION_NOT_FOUND, status=status.HTTP_404_NOT_FOUND)
         if role not in DELETE_ROLES:
             return Response(
                 {
@@ -360,9 +354,7 @@ class AssetScanReportImportView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        asset = Website.objects.filter(
-            pk=asset_id, organization=organization
-        ).first()
+        asset = Website.objects.filter(pk=asset_id, organization=organization).first()
         if asset is None:
             return Response(
                 {"detail": "Asset not found."},
@@ -442,6 +434,8 @@ recommendation_list = RecommendationListView.as_view()
 recommendation_accept = RecommendationDecisionView.as_view()
 recommendation_dismiss = RecommendationDecisionView.as_view()
 organization_advisor_chat = OrganizationAdvisorChatView.as_view()
+
+
 class AssetSecurityFindingListView(generics.ListAPIView):
     """GET /api/v1/organizations/<org>/assets/<asset>/security/findings/.
 
@@ -468,9 +462,10 @@ class AssetSecurityFindingListView(generics.ListAPIView):
         organization = Organization.objects.filter(
             pk=self.kwargs["organization_id"]
         ).first()
-        if organization is None or role_for_organization(
-            self.request.user, organization
-        ) not in READ_ROLES:
+        if (
+            organization is None
+            or role_for_organization(self.request.user, organization) not in READ_ROLES
+        ):
             raise Http404("Organization not found.")
 
         asset = Website.objects.filter(
@@ -483,25 +478,21 @@ class AssetSecurityFindingListView(generics.ListAPIView):
             organization=organization, asset=asset
         )
 
-        raw_status = str(
-            self.request.query_params.get("status") or "open"
-        ).strip().lower()
+        raw_status = (
+            str(self.request.query_params.get("status") or "open").strip().lower()
+        )
         if raw_status != "all":
             if raw_status not in SecurityFinding.Status.values:
                 raise ValidationError({"status": "Invalid finding status."})
             queryset = queryset.filter(status=raw_status)
 
-        severity = str(
-            self.request.query_params.get("severity") or ""
-        ).strip().lower()
+        severity = str(self.request.query_params.get("severity") or "").strip().lower()
         if severity:
             if severity not in SecurityFinding.Severity.values:
                 raise ValidationError({"severity": "Invalid severity."})
             queryset = queryset.filter(severity=severity)
 
-        source = str(
-            self.request.query_params.get("source") or ""
-        ).strip().lower()
+        source = str(self.request.query_params.get("source") or "").strip().lower()
         if source:
             queryset = queryset.filter(scanner_source=source)
 

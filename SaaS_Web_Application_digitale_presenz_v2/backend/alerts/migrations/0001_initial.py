@@ -7,109 +7,313 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('scans', '0002_scan_add_pending_status'),
-        ('websites', '0002_website_is_active'),
+        ("scans", "0002_scan_add_pending_status"),
+        ("websites", "0002_website_is_active"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AlertPreference',
+            name="AlertPreference",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ssl_expiring_enabled', models.BooleanField(default=True)),
-                ('ssl_invalid_enabled', models.BooleanField(default=True)),
-                ('website_offline_enabled', models.BooleanField(default=True)),
-                ('dns_problem_enabled', models.BooleanField(default=True)),
-                ('email_security_enabled', models.BooleanField(default=True)),
-                ('security_headers_enabled', models.BooleanField(default=True)),
-                ('performance_enabled', models.BooleanField(default=True)),
-                ('score_drop_enabled', models.BooleanField(default=True)),
-                ('scan_failed_enabled', models.BooleanField(default=True)),
-                ('ssl_expiry_warning_days', models.IntegerField(default=30)),
-                ('ssl_expiry_critical_days', models.IntegerField(default=7)),
-                ('score_drop_threshold', models.IntegerField(default=10)),
-                ('consecutive_failures_critical', models.IntegerField(default=3)),
-                ('digest_frequency', models.CharField(choices=[('immediate', 'Immediate'), ('hourly', 'Hourly digest'), ('daily', 'Daily digest')], default='immediate', max_length=10)),
-                ('quiet_hours_start', models.TimeField(blank=True, null=True)),
-                ('quiet_hours_end', models.TimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='alert_preferences', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ssl_expiring_enabled", models.BooleanField(default=True)),
+                ("ssl_invalid_enabled", models.BooleanField(default=True)),
+                ("website_offline_enabled", models.BooleanField(default=True)),
+                ("dns_problem_enabled", models.BooleanField(default=True)),
+                ("email_security_enabled", models.BooleanField(default=True)),
+                ("security_headers_enabled", models.BooleanField(default=True)),
+                ("performance_enabled", models.BooleanField(default=True)),
+                ("score_drop_enabled", models.BooleanField(default=True)),
+                ("scan_failed_enabled", models.BooleanField(default=True)),
+                ("ssl_expiry_warning_days", models.IntegerField(default=30)),
+                ("ssl_expiry_critical_days", models.IntegerField(default=7)),
+                ("score_drop_threshold", models.IntegerField(default=10)),
+                ("consecutive_failures_critical", models.IntegerField(default=3)),
+                (
+                    "digest_frequency",
+                    models.CharField(
+                        choices=[
+                            ("immediate", "Immediate"),
+                            ("hourly", "Hourly digest"),
+                            ("daily", "Daily digest"),
+                        ],
+                        default="immediate",
+                        max_length=10,
+                    ),
+                ),
+                ("quiet_hours_start", models.TimeField(blank=True, null=True)),
+                ("quiet_hours_end", models.TimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="alert_preferences",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Alert Preference',
+                "verbose_name": "Alert Preference",
             },
         ),
         migrations.CreateModel(
-            name='AlertRule',
+            name="AlertRule",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('metric', models.CharField(choices=[('health_score', 'Health Score'), ('ssl_days_remaining', 'SSL Days Remaining'), ('load_time_ms', 'Load Time (ms)'), ('page_size_kb', 'Page Size (KB)')], max_length=25)),
-                ('operator', models.CharField(choices=[('gt', 'Greater than'), ('lt', 'Less than'), ('gte', 'Greater than or equal'), ('lte', 'Less than or equal'), ('eq', 'Equal')], max_length=5)),
-                ('threshold', models.FloatField()),
-                ('severity', models.CharField(choices=[('warning', 'Warning'), ('critical', 'Critical')], max_length=10)),
-                ('enabled', models.BooleanField(default=True)),
-                ('cooldown_minutes', models.IntegerField(default=60)),
-                ('last_triggered_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alert_rules', to=settings.AUTH_USER_MODEL)),
-                ('website', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='alert_rules', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                (
+                    "metric",
+                    models.CharField(
+                        choices=[
+                            ("health_score", "Health Score"),
+                            ("ssl_days_remaining", "SSL Days Remaining"),
+                            ("load_time_ms", "Load Time (ms)"),
+                            ("page_size_kb", "Page Size (KB)"),
+                        ],
+                        max_length=25,
+                    ),
+                ),
+                (
+                    "operator",
+                    models.CharField(
+                        choices=[
+                            ("gt", "Greater than"),
+                            ("lt", "Less than"),
+                            ("gte", "Greater than or equal"),
+                            ("lte", "Less than or equal"),
+                            ("eq", "Equal"),
+                        ],
+                        max_length=5,
+                    ),
+                ),
+                ("threshold", models.FloatField()),
+                (
+                    "severity",
+                    models.CharField(
+                        choices=[("warning", "Warning"), ("critical", "Critical")],
+                        max_length=10,
+                    ),
+                ),
+                ("enabled", models.BooleanField(default=True)),
+                ("cooldown_minutes", models.IntegerField(default=60)),
+                ("last_triggered_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="alert_rules",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "website",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="alert_rules",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Alert Rule',
-                'ordering': ['-created_at'],
+                "verbose_name": "Alert Rule",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='MuteWindow',
+            name="MuteWindow",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('start_at', models.DateTimeField()),
-                ('end_at', models.DateTimeField()),
-                ('reason', models.CharField(choices=[('maintenance', 'Maintenance'), ('deployment', 'Deployment'), ('migration', 'Migration'), ('other', 'Other')], default='maintenance', max_length=20)),
-                ('note', models.TextField(blank=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mute_windows', to=settings.AUTH_USER_MODEL)),
-                ('websites', models.ManyToManyField(blank=True, help_text="Empty = all user's websites", related_name='mute_windows', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("start_at", models.DateTimeField()),
+                ("end_at", models.DateTimeField()),
+                (
+                    "reason",
+                    models.CharField(
+                        choices=[
+                            ("maintenance", "Maintenance"),
+                            ("deployment", "Deployment"),
+                            ("migration", "Migration"),
+                            ("other", "Other"),
+                        ],
+                        default="maintenance",
+                        max_length=20,
+                    ),
+                ),
+                ("note", models.TextField(blank=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="mute_windows",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "websites",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Empty = all user's websites",
+                        related_name="mute_windows",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Mute Window',
-                'ordering': ['-start_at'],
+                "verbose_name": "Mute Window",
+                "ordering": ["-start_at"],
             },
         ),
         migrations.CreateModel(
-            name='Alert',
+            name="Alert",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('alert_type', models.CharField(choices=[('ssl_expiring', 'SSL Expiring'), ('ssl_invalid', 'SSL Invalid'), ('ssl_expired', 'SSL Expired'), ('website_offline', 'Website Offline'), ('dns_problem', 'DNS Problem'), ('email_security', 'Email Security'), ('security_headers', 'Security Headers'), ('performance', 'Performance'), ('score_drop', 'Score Drop'), ('scan_failed', 'Scan Failed'), ('monitoring_disabled', 'Monitoring Disabled')], max_length=30)),
-                ('severity', models.CharField(choices=[('info', 'Info'), ('warning', 'Warning'), ('critical', 'Critical')], max_length=10)),
-                ('status', models.CharField(choices=[('firing', 'Firing'), ('acknowledged', 'Acknowledged'), ('resolved', 'Resolved')], default='firing', max_length=15)),
-                ('title', models.CharField(max_length=255)),
-                ('message', models.TextField()),
-                ('metadata', models.JSONField(default=dict)),
-                ('notification_channels_sent', models.JSONField(default=list)),
-                ('acknowledged_at', models.DateTimeField(blank=True, null=True)),
-                ('resolved_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('acknowledged_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='acknowledged_alerts', to=settings.AUTH_USER_MODEL)),
-                ('scan', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='alerts', to='scans.scan')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alerts', to=settings.AUTH_USER_MODEL)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='alerts', to='websites.website')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "alert_type",
+                    models.CharField(
+                        choices=[
+                            ("ssl_expiring", "SSL Expiring"),
+                            ("ssl_invalid", "SSL Invalid"),
+                            ("ssl_expired", "SSL Expired"),
+                            ("website_offline", "Website Offline"),
+                            ("dns_problem", "DNS Problem"),
+                            ("email_security", "Email Security"),
+                            ("security_headers", "Security Headers"),
+                            ("performance", "Performance"),
+                            ("score_drop", "Score Drop"),
+                            ("scan_failed", "Scan Failed"),
+                            ("monitoring_disabled", "Monitoring Disabled"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "severity",
+                    models.CharField(
+                        choices=[
+                            ("info", "Info"),
+                            ("warning", "Warning"),
+                            ("critical", "Critical"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("firing", "Firing"),
+                            ("acknowledged", "Acknowledged"),
+                            ("resolved", "Resolved"),
+                        ],
+                        default="firing",
+                        max_length=15,
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("message", models.TextField()),
+                ("metadata", models.JSONField(default=dict)),
+                ("notification_channels_sent", models.JSONField(default=list)),
+                ("acknowledged_at", models.DateTimeField(blank=True, null=True)),
+                ("resolved_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "acknowledged_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="acknowledged_alerts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "scan",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="alerts",
+                        to="scans.scan",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="alerts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="alerts",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Alert',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['user', 'status'], name='alerts_aler_user_id_286633_idx'), models.Index(fields=['website', 'status'], name='alerts_aler_website_193636_idx'), models.Index(fields=['status', 'created_at'], name='alerts_aler_status_bbfb4b_idx')],
+                "verbose_name": "Alert",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "status"], name="alerts_aler_user_id_286633_idx"
+                    ),
+                    models.Index(
+                        fields=["website", "status"],
+                        name="alerts_aler_website_193636_idx",
+                    ),
+                    models.Index(
+                        fields=["status", "created_at"],
+                        name="alerts_aler_status_bbfb4b_idx",
+                    ),
+                ],
             },
         ),
     ]

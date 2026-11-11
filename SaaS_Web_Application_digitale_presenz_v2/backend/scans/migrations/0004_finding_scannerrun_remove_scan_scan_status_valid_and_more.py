@@ -5,155 +5,323 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('scans', '0003_scan_guest_fields'),
+        ("scans", "0003_scan_guest_fields"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Finding',
+            name="Finding",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category', models.CharField(help_text="Category matching CheckResult.Category (e.g. 'ssl', 'dns', 'security').", max_length=32)),
-                ('check_code', models.CharField(help_text="Dot-separated check code, e.g. 'ssl.certificate_valid'.", max_length=128)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('severity', models.CharField(choices=[('info', 'Info'), ('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('critical', 'Critical')], default='info', max_length=16)),
-                ('status', models.CharField(choices=[('pass', 'Pass'), ('fail', 'Fail'), ('warning', 'Warning'), ('not_applicable', 'Not Applicable'), ('unknown', 'Unknown')], default='unknown', max_length=16)),
-                ('evidence', models.JSONField(blank=True, default=dict)),
-                ('detected_value', models.JSONField(blank=True, null=True)),
-                ('expected_value', models.JSONField(blank=True, null=True)),
-                ('recommendation', models.TextField(blank=True)),
-                ('reference_url', models.URLField(blank=True, max_length=500)),
-                ('duration_ms', models.PositiveIntegerField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        help_text="Category matching CheckResult.Category (e.g. 'ssl', 'dns', 'security').",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "check_code",
+                    models.CharField(
+                        help_text="Dot-separated check code, e.g. 'ssl.certificate_valid'.",
+                        max_length=128,
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "severity",
+                    models.CharField(
+                        choices=[
+                            ("info", "Info"),
+                            ("low", "Low"),
+                            ("medium", "Medium"),
+                            ("high", "High"),
+                            ("critical", "Critical"),
+                        ],
+                        default="info",
+                        max_length=16,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pass", "Pass"),
+                            ("fail", "Fail"),
+                            ("warning", "Warning"),
+                            ("not_applicable", "Not Applicable"),
+                            ("unknown", "Unknown"),
+                        ],
+                        default="unknown",
+                        max_length=16,
+                    ),
+                ),
+                ("evidence", models.JSONField(blank=True, default=dict)),
+                ("detected_value", models.JSONField(blank=True, null=True)),
+                ("expected_value", models.JSONField(blank=True, null=True)),
+                ("recommendation", models.TextField(blank=True)),
+                ("reference_url", models.URLField(blank=True, max_length=500)),
+                ("duration_ms", models.PositiveIntegerField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'ordering': ['-severity', 'category', 'check_code'],
+                "ordering": ["-severity", "category", "check_code"],
             },
         ),
         migrations.CreateModel(
-            name='ScannerRun',
+            name="ScannerRun",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('scanner', models.CharField(help_text="Scanner name (e.g. 'nmap', 'ssl', 'dns').", max_length=64)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed'), ('timeout', 'Timeout'), ('cancelled', 'Cancelled'), ('unavailable', 'Unavailable')], default='pending', max_length=16)),
-                ('started_at', models.DateTimeField(blank=True, null=True)),
-                ('finished_at', models.DateTimeField(blank=True, null=True)),
-                ('duration_ms', models.PositiveIntegerField(blank=True, null=True)),
-                ('exit_code', models.SmallIntegerField(blank=True, null=True)),
-                ('error_message', models.TextField(blank=True)),
-                ('raw_output', models.TextField(blank=True, help_text='Truncated raw tool output for debugging.')),
-                ('metadata', models.JSONField(blank=True, default=dict, help_text='Scanner-specific metadata.')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "scanner",
+                    models.CharField(
+                        help_text="Scanner name (e.g. 'nmap', 'ssl', 'dns').",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("running", "Running"),
+                            ("completed", "Completed"),
+                            ("failed", "Failed"),
+                            ("timeout", "Timeout"),
+                            ("cancelled", "Cancelled"),
+                            ("unavailable", "Unavailable"),
+                        ],
+                        default="pending",
+                        max_length=16,
+                    ),
+                ),
+                ("started_at", models.DateTimeField(blank=True, null=True)),
+                ("finished_at", models.DateTimeField(blank=True, null=True)),
+                ("duration_ms", models.PositiveIntegerField(blank=True, null=True)),
+                ("exit_code", models.SmallIntegerField(blank=True, null=True)),
+                ("error_message", models.TextField(blank=True)),
+                (
+                    "raw_output",
+                    models.TextField(
+                        blank=True, help_text="Truncated raw tool output for debugging."
+                    ),
+                ),
+                (
+                    "metadata",
+                    models.JSONField(
+                        blank=True, default=dict, help_text="Scanner-specific metadata."
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'ordering': ['created_at'],
+                "ordering": ["created_at"],
             },
         ),
         migrations.RemoveConstraint(
-            model_name='scan',
-            name='scan_status_valid',
+            model_name="scan",
+            name="scan_status_valid",
         ),
         migrations.AddField(
-            model_name='scan',
-            name='current_step',
-            field=models.CharField(blank=True, default='', help_text='Human-readable label of the currently executing scanner step.', max_length=128),
+            model_name="scan",
+            name="current_step",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Human-readable label of the currently executing scanner step.",
+                max_length=128,
+            ),
         ),
         migrations.AddField(
-            model_name='scan',
-            name='failed_at',
+            model_name="scan",
+            name="failed_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='scan',
-            name='progress',
-            field=models.PositiveSmallIntegerField(default=0, help_text='Overall scan progress, 0–100.'),
+            model_name="scan",
+            name="progress",
+            field=models.PositiveSmallIntegerField(
+                default=0, help_text="Overall scan progress, 0–100."
+            ),
         ),
         migrations.AddField(
-            model_name='scan',
-            name='queued_at',
+            model_name="scan",
+            name="queued_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='scan',
-            name='scan_type',
-            field=models.CharField(choices=[('health', 'Health'), ('security', 'Security'), ('full', 'Full')], default='health', help_text='Type of scan: health (internal checks), security (external tools), or full.', max_length=16),
+            model_name="scan",
+            name="scan_type",
+            field=models.CharField(
+                choices=[
+                    ("health", "Health"),
+                    ("security", "Security"),
+                    ("full", "Full"),
+                ],
+                default="health",
+                help_text="Type of scan: health (internal checks), security (external tools), or full.",
+                max_length=16,
+            ),
         ),
         migrations.AddField(
-            model_name='scan',
-            name='steps',
-            field=models.JSONField(blank=True, default=list, help_text='Ordered list of scanner steps with status/progress for real-time feed. Format: [{key, label, status, progress, duration_ms, error}]'),
+            model_name="scan",
+            name="steps",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="Ordered list of scanner steps with status/progress for real-time feed. Format: [{key, label, status, progress, duration_ms, error}]",
+            ),
         ),
         migrations.AlterField(
-            model_name='scan',
-            name='created_at',
+            model_name="scan",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='scan',
-            name='is_guest',
-            field=models.BooleanField(db_index=True, default=False, help_text='True if performed by an unauthenticated visitor.'),
+            model_name="scan",
+            name="is_guest",
+            field=models.BooleanField(
+                db_index=True,
+                default=False,
+                help_text="True if performed by an unauthenticated visitor.",
+            ),
         ),
         migrations.AlterField(
-            model_name='scan',
-            name='session_key',
-            field=models.CharField(blank=True, db_index=True, help_text='Django session key of the guest visitor.', max_length=40, null=True),
+            model_name="scan",
+            name="session_key",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="Django session key of the guest visitor.",
+                max_length=40,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='scan',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed'), ('cancelled', 'Cancelled')], default='pending', max_length=16),
+            model_name="scan",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("queued", "Queued"),
+                    ("running", "Running"),
+                    ("completed", "Completed"),
+                    ("failed", "Failed"),
+                    ("cancelled", "Cancelled"),
+                ],
+                default="pending",
+                max_length=16,
+            ),
         ),
         migrations.AddIndex(
-            model_name='scan',
-            index=models.Index(fields=['is_guest', 'created_at'], name='scans_scan_is_gues_215e8e_idx'),
+            model_name="scan",
+            index=models.Index(
+                fields=["is_guest", "created_at"], name="scans_scan_is_gues_215e8e_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='scan',
-            index=models.Index(fields=['session_key'], name='scans_scan_session_eac974_idx'),
+            model_name="scan",
+            index=models.Index(
+                fields=["session_key"], name="scans_scan_session_eac974_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='scan',
-            index=models.Index(fields=['scan_type', 'status'], name='scans_scan_scan_ty_ba1544_idx'),
+            model_name="scan",
+            index=models.Index(
+                fields=["scan_type", "status"], name="scans_scan_scan_ty_ba1544_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='scan',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['pending', 'queued', 'running', 'completed', 'failed', 'cancelled'])), name='scan_status_valid'),
+            model_name="scan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "status__in",
+                        [
+                            "pending",
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed",
+                            "cancelled",
+                        ],
+                    )
+                ),
+                name="scan_status_valid",
+            ),
         ),
         migrations.AddField(
-            model_name='scannerrun',
-            name='scan',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='scanner_runs', to='scans.scan'),
+            model_name="scannerrun",
+            name="scan",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="scanner_runs",
+                to="scans.scan",
+            ),
         ),
         migrations.AddField(
-            model_name='finding',
-            name='scanner_run',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='findings', to='scans.scannerrun'),
+            model_name="finding",
+            name="scanner_run",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="findings",
+                to="scans.scannerrun",
+            ),
         ),
         migrations.AddIndex(
-            model_name='scannerrun',
-            index=models.Index(fields=['scan', 'scanner'], name='scans_scann_scan_id_520a58_idx'),
+            model_name="scannerrun",
+            index=models.Index(
+                fields=["scan", "scanner"], name="scans_scann_scan_id_520a58_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='scannerrun',
-            index=models.Index(fields=['scanner', 'status'], name='scans_scann_scanner_4066d9_idx'),
+            model_name="scannerrun",
+            index=models.Index(
+                fields=["scanner", "status"], name="scans_scann_scanner_4066d9_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='finding',
-            index=models.Index(fields=['scanner_run', 'category'], name='scans_findi_scanner_b278b5_idx'),
+            model_name="finding",
+            index=models.Index(
+                fields=["scanner_run", "category"],
+                name="scans_findi_scanner_b278b5_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='finding',
-            index=models.Index(fields=['scanner_run', 'severity'], name='scans_findi_scanner_13230b_idx'),
+            model_name="finding",
+            index=models.Index(
+                fields=["scanner_run", "severity"],
+                name="scans_findi_scanner_13230b_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='finding',
-            index=models.Index(fields=['scanner_run', 'status'], name='scans_findi_scanner_483132_idx'),
+            model_name="finding",
+            index=models.Index(
+                fields=["scanner_run", "status"], name="scans_findi_scanner_483132_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='finding',
-            index=models.Index(fields=['check_code'], name='scans_findi_check_c_4de32d_idx'),
+            model_name="finding",
+            index=models.Index(
+                fields=["check_code"], name="scans_findi_check_c_4de32d_idx"
+            ),
         ),
     ]

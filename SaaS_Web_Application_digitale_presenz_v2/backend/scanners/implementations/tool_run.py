@@ -119,7 +119,9 @@ class ToolRun:
     command: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_command_result(cls, result: Any, *, max_output_bytes: int = 0) -> "ToolRun":
+    def from_command_result(
+        cls, result: Any, *, max_output_bytes: int = 0
+    ) -> "ToolRun":
         return cls(
             stdout=getattr(result, "stdout", "") or "",
             stderr=getattr(result, "stderr", "") or "",
@@ -339,9 +341,7 @@ def build_outcome(
         if not _has_diagnostic_finding(findings):
             findings = [
                 *findings,
-                incomplete_finding(
-                    scanner.name, reason, duration_ms=run.duration_ms
-                ),
+                incomplete_finding(scanner.name, reason, duration_ms=run.duration_ms),
             ]
 
     details.setdefault("timed_out", run.timed_out)

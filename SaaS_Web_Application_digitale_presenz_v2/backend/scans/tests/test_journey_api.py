@@ -181,9 +181,7 @@ class JourneyCreateAPITests(JourneyAPITestMixin, APITestCase):
         self.assertIn("website", response.data)
 
     def test_create_rejects_unknown_website(self) -> None:
-        response = self.client.post(
-            JOURNEYS_URL, {"website": 999999}, format="json"
-        )
+        response = self.client.post(JOURNEYS_URL, {"website": 999999}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 

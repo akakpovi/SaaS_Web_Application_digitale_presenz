@@ -188,18 +188,20 @@ class OrchestratorStatusTests(TestCase):
             status=Scan.Status.QUEUED,
             scan_type=Scan.ScanType.FULL,
         )
-        with patch(
-            "scanners.registry.ScannerRegistry", autospec=True
-        ) as registry, patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=steps,
-        ), patch(
-            "scans.services.scoring.recalculate_scan_health"
-        ), patch(
-            "advisory.services.scan_ingestion.ingest_scan_findings",
-            return_value=None,
-        ) as ingest, override_settings(
-            SCANNER_ARCHIVE_ENABLED=False,
+        with (
+            patch("scanners.registry.ScannerRegistry", autospec=True) as registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=steps,
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
+            patch(
+                "advisory.services.scan_ingestion.ingest_scan_findings",
+                return_value=None,
+            ) as ingest,
+            override_settings(
+                SCANNER_ARCHIVE_ENABLED=False,
+            ),
         ):
             registry.get.side_effect = lambda name: scanners[name]
             ScanOrchestrator(scan.id).run()
@@ -227,7 +229,9 @@ class OrchestratorStatusTests(TestCase):
         self.assertEqual(steps["nuclei"]["status"], "timeout")
         self.assertEqual(steps["zap"]["status"], "completed")
 
-        calls = {call.kwargs["scanner_name"]: call.kwargs for call in ingest.call_args_list}
+        calls = {
+            call.kwargs["scanner_name"]: call.kwargs for call in ingest.call_args_list
+        }
         self.assertTrue(calls["zap"]["complete"])
         self.assertFalse(calls["nuclei"]["complete"])
 
@@ -249,9 +253,7 @@ class OrchestratorStatusTests(TestCase):
             failure_message="Partial scan: nuclei timeout.",
             completed_at=timezone.now(),
         )
-        with patch(
-            "scans.services.steps_builder.build_initial_steps"
-        ) as build_steps:
+        with patch("scans.services.steps_builder.build_initial_steps") as build_steps:
             ScanOrchestrator(scan.id).run()
         build_steps.assert_not_called()
         scan.refresh_from_db()

@@ -144,9 +144,7 @@ class NucleiScanner(BaseScanner):
     @property
     def _scenario_templates_path(self) -> str:
         """Host directory holding the stage-2 ``selected/`` and ``presence/``."""
-        return str(
-            self._cfg.get("scenario_templates_path", "") or ""
-        ).strip()
+        return str(self._cfg.get("scenario_templates_path", "") or "").strip()
 
     @property
     def binary_version(self) -> str:
@@ -162,9 +160,7 @@ class NucleiScanner(BaseScanner):
     @property
     def templates_version(self) -> str:
         """Deployment-reported template catalogue version, or ``unknown``."""
-        return str(
-            self._cfg.get("templates_version", "") or "unknown"
-        ).strip()
+        return str(self._cfg.get("templates_version", "") or "unknown").strip()
 
     # ------------------------------------------------------------------
     # Availability / gate
@@ -293,9 +289,8 @@ class NucleiScanner(BaseScanner):
         would resolve every existing finding.
         """
         text = stderr or ""
-        return (
-            "unresponsive permanently" in text
-            or ("Skipped " in text and "from target list" in text)
+        return "unresponsive permanently" in text or (
+            "Skipped " in text and "from target list" in text
         )
 
     def _partial_finding(
@@ -394,9 +389,7 @@ class NucleiScanner(BaseScanner):
                 template_paths_used = profile_paths
                 env_templates = container_scenario_root
                 if scenario_templates_root:
-                    mounts = [
-                        (scenario_templates_root, container_scenario_root)
-                    ]
+                    mounts = [(scenario_templates_root, container_scenario_root)]
             else:
                 # Process mode has no container: resolve the profile's
                 # subdirectories under the scenario root, then under the full
@@ -406,16 +399,12 @@ class NucleiScanner(BaseScanner):
                     # Process mode runs from the application tree: the assets
                     # shipped with the repository are a valid fallback.
                     host_root = os.path.join(
-                        os.path.dirname(
-                            os.path.dirname(os.path.abspath(__file__))
-                        ),
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                         "templates",
                     )
                 template_paths_used = (
                     [
-                        os.path.join(
-                            host_root, os.path.basename(path.rstrip("/"))
-                        )
+                        os.path.join(host_root, os.path.basename(path.rstrip("/")))
                         for path in profile_paths
                     ]
                     if host_root
@@ -427,9 +416,7 @@ class NucleiScanner(BaseScanner):
                 if templates_root and executor.mode == SandboxMode.DOCKER
                 else templates_root
             )
-            template_paths_used = (
-                [container_templates] if container_templates else []
-            )
+            template_paths_used = [container_templates] if container_templates else []
             env_templates = container_templates
             if templates_root and executor.mode == SandboxMode.DOCKER:
                 mounts = [(templates_root, docker_templates)]
@@ -438,7 +425,9 @@ class NucleiScanner(BaseScanner):
             command_result = executor.run(
                 command=self.build_command(
                     target.url,
-                    templates_path=(template_paths_used[0] if template_paths_used else None),
+                    templates_path=(
+                        template_paths_used[0] if template_paths_used else None
+                    ),
                     template_paths=template_paths_used or None,
                     profile_name=profile_name,
                 ),
@@ -485,36 +474,19 @@ class NucleiScanner(BaseScanner):
         findings = self.normalize(
             parsed, preserve_matchers=(profile_name == "scenario_c")
         )
-        critical = [
-            item for item in parsed
-            if item.get("severity") == "critical"
-        ]
-        high = [
-            item for item in parsed
-            if item.get("severity") == "high"
-        ]
+        critical = [item for item in parsed if item.get("severity") == "critical"]
+        high = [item for item in parsed if item.get("severity") == "high"]
         high_or_critical = [
-            item for item in parsed
-            if item.get("severity") in ("high", "critical")
+            item for item in parsed if item.get("severity") in ("high", "critical")
         ]
-        medium = [
-            item for item in parsed
-            if item.get("severity") == "medium"
-        ]
-        low = [
-            item for item in parsed
-            if item.get("severity") == "low"
-        ]
+        medium = [item for item in parsed if item.get("severity") == "medium"]
+        low = [item for item in parsed if item.get("severity") == "low"]
         # Nuclei is a 20-point scorecard. Critical/high findings dominate the
         # penalty; medium and low findings are still visible without making
         # the score meaningless on a noisy template catalog.
         nuclei_score = max(
             0,
-            20
-            - 10 * len(critical)
-            - 5 * len(high)
-            - 2 * len(medium)
-            - len(low),
+            20 - 10 * len(critical) - 5 * len(high) - 2 * len(medium) - len(low),
         )
         stats = self._stats_from_stderr(command_result.stderr)
         host_skipped = self._host_was_skipped(command_result.stderr)
@@ -528,9 +500,7 @@ class NucleiScanner(BaseScanner):
 
         raw_templates = (stats or {}).get("templates")
         try:
-            templates_loaded = (
-                None if raw_templates is None else int(raw_templates)
-            )
+            templates_loaded = None if raw_templates is None else int(raw_templates)
         except (TypeError, ValueError):
             templates_loaded = None
 
@@ -817,7 +787,9 @@ class NucleiScanner(BaseScanner):
             ):
                 # One missing header = one actionable finding.  The matcher
                 # name is the header identifier (e.g. ``content-security-policy``).
-                matcher_slug = re.sub(r"[^a-z0-9]+", "-", matcher_name.lower()).strip("-")
+                matcher_slug = re.sub(r"[^a-z0-9]+", "-", matcher_name.lower()).strip(
+                    "-"
+                )
                 if matcher_slug:
                     check_code = f"nuclei.{template_id}.{matcher_slug}"[:128]
                     key = (check_code, matched_at)
@@ -846,8 +818,7 @@ class NucleiScanner(BaseScanner):
                         "ip": item.get("ip", ""),
                     },
                     recommendation=(
-                        "Review the template documentation and apply the "
-                        "suggested fix."
+                        "Review the template documentation and apply the suggested fix."
                     ),
                     reference_url=ref_url if isinstance(ref_url, str) else "",
                 )

@@ -88,12 +88,14 @@ def run_due_monitors() -> dict:
     from scans.tasks import run_authenticated_scan
 
     now = timezone.now()
-    configs = MonitoringConfig.objects.filter(
-        enabled=True,
-        next_scan_at__lte=now,
-    ).select_related(
-        "website", "website__owner", "website__organization"
-    ).order_by("next_scan_at")
+    configs = (
+        MonitoringConfig.objects.filter(
+            enabled=True,
+            next_scan_at__lte=now,
+        )
+        .select_related("website", "website__owner", "website__organization")
+        .order_by("next_scan_at")
+    )
 
     max_per_run = max(1, int(getattr(settings, "MONITORING_MAX_SCANS_PER_RUN", 20)))
     queued, skipped, active, quota_blocked = 0, 0, 0, 0
@@ -121,9 +123,7 @@ def run_due_monitors() -> dict:
         ).exists():
             _reschedule(config, now=now, next_scan_at=now + timedelta(minutes=15))
             active += 1
-            logger.info(
-                "Skipped %s: a scan is already active", website.domain
-            )
+            logger.info("Skipped %s: a scan is already active", website.domain)
             continue
 
         # Mute window check
@@ -188,7 +188,10 @@ def run_due_monitors() -> dict:
 
         logger.info(
             "Queued monitoring scan %s for %s type=%s (next: %s)",
-            scan.id, website.domain, scan.scan_type, config.next_scan_at,
+            scan.id,
+            website.domain,
+            scan.scan_type,
+            config.next_scan_at,
         )
 
     logger.info(

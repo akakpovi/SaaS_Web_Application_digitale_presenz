@@ -8,7 +8,14 @@ from typing import Any
 
 from django.conf import settings
 
-from scanners.base import BaseScanner, NormalizedFinding, Severity, FindingStatus, ScanResult, ScannerType
+from scanners.base import (
+    BaseScanner,
+    NormalizedFinding,
+    Severity,
+    FindingStatus,
+    ScanResult,
+    ScannerType,
+)
 from scanners.executors.sandbox import get_sandbox_executor
 from scanners.exceptions import TargetValidationError
 from scanners.security.target_validator import validate_target
@@ -26,13 +33,15 @@ def _parse_feroxbuster_output(output: str) -> list[dict[str, Any]]:
         try:
             item = json.loads(line)
             if item.get("type") == "response":
-                findings.append({
-                    "url": item.get("url", ""),
-                    "status": item.get("status", 0),
-                    "content_length": item.get("content_length", 0),
-                    "word_count": item.get("word_count", 0),
-                    "line_count": item.get("line_count", 0),
-                })
+                findings.append(
+                    {
+                        "url": item.get("url", ""),
+                        "status": item.get("status", 0),
+                        "content_length": item.get("content_length", 0),
+                        "word_count": item.get("word_count", 0),
+                        "line_count": item.get("line_count", 0),
+                    }
+                )
         except json.JSONDecodeError:
             continue
     return findings
@@ -80,25 +89,29 @@ class FeroxbusterScanner(BaseScanner):
 
     def scan_findings(self, domain: str) -> list[NormalizedFinding]:
         if not self.is_available():
-            return [NormalizedFinding(
-                check_code="feroxbuster.unavailable",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.NOT_APPLICABLE,
-                title="Feroxbuster not available",
-            )]
+            return [
+                NormalizedFinding(
+                    check_code="feroxbuster.unavailable",
+                    category="security",
+                    severity=Severity.INFO,
+                    status=FindingStatus.NOT_APPLICABLE,
+                    title="Feroxbuster not available",
+                )
+            ]
 
         try:
             target_info = validate_target(f"https://{domain}")
         except TargetValidationError as exc:
-            return [NormalizedFinding(
-                check_code="feroxbuster.target_validation",
-                category="security",
-                severity=Severity.HIGH,
-                status=FindingStatus.FAIL,
-                title="Target validation failed",
-                description=str(exc),
-            )]
+            return [
+                NormalizedFinding(
+                    check_code="feroxbuster.target_validation",
+                    category="security",
+                    severity=Severity.HIGH,
+                    status=FindingStatus.FAIL,
+                    title="Target validation failed",
+                    description=str(exc),
+                )
+            ]
 
         result = get_sandbox_executor().run(
             command=self.build_command(target_info.url),
@@ -107,14 +120,16 @@ class FeroxbusterScanner(BaseScanner):
         )
 
         if result.timed_out:
-            return [NormalizedFinding(
-                check_code="feroxbuster.timeout",
-                category="security",
-                severity=Severity.INFO,
-                status=FindingStatus.UNKNOWN,
-                title=f"Feroxbuster timed out after {self.timeout}s",
-                duration_ms=result.duration_ms,
-            )]
+            return [
+                NormalizedFinding(
+                    check_code="feroxbuster.timeout",
+                    category="security",
+                    severity=Severity.INFO,
+                    status=FindingStatus.UNKNOWN,
+                    title=f"Feroxbuster timed out after {self.timeout}s",
+                    duration_ms=result.duration_ms,
+                )
+            ]
 
         parsed = _parse_feroxbuster_output(result.stdout)
         return self.normalize(parsed)
@@ -125,20 +140,27 @@ class FeroxbusterScanner(BaseScanner):
         threads = cfg.get("threads", 10)
         return [
             "feroxbuster",
-            "--url", target,
-            "--wordlist", wordlist,
-            "--threads", str(threads),
+            "--url",
+            target,
+            "--wordlist",
+            wordlist,
+            "--threads",
+            str(threads),
             "--json",
             "--quiet",
-            "--no-recursion",   # Keep it fast / non-intrusive
-            "--timeout", "10",
-            "--rate-limit", "50",
+            "--no-recursion",  # Keep it fast / non-intrusive
+            "--timeout",
+            "10",
+            "--rate-limit",
+            "50",
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return _parse_feroxbuster_output(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         sensitive_patterns = {"admin", "backup", "config", ".env", ".git", "wp-admin"}
 
@@ -149,16 +171,20 @@ class FeroxbusterScanner(BaseScanner):
             severity = Severity.HIGH if is_sensitive else Severity.LOW
             status = FindingStatus.FAIL if is_sensitive else FindingStatus.WARNING
 
-            findings.append(NormalizedFinding(
-                check_code=f"feroxbuster.url.{abs(hash(url)) % 100000}",
-                category="security",
-                severity=severity,
-                status=status,
-                title=f"URL found: {url[:200]}",
-                description=f"Feroxbuster discovered '{url}' (HTTP {item.get('status', '?')})",
-                evidence=item,
-                recommendation="Review access controls for this path." if is_sensitive else "",
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"feroxbuster.url.{abs(hash(url)) % 100000}",
+                    category="security",
+                    severity=severity,
+                    status=status,
+                    title=f"URL found: {url[:200]}",
+                    description=f"Feroxbuster discovered '{url}' (HTTP {item.get('status', '?')})",
+                    evidence=item,
+                    recommendation="Review access controls for this path."
+                    if is_sensitive
+                    else "",
+                )
+            )
 
         return findings
 

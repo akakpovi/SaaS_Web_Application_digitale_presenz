@@ -85,9 +85,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
 
     def _list_url(self, organization: Organization | None = None) -> str:
         organization = organization or self.organization
-        return (
-            f"/api/v1/organizations/{organization.id}/social/connections/"
-        )
+        return f"/api/v1/organizations/{organization.id}/social/connections/"
 
     def _detail_url(
         self,
@@ -190,9 +188,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
             self.assertEqual(access_token, "revoke-this-access-token")
             # The local ciphertext must still exist while the provider call
             # is in flight; only a successful revocation permits deletion.
-            self.assertTrue(
-                OAuthConnection.objects.filter(pk=connection.pk).exists()
-            )
+            self.assertTrue(OAuthConnection.objects.filter(pk=connection.pk).exists())
 
         client.revoke_token.side_effect = revoke_token
         self._auth(self.owner)
@@ -205,9 +201,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(response.content, b"")
-        self.assertFalse(
-            OAuthConnection.objects.filter(pk=connection.pk).exists()
-        )
+        self.assertFalse(OAuthConnection.objects.filter(pk=connection.pk).exists())
         client.revoke_token.assert_called_once_with(
             access_token="revoke-this-access-token"
         )
@@ -229,9 +223,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
             )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(
-            OAuthConnection.objects.filter(pk=other_connection.pk).exists()
-        )
+        self.assertTrue(OAuthConnection.objects.filter(pk=other_connection.pk).exists())
         client.revoke_token.assert_not_called()
 
     def test_admin_can_delete(self):
@@ -246,9 +238,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
             response = self.client.delete(self._detail_url(connection))
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            OAuthConnection.objects.filter(pk=connection.pk).exists()
-        )
+        self.assertFalse(OAuthConnection.objects.filter(pk=connection.pk).exists())
         client.revoke_token.assert_called_once()
 
     def test_analyst_and_viewer_cannot_delete(self):
@@ -264,18 +254,14 @@ class OAuthConnectionManagementAPITests(APITestCase):
                 response = self.client.delete(self._detail_url(connection))
 
             self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-            self.assertTrue(
-                OAuthConnection.objects.filter(pk=connection.pk).exists()
-            )
+            self.assertTrue(OAuthConnection.objects.filter(pk=connection.pk).exists())
 
         client.revoke_token.assert_not_called()
 
     def test_provider_revocation_failure_keeps_connection(self):
         connection = create_connection(self.organization)
         client = Mock()
-        client.revoke_token.side_effect = ProviderRequestError(
-            "provider unavailable"
-        )
+        client.revoke_token.side_effect = ProviderRequestError("provider unavailable")
         self._auth(self.owner)
 
         with patch(
@@ -286,16 +272,12 @@ class OAuthConnectionManagementAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(response.data["error"], "oauth_revocation_failed")
-        self.assertTrue(
-            OAuthConnection.objects.filter(pk=connection.pk).exists()
-        )
+        self.assertTrue(OAuthConnection.objects.filter(pk=connection.pk).exists())
 
     def test_missing_provider_configuration_keeps_connection(self):
         connection = create_connection(self.organization)
         client = Mock()
-        client.revoke_token.side_effect = ProviderNotConfiguredError(
-            "not configured"
-        )
+        client.revoke_token.side_effect = ProviderNotConfiguredError("not configured")
         self._auth(self.owner)
 
         with patch(
@@ -306,9 +288,7 @@ class OAuthConnectionManagementAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(response.data["error"], "oauth_revocation_failed")
-        self.assertTrue(
-            OAuthConnection.objects.filter(pk=connection.pk).exists()
-        )
+        self.assertTrue(OAuthConnection.objects.filter(pk=connection.pk).exists())
 
     def test_unauthenticated_delete_is_rejected(self):
         connection = create_connection(self.organization)
@@ -322,7 +302,5 @@ class OAuthConnectionManagementAPITests(APITestCase):
             response = self.client.delete(self._detail_url(connection))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertTrue(
-            OAuthConnection.objects.filter(pk=connection.pk).exists()
-        )
+        self.assertTrue(OAuthConnection.objects.filter(pk=connection.pk).exists())
         client.revoke_token.assert_not_called()

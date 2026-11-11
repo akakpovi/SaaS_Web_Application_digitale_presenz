@@ -94,9 +94,7 @@ If you are unsure, say you are unsure and which scanner evidence would settle
 it."""
 
 _UNAVAILABLE_DETAILS = {
-    "ai_not_configured": (
-        "The AI advisor is not configured on this deployment."
-    ),
+    "ai_not_configured": ("The AI advisor is not configured on this deployment."),
     "ai_circuit_open": (
         "The AI advisor is temporarily paused after repeated provider errors."
     ),
@@ -164,9 +162,8 @@ def build_coverage_note(organization, *, asset=None) -> str:
     """
     from scans.models import Scan, ScannerRun
 
-    queryset = (
-        Scan.objects.filter(website__organization=organization)
-        .order_by("-created_at")
+    queryset = Scan.objects.filter(website__organization=organization).order_by(
+        "-created_at"
     )
     if asset is not None:
         queryset = queryset.filter(website=asset)
@@ -199,7 +196,9 @@ def build_coverage_note(organization, *, asset=None) -> str:
         for scanner, run_status in sorted(problem_runs):
             lines.append(f"- {scanner}: {run_status}")
         if scan.failure_message:
-            lines.append(f"operator-visible failure message: {_bounded(scan.failure_message, 300)}")
+            lines.append(
+                f"operator-visible failure message: {_bounded(scan.failure_message, 300)}"
+            )
     return "\n".join(lines)
 
 

@@ -23,9 +23,7 @@ class ApiKeyListCreateView(APIView):
     permission_classes = [IsAuthenticated, HasAPIAccess]
 
     def get(self, request) -> Response:
-        keys = ApiKey.objects.filter(
-            user=request.user, revoked_at__isnull=True
-        )
+        keys = ApiKey.objects.filter(user=request.user, revoked_at__isnull=True)
         return Response(ApiKeySerializer(keys, many=True).data)
 
     def post(self, request) -> Response:

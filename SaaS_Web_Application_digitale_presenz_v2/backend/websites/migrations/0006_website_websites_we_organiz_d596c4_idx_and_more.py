@@ -5,20 +5,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('organizations', '0003_organizationinvitation'),
-        ('websites', '0005_website_organization'),
+        ("organizations", "0003_organizationinvitation"),
+        ("websites", "0005_website_organization"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='website',
-            index=models.Index(fields=['organization', 'created_at'], name='websites_we_organiz_d596c4_idx'),
+            model_name="website",
+            index=models.Index(
+                fields=["organization", "created_at"],
+                name="websites_we_organiz_d596c4_idx",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='website',
-            constraint=models.UniqueConstraint(condition=models.Q(('organization__isnull', False)), fields=('organization', 'domain'), name='unique_website_domain_per_organization'),
+            model_name="website",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("organization__isnull", False)),
+                fields=("organization", "domain"),
+                name="unique_website_domain_per_organization",
+            ),
         ),
     ]

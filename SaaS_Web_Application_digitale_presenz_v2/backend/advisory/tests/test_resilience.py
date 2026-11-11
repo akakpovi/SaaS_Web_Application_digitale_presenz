@@ -177,7 +177,9 @@ class AdvisorResilienceTests(TestCase):
         )
 
         snapshot = build_scan_snapshot(self.scan)
-        finding = next(item for item in snapshot["findings"] if item["check_code"] == "ssl.large")
+        finding = next(
+            item for item in snapshot["findings"] if item["check_code"] == "ssl.large"
+        )
 
         self.assertLessEqual(len(finding["description"]), 3_100)
         self.assertIn("[truncated]", finding["description"])

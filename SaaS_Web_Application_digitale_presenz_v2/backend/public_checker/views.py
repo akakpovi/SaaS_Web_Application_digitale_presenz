@@ -13,9 +13,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import permissions, status
 
-from core.security import validate_domain_for_scan, DomainValidationError, SSRFBlockedError
+from core.security import (
+    validate_domain_for_scan,
+    DomainValidationError,
+    SSRFBlockedError,
+)
 from scans.models import Scan, CheckResult, HealthStatus
-from scans.services.scoring import CHECK_WEIGHTS, PublicScorableResult, calculate_health_score
+from scans.services.scoring import (
+    CHECK_WEIGHTS,
+    PublicScorableResult,
+    calculate_health_score,
+)
 from scans.services.steps_builder import build_initial_steps, StepStatus
 from websites.models import Website
 from .models import PublicLead
@@ -34,7 +42,14 @@ DOMAIN_REGEX = re.compile(
 
 def _detect_language_code(request: Request) -> str:
     language_code = translation.get_language_from_request(request, check_path=False)
-    supported_languages = {code for code, _label in getattr(settings, "LANGUAGES", [("fr", "Français"), ("en", "English"), ("de", "Deutsch")])}
+    supported_languages = {
+        code
+        for code, _label in getattr(
+            settings,
+            "LANGUAGES",
+            [("fr", "Français"), ("en", "English"), ("de", "Deutsch")],
+        )
+    }
     if language_code not in supported_languages:
         language_code = settings.LANGUAGE_CODE.split("-")[0]
     return language_code
@@ -50,21 +65,18 @@ def _build_rich_remediation(category: str, check_status: str) -> dict:
     if category == "email_security":
         return {
             "code": "v=spf1 include:_spf.example.com ~all",
-            "server_type": "generic"
+            "server_type": "generic",
         }
     elif category == "security_headers":
         return {
-            "code": "add_header X-Content-Type-Options \"nosniff\" always;\nadd_header X-Frame-Options \"SAMEORIGIN\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;",
+            "code": 'add_header X-Content-Type-Options "nosniff" always;\nadd_header X-Frame-Options "SAMEORIGIN" always;\nadd_header Referrer-Policy "strict-origin-when-cross-origin" always;',
             "server_type": "nginx",
-            "nginx": "add_header X-Content-Type-Options \"nosniff\" always;\nadd_header X-Frame-Options \"SAMEORIGIN\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;",
-            "apache": "Header set X-Content-Type-Options \"nosniff\"\nHeader set X-Frame-Options \"SAMEORIGIN\"\nHeader set Referrer-Policy \"strict-origin-when-cross-origin\"",
-            "htaccess": "Header set X-Content-Type-Options \"nosniff\"\nHeader set X-Frame-Options \"SAMEORIGIN\""
+            "nginx": 'add_header X-Content-Type-Options "nosniff" always;\nadd_header X-Frame-Options "SAMEORIGIN" always;\nadd_header Referrer-Policy "strict-origin-when-cross-origin" always;',
+            "apache": 'Header set X-Content-Type-Options "nosniff"\nHeader set X-Frame-Options "SAMEORIGIN"\nHeader set Referrer-Policy "strict-origin-when-cross-origin"',
+            "htaccess": 'Header set X-Content-Type-Options "nosniff"\nHeader set X-Frame-Options "SAMEORIGIN"',
         }
     elif category == "ssl":
-        return {
-            "code": "sudo certbot renew --nginx",
-            "server_type": "generic"
-        }
+        return {"code": "sudo certbot renew --nginx", "server_type": "generic"}
     return {}
 
 
@@ -79,11 +91,13 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
             "score": cr.score,
             "max_score": CHECK_WEIGHTS.get(cr.category),
             "message": cr.summary,
-            "remediation": _build_rich_remediation(cr.category, cr.status)
+            "remediation": _build_rich_remediation(cr.category, cr.status),
         }
 
         if cr.category == "ssl" and cr.technical_details:
-            days = cr.technical_details.get("days_remaining") or cr.technical_details.get("days_left")
+            days = cr.technical_details.get(
+                "days_remaining"
+            ) or cr.technical_details.get("days_left")
             if days is not None:
                 check_data["days_until_expiry"] = int(days)
 
@@ -93,9 +107,17 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
 
         checks[cr.category] = check_data
 
-    critical_count = sum(1 for c in checks.values() if c["status"] == HealthStatus.CRITICAL.value)
-    warning_count = sum(1 for c in checks.values() if c["status"] == HealthStatus.WARNING.value)
-    passed_count = sum(1 for c in checks.values() if c["status"] in [HealthStatus.HEALTHY.value, "passed"])
+    critical_count = sum(
+        1 for c in checks.values() if c["status"] == HealthStatus.CRITICAL.value
+    )
+    warning_count = sum(
+        1 for c in checks.values() if c["status"] == HealthStatus.WARNING.value
+    )
+    passed_count = sum(
+        1
+        for c in checks.values()
+        if c["status"] in [HealthStatus.HEALTHY.value, "passed"]
+    )
 
     return {
         "id": str(scan.id),
@@ -109,27 +131,31 @@ def _serialize_scan_with_rich_data(scan: Scan) -> dict:
         "progress": scan.progress,
         "current_step": scan.current_step,
         "steps": scan.steps,
-        "created_at": scan.created_at.isoformat() if scan.created_at else timezone.now().isoformat(),
-        "scanned_at": scan.completed_at.isoformat() if scan.completed_at else timezone.now().isoformat(),
+        "created_at": scan.created_at.isoformat()
+        if scan.created_at
+        else timezone.now().isoformat(),
+        "scanned_at": scan.completed_at.isoformat()
+        if scan.completed_at
+        else timezone.now().isoformat(),
         "summary": {
             "critical": critical_count,
             "warnings": warning_count,
-            "passed": passed_count
+            "passed": passed_count,
         },
         "checks": checks,
         "meta": {
             "total_monitored_sites": Website.objects.filter(is_guest=False).count(),
-            "average_rating": None
+            "average_rating": None,
         },
         "preview_limitations": [
             "Score history is not available in public mode",
-            "Real-time alerts require a free account"
+            "Real-time alerts require a free account",
         ],
         "cta": {
             "convert_url": f"/api/v1/public/scan/{scan.id}/convert/",
             "email_report_url": f"/api/v1/public/scan/{scan.id}/email/",
-            "register_url": f"/register?scan_id={scan.id}&url=https://{scan.website.domain}"
-        }
+            "register_url": f"/register?scan_id={scan.id}&url=https://{scan.website.domain}",
+        },
     }
 
 
@@ -179,11 +205,7 @@ def _session_owns_scan(request: Request, scan: Scan) -> bool:
     """
     if not scan.is_guest:
         user = getattr(request, "user", None)
-        return bool(
-            user
-            and user.is_authenticated
-            and scan.website.owner_id == user.id
-        )
+        return bool(user and user.is_authenticated and scan.website.owner_id == user.id)
 
     session_key = _session_key_of(request)
     if session_key and scan.session_key == session_key:
@@ -198,27 +220,52 @@ class PublicScanEndpointView(APIView):
     throttle_classes = [PublicScanThrottle]
 
     def post(self, request: Request) -> Response:
-        raw_input: str = (request.data.get("domain") or request.data.get("url") or "").strip()
+        raw_input: str = (
+            request.data.get("domain") or request.data.get("url") or ""
+        ).strip()
         if not raw_input:
-            return Response({"detail": "Domain or URL is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Domain or URL is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if "/check" in request.path and ("://" in raw_input or "/" in raw_input):
-            return Response({"detail": "Invalid domain format. Protocols not allowed."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid domain format. Protocols not allowed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        url_to_parse = raw_input if raw_input.startswith(("http://", "https://")) else f"https://{raw_input}"
+        url_to_parse = (
+            raw_input
+            if raw_input.startswith(("http://", "https://"))
+            else f"https://{raw_input}"
+        )
         try:
             parsed = urlparse(url_to_parse)
-            domain = (parsed.netloc or parsed.path.split("/")[0]).split(":")[0].lower().strip()
+            domain = (
+                (parsed.netloc or parsed.path.split("/")[0])
+                .split(":")[0]
+                .lower()
+                .strip()
+            )
         except Exception:
-            return Response({"detail": "Invalid URL format."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid URL format."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not domain or len(domain) > 253 or not DOMAIN_REGEX.match(domain):
-            return Response({"detail": "Invalid domain name format."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid domain name format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             domain = validate_domain_for_scan(domain)
         except (DomainValidationError, SSRFBlockedError, ValueError) as e:
-            return Response({"detail": f"Restricted or unsafe domain: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": f"Restricted or unsafe domain: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Create guest session if needed
         if not request.session.session_key:
@@ -257,16 +304,23 @@ class PublicScanEndpointView(APIView):
                     for scan_id in request.session.get(GUEST_SCANS_SESSION_KEY, [])
                     if str(scan_id) != str(scan.id)
                 ]
-                request.session[GUEST_SCANS_SESSION_KEY] = [str(scan.id)] + owned_scans[:19]
+                request.session[GUEST_SCANS_SESSION_KEY] = [str(scan.id)] + owned_scans[
+                    :19
+                ]
                 request.session.modified = True
 
         # Enqueue the scan task
         try:
             run_public_scan.delay(scan.id)
         except Exception as e:
-            logger.exception(f"Could not trigger run_public_scan for scan {scan.id}: {e}")
+            logger.exception(
+                f"Could not trigger run_public_scan for scan {scan.id}: {e}"
+            )
             # Mark scan as failed since we couldn't dispatch to Celery
-            scan.transition_to(Scan.Status.FAILED, failure_message=f"Failed to queue scan task: {str(e)[:500]}")
+            scan.transition_to(
+                Scan.Status.FAILED,
+                failure_message=f"Failed to queue scan task: {str(e)[:500]}",
+            )
             return Response(
                 {"detail": "Failed to queue scan. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -307,8 +361,7 @@ class PublicScanStatusView(APIView):
         # so the caller sees fresh state.
         if lookup.isdigit():
             scan = (
-                Scan.objects
-                .select_related("website")
+                Scan.objects.select_related("website")
                 .prefetch_related("check_results")
                 .filter(pk=int(lookup))
                 .first()
@@ -335,8 +388,7 @@ class PublicScanStatusView(APIView):
             )
 
         scan = (
-            Scan.objects
-            .select_related("website")
+            Scan.objects.select_related("website")
             .prefetch_related("check_results")
             .filter(session_key=session_key, is_guest=True)
             .order_by("-created_at")
@@ -359,21 +411,24 @@ class PublicScanEmailView(APIView):
     def post(self, request: Request, scan_id: str) -> Response:
         email = request.data.get("email", "").strip().lower()
         if not email or "@" not in email:
-            return Response({"detail": "Invalid email address."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid email address."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Security: only the visitor/owner of the scan may have its report
         # emailed — this endpoint used to accept any scan id and could be
         # abused to exfiltrate a private scan report to an arbitrary address.
         scan = (
-            Scan.objects
-            .select_related("website")
+            Scan.objects.select_related("website")
             .filter(pk=int(scan_id), is_guest=True)
             .first()
             if str(scan_id).isdigit()
             else None
         )
         if scan is None or not _session_owns_scan(request, scan):
-            return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         lead, _ = PublicLead.objects.get_or_create(
             email=email,
@@ -393,11 +448,13 @@ class PublicScanEmailView(APIView):
         except Exception as e:
             logger.warning(f"Could not trigger celery email task: {e}")
 
-        return Response({
-            "status": "email_queued",
-            "message": f"Report sent to {email}",
-            "language": language_code,
-        })
+        return Response(
+            {
+                "status": "email_queued",
+                "message": f"Report sent to {email}",
+                "language": language_code,
+            }
+        )
 
 
 class PublicScanConvertView(APIView):
@@ -420,12 +477,13 @@ class PublicScanConvertView(APIView):
 
     def post(self, request: Request, scan_id: str) -> Response:
         if not str(scan_id).isdigit():
-            return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         with transaction.atomic():
             scan = (
-                Scan.objects
-                .select_for_update()
+                Scan.objects.select_for_update()
                 .select_related("website")
                 .filter(pk=int(scan_id), is_guest=True)
                 .first()
@@ -437,10 +495,14 @@ class PublicScanConvertView(APIView):
                     scan_id,
                     request.user.pk,
                 )
-                return Response({"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"detail": "Scan not found."}, status=status.HTTP_404_NOT_FOUND
+                )
 
             website = scan.website
-            existing_user_site = Website.objects.filter(owner=request.user, domain=website.domain).first()
+            existing_user_site = Website.objects.filter(
+                owner=request.user, domain=website.domain
+            ).first()
             if existing_user_site:
                 scan.website = existing_user_site
                 scan.is_guest = False
@@ -456,9 +518,14 @@ class PublicScanConvertView(APIView):
                 scan.save(update_fields=["is_guest", "session_key"])
                 target_website = website
 
-            PublicLead.objects.filter(scan_id=str(scan.id), email=request.user.email).update(converted_to_user=request.user)
+            PublicLead.objects.filter(
+                scan_id=str(scan.id), email=request.user.email
+            ).update(converted_to_user=request.user)
 
-        return Response({
-            "website_id": target_website.id,
-            "dashboard_url": f"/app/websites/{target_website.id}",
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "website_id": target_website.id,
+                "dashboard_url": f"/app/websites/{target_website.id}",
+            },
+            status=status.HTTP_200_OK,
+        )

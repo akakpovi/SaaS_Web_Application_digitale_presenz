@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,49 +15,112 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Organization',
+            name="Organization",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=150)),
-                ('is_personal', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('billing_owner', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='owned_organizations', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=150)),
+                ("is_personal", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "billing_owner",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="owned_organizations",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Organization',
-                'ordering': ['name'],
+                "verbose_name": "Organization",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Membership',
+            name="Membership",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('role', models.CharField(choices=[('owner', 'Owner'), ('admin', 'Admin'), ('analyst', 'Analyst'), ('viewer', 'Viewer')], max_length=12)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='organization_memberships', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='organizations.organization')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("owner", "Owner"),
+                            ("admin", "Admin"),
+                            ("analyst", "Analyst"),
+                            ("viewer", "Viewer"),
+                        ],
+                        max_length=12,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="organization_memberships",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="memberships",
+                        to="organizations.organization",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Organization membership',
-                'ordering': ['organization', 'user'],
+                "verbose_name": "Organization membership",
+                "ordering": ["organization", "user"],
             },
         ),
         migrations.AddIndex(
-            model_name='organization',
-            index=models.Index(fields=['billing_owner', 'is_personal'], name='organizatio_billing_4fd5b5_idx'),
+            model_name="organization",
+            index=models.Index(
+                fields=["billing_owner", "is_personal"],
+                name="organizatio_billing_4fd5b5_idx",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='organization',
-            constraint=models.UniqueConstraint(condition=models.Q(('billing_owner__isnull', False), ('is_personal', True)), fields=('billing_owner',), name='unique_personal_organization_per_billing_owner'),
+            model_name="organization",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(
+                    ("billing_owner__isnull", False), ("is_personal", True)
+                ),
+                fields=("billing_owner",),
+                name="unique_personal_organization_per_billing_owner",
+            ),
         ),
         migrations.AddIndex(
-            model_name='membership',
-            index=models.Index(fields=['user', 'organization'], name='organizatio_user_id_a85932_idx'),
+            model_name="membership",
+            index=models.Index(
+                fields=["user", "organization"], name="organizatio_user_id_a85932_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='membership',
-            constraint=models.UniqueConstraint(fields=('organization', 'user'), name='unique_organization_membership'),
+            model_name="membership",
+            constraint=models.UniqueConstraint(
+                fields=("organization", "user"), name="unique_organization_membership"
+            ),
         ),
     ]

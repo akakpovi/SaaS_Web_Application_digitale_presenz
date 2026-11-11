@@ -76,8 +76,12 @@ class ScanIngestionMappingTests(TestCase):
         report = parsed_report_for(
             "nuclei",
             [
-                normalized(title="Exposed .env File", evidence={"url": "https://a/.env"}),
-                normalized(title="Exposed .env File", evidence={"url": "https://b/.env"}),
+                normalized(
+                    title="Exposed .env File", evidence={"url": "https://a/.env"}
+                ),
+                normalized(
+                    title="Exposed .env File", evidence={"url": "https://b/.env"}
+                ),
             ],
         )
         self.assertEqual(len(report.findings), 1)
@@ -160,9 +164,9 @@ class ScanIngestionServiceTests(TestCase):
 
         self.assertEqual(outcome.resolved, 1)
         self.assertEqual(
-            self.findings(status=SecurityFinding.Status.RESOLVED).values_list(
-                "vulnerability_name", flat=True
-            ).get(),
+            self.findings(status=SecurityFinding.Status.RESOLVED)
+            .values_list("vulnerability_name", flat=True)
+            .get(),
             "Deprecated TLS",
         )
 
@@ -184,9 +188,7 @@ class ScanIngestionServiceTests(TestCase):
         )
 
         self.assertEqual(outcome.resolved, 0)
-        self.assertEqual(
-            self.findings(status=SecurityFinding.Status.OPEN).count(), 2
-        )
+        self.assertEqual(self.findings(status=SecurityFinding.Status.OPEN).count(), 2)
 
     def test_partial_meta_does_not_hide_real_findings_and_never_resolves(self):
         ingest_scan_findings(
@@ -214,10 +216,10 @@ class ScanIngestionServiceTests(TestCase):
 
         self.assertEqual(outcome.resolved, 0)
         self.assertEqual(outcome.updated, 1)
-        self.assertEqual(
-            self.findings(status=SecurityFinding.Status.OPEN).count(), 2
+        self.assertEqual(self.findings(status=SecurityFinding.Status.OPEN).count(), 2)
+        self.assertFalse(
+            self.findings(vulnerability_name__icontains="timeout").exists()
         )
-        self.assertFalse(self.findings(vulnerability_name__icontains="timeout").exists())
 
     def test_output_truncated_meta_forces_non_resolving_ingest(self):
         ingest_scan_findings(
@@ -244,9 +246,7 @@ class ScanIngestionServiceTests(TestCase):
         )
 
         self.assertEqual(outcome.resolved, 0)
-        self.assertEqual(
-            self.findings(status=SecurityFinding.Status.OPEN).count(), 2
-        )
+        self.assertEqual(self.findings(status=SecurityFinding.Status.OPEN).count(), 2)
         self.assertFalse(
             self.findings(vulnerability_name__icontains="truncated").exists()
         )
@@ -283,9 +283,7 @@ class ScanIngestionServiceTests(TestCase):
                 normalized(title="X-Frame-Options", check_code="zap.xfo"),
             ],
         )
-        before = dict(
-            self.findings().values_list("vulnerability_name", "status")
-        )
+        before = dict(self.findings().values_list("vulnerability_name", "status"))
 
         failure = NormalizedFinding(
             check_code="zap.sandbox_unavailable",
@@ -303,9 +301,7 @@ class ScanIngestionServiceTests(TestCase):
         )
 
         self.assertIsNone(outcome)
-        after = dict(
-            self.findings().values_list("vulnerability_name", "status")
-        )
+        after = dict(self.findings().values_list("vulnerability_name", "status"))
         self.assertEqual(before, after)
         self.assertEqual(self.findings().count(), 2)
         self.assertFalse(
@@ -390,7 +386,9 @@ class OrchestratorIngestionHookTests(TestCase):
             )
 
         self.assertFalse(
-            SecurityFinding.objects.filter(organization=self.website.organization).exists()
+            SecurityFinding.objects.filter(
+                organization=self.website.organization
+            ).exists()
         )
 
     def test_timeout_details_disable_resolution(self):

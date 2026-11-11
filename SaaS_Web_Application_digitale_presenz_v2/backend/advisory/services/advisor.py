@@ -71,6 +71,7 @@ def stale_run_cutoff(now: Any | None = None) -> Any:
         window = RUN_STALE_AFTER
     return (now or timezone.now()) - window
 
+
 _DETERMINISTIC_PRIORITY = {
     1: "critical",
     2: "high",
@@ -154,9 +155,9 @@ _TRANSIENT_ERROR_CODES = frozenset(
         "ai_circuit_open",
     }
 )
-_RETRYABLE_ERROR_CODES = frozenset(
-    {"rate_limit_exceeded", "guest_quota_exceeded"}
-) | _TRANSIENT_ERROR_CODES
+_RETRYABLE_ERROR_CODES = (
+    frozenset({"rate_limit_exceeded", "guest_quota_exceeded"}) | _TRANSIENT_ERROR_CODES
+)
 
 
 @dataclass(frozen=True)
@@ -181,9 +182,7 @@ class AdvisorResult:
         invalid payload or a rejected request is not retried (retrying cannot
         change the answer and would only spend credits).
         """
-        return bool(
-            self.used_fallback and self.error_code in _RETRYABLE_ERROR_CODES
-        )
+        return bool(self.used_fallback and self.error_code in _RETRYABLE_ERROR_CODES)
 
 
 def _bounded_text(value: Any, limit: int = MAX_EVIDENCE_TEXT_CHARS) -> str:
@@ -272,9 +271,7 @@ def _snapshot_size(snapshot: dict[str, Any]) -> int:
 
 
 def _max_prompt_chars() -> int:
-    return int(
-        getattr(settings, "AKA_AI_MAX_PROMPT_CHARS", DEFAULT_MAX_PROMPT_CHARS)
-    )
+    return int(getattr(settings, "AKA_AI_MAX_PROMPT_CHARS", DEFAULT_MAX_PROMPT_CHARS))
 
 
 def build_scan_snapshot(scan: Scan) -> dict[str, Any]:
@@ -285,9 +282,7 @@ def build_scan_snapshot(scan: Scan) -> dict[str, Any]:
     at 10.  A final prompt-size budget removes the lowest-ranked remaining
     entries, so the evidence can never grow without bound.
     """
-    all_findings = list(
-        Finding.objects.filter(scanner_run__scan=scan).order_by("id")
-    )
+    all_findings = list(Finding.objects.filter(scanner_run__scan=scan).order_by("id"))
     all_findings.sort(key=_finding_sort_key)
 
     critical = [
@@ -301,9 +296,9 @@ def build_scan_snapshot(scan: Scan) -> dict[str, Any]:
         for finding in all_findings
         if finding.severity != Finding.Severity.CRITICAL
     ]
-    selected_findings = selected_critical + remaining[
-        : max(0, MAX_FINDINGS - len(selected_critical))
-    ]
+    selected_findings = (
+        selected_critical + remaining[: max(0, MAX_FINDINGS - len(selected_critical))]
+    )
     selected_findings.sort(key=_finding_sort_key)
 
     all_check_results = list(scan.check_results.all())
@@ -311,9 +306,7 @@ def build_scan_snapshot(scan: Scan) -> dict[str, Any]:
     selected_checks = all_check_results[:MAX_CHECK_RESULTS]
 
     findings_payload = [_serialize_finding(finding) for finding in selected_findings]
-    checks_payload = [
-        _serialize_check_result(result) for result in selected_checks
-    ]
+    checks_payload = [_serialize_check_result(result) for result in selected_checks]
 
     snapshot: dict[str, Any] = {
         "scan": {
@@ -333,9 +326,7 @@ def build_scan_snapshot(scan: Scan) -> dict[str, Any]:
         included_findings = len(snapshot["findings"])
         included_checks = len(snapshot["check_results"])
         included_critical = sum(
-            1
-            for item in snapshot["findings"]
-            if item["severity"] == "critical"
+            1 for item in snapshot["findings"] if item["severity"] == "critical"
         )
         snapshot["evidence_limits"] = {
             "findings_total": len(all_findings),
@@ -399,10 +390,7 @@ def build_messages(snapshot: dict[str, Any]) -> list[dict[str, str]]:
         {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
-            "content": (
-                "UNTRUSTED TECHNICAL EVIDENCE (JSON DATA ONLY):\n"
-                f"{evidence}"
-            ),
+            "content": (f"UNTRUSTED TECHNICAL EVIDENCE (JSON DATA ONLY):\n{evidence}"),
         },
     ]
 
@@ -441,9 +429,7 @@ def generate_recommendations_for_scan(
                 cached.get("reason") or "invalid_api_key",
             )
             _mark_failed(run, error_code="invalid_api_key")
-            return _fallback_result(
-                run, scan, error_code="invalid_api_key"
-            )
+            return _fallback_result(run, scan, error_code="invalid_api_key")
         try:
             client = build_aka_client()
         except (ImproperlyConfigured, ValueError) as exc:
@@ -563,9 +549,8 @@ def _claim_run(
         pass
 
     with transaction.atomic():
-        run = (
-            AIRecommendationRun.objects.select_for_update()
-            .get(scan=scan, input_hash=input_hash)
+        run = AIRecommendationRun.objects.select_for_update().get(
+            scan=scan, input_hash=input_hash
         )
         if run.status == AIRecommendationRun.Status.SUCCEEDED:
             return run, False
@@ -574,10 +559,14 @@ def _claim_run(
             run.status == AIRecommendationRun.Status.RUNNING
             and run.updated_at < stale_run_cutoff()
         )
-        reclaimable = run.status in {
-            AIRecommendationRun.Status.PENDING,
-            AIRecommendationRun.Status.FAILED,
-        } or stale
+        reclaimable = (
+            run.status
+            in {
+                AIRecommendationRun.Status.PENDING,
+                AIRecommendationRun.Status.FAILED,
+            }
+            or stale
+        )
         if retry_failed and reclaimable:
             run.status = AIRecommendationRun.Status.RUNNING
             run.attempts = (run.attempts or 0) + 1

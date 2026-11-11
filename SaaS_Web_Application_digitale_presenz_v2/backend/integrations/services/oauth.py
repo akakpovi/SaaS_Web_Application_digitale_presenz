@@ -62,7 +62,9 @@ class OAuthFlowError(Exception):
 class OAuthForbidden(OAuthFlowError):
     status_code = 403
     code = "forbidden"
-    default_message = "Your organization role does not allow connecting social accounts."
+    default_message = (
+        "Your organization role does not allow connecting social accounts."
+    )
 
 
 class UnsupportedOAuthProvider(OAuthFlowError):
@@ -217,11 +219,7 @@ def _consume_state(provider: str, raw_state: str) -> OAuthState:
     the connection to another tenant.
     """
 
-    if (
-        not raw_state
-        or len(raw_state) > MAX_STATE_LENGTH
-        or len(raw_state) < 20
-    ):
+    if not raw_state or len(raw_state) > MAX_STATE_LENGTH or len(raw_state) < 20:
         raise InvalidOAuthState()
 
     state_hash = hashlib.sha256(raw_state.encode("utf-8")).hexdigest()
@@ -292,19 +290,15 @@ def complete_oauth_flow(
 
     provider = _normalize_provider(provider)
     client = _client(provider)
-    if (
-        not code
-        or len(code) > MAX_AUTHORIZATION_CODE_LENGTH
-        or not raw_state
-    ):
+    if not code or len(code) > MAX_AUTHORIZATION_CODE_LENGTH or not raw_state:
         raise InvalidOAuthRequest()
 
     state = _consume_state(provider, raw_state)
     verifier = _decrypt_verifier(state)
 
-    redirect_uri = state.redirect_uri or str(
-        getattr(client, "redirect_uri", "") or ""
-    ).strip()
+    redirect_uri = (
+        state.redirect_uri or str(getattr(client, "redirect_uri", "") or "").strip()
+    )
     if not redirect_uri:
         raise OAuthProviderNotConfigured()
 

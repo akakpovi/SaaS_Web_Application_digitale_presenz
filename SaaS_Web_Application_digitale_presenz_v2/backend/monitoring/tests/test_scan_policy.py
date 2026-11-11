@@ -85,9 +85,7 @@ class SchedulerPolicyTests(TestCase):
         self.assertEqual(result["active"], 1)
         self.assertEqual(result["queued"], 0)
         delay.assert_not_called()
-        self.assertEqual(
-            Scan.objects.filter(website=self.website).count(), 1
-        )
+        self.assertEqual(Scan.objects.filter(website=self.website).count(), 1)
         self.assertEqual(existing.status, Scan.Status.RUNNING)
 
     def test_per_run_cap_limits_queued_scans(self):
@@ -100,7 +98,9 @@ class SchedulerPolicyTests(TestCase):
         result, _delay = self.run_scheduler(MONITORING_MAX_SCANS_PER_RUN=1)
 
         self.assertEqual(result["queued"], 1)
-        self.assertEqual(Scan.objects.filter(trigger=Scan.Trigger.MONITORING).count(), 1)
+        self.assertEqual(
+            Scan.objects.filter(trigger=Scan.Trigger.MONITORING).count(), 1
+        )
 
 
 class MonitoringAccessTests(APITestCase):

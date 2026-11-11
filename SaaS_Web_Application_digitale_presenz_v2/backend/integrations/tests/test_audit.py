@@ -152,9 +152,9 @@ class SocialAuditFlowAPITests(APITestCase):
             "linkedin/authorize/"
         )
         self.assertEqual(authorize.status_code, status.HTTP_200_OK)
-        raw_state = parse_qs(
-            urlparse(authorize.data["authorization_url"]).query
-        )["state"][0]
+        raw_state = parse_qs(urlparse(authorize.data["authorization_url"]).query)[
+            "state"
+        ][0]
 
         provider_client = Mock()
         provider_client.exchange_code.return_value = OAuthTokens(
@@ -167,9 +167,7 @@ class SocialAuditFlowAPITests(APITestCase):
             display_name="Audit Flow User",
         )
 
-        callback_query = urlencode(
-            {"code": "authorization-code", "state": raw_state}
-        )
+        callback_query = urlencode({"code": "authorization-code", "state": raw_state})
         with patch(
             "integrations.services.oauth.get_provider_client",
             return_value=provider_client,
@@ -208,9 +206,7 @@ class SocialAuditFlowAPITests(APITestCase):
             )
 
         self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            OAuthConnection.objects.filter(pk=connection.id).exists()
-        )
+        self.assertFalse(OAuthConnection.objects.filter(pk=connection.id).exists())
         revoke_client.revoke_token.assert_called_once_with(
             access_token="flow-access-token-secret"
         )

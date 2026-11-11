@@ -103,9 +103,7 @@ class ServerLoggingConfigurationTests(SimpleTestCase):
         stream = io.StringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(
-            JsonFormatter(
-                "%(levelname)s %(name)s %(message)s %(request)s"
-            )
+            JsonFormatter("%(levelname)s %(name)s %(message)s %(request)s")
         )
         handler.addFilter(OAuthQueryRedactionFilter())
 
@@ -143,9 +141,7 @@ class ServerLoggingConfigurationTests(SimpleTestCase):
         dockerfile = settings.BASE_DIR / "Dockerfile"
         contents = dockerfile.read_text(encoding="utf-8")
         access_format = next(
-            line
-            for line in contents.splitlines()
-            if "--access-logformat" in line
+            line for line in contents.splitlines() if "--access-logformat" in line
         )
 
         self.assertIn("%(U)s", access_format)

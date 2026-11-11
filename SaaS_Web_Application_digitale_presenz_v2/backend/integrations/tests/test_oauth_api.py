@@ -98,9 +98,7 @@ class OAuthFlowAPITests(APITestCase):
         )
 
     def _raw_state(self, response) -> str:
-        query = parse_qs(
-            urlparse(response.data["authorization_url"]).query
-        )
+        query = parse_qs(urlparse(response.data["authorization_url"]).query)
         return query["state"][0]
 
     def _query(self, response) -> dict[str, list[str]]:
@@ -108,9 +106,7 @@ class OAuthFlowAPITests(APITestCase):
 
     def _state_row(self, raw_state: str) -> OAuthState:
         return OAuthState.objects.get(
-            state_hash=hashlib.sha256(
-                raw_state.encode("utf-8")
-            ).hexdigest()
+            state_hash=hashlib.sha256(raw_state.encode("utf-8")).hexdigest()
         )
 
     def _verifier(self, state: OAuthState) -> str:
@@ -137,9 +133,7 @@ class OAuthFlowAPITests(APITestCase):
         # client's forced authentication unless a test explicitly needs one.
         self._auth(authenticated_as)
         query = urlencode({"code": code, "state": raw_state})
-        return self.client.get(
-            f"/api/v1/social/oauth/{provider}/callback/?{query}"
-        )
+        return self.client.get(f"/api/v1/social/oauth/{provider}/callback/?{query}")
 
     def _redirect_query(self, response) -> dict[str, list[str]]:
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
@@ -239,9 +233,7 @@ class OAuthFlowAPITests(APITestCase):
         self.assertGreaterEqual(len(verifier), 43)
         self.assertLessEqual(len(verifier), 128)
         expected_challenge = (
-            base64.urlsafe_b64encode(
-                hashlib.sha256(verifier.encode("ascii")).digest()
-            )
+            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
             .rstrip(b"=")
             .decode("ascii")
         )
@@ -504,8 +496,7 @@ class OAuthFlowAPITests(APITestCase):
 
         self._auth(None)
         no_code = self.client.get(
-            "/api/v1/social/oauth/linkedin/callback/?"
-            + urlencode({"state": raw_state})
+            "/api/v1/social/oauth/linkedin/callback/?" + urlencode({"state": raw_state})
         )
         no_state = self.client.get(
             "/api/v1/social/oauth/linkedin/callback/?"
@@ -542,9 +533,7 @@ class OAuthFlowAPITests(APITestCase):
     )
     def test_redirect_preserves_frontend_path_and_drops_stale_status(self):
         self._auth(None)
-        response = self.client.get(
-            "/api/v1/social/oauth/linkedin/callback/"
-        )
+        response = self.client.get("/api/v1/social/oauth/linkedin/callback/")
 
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         parsed = urlparse(response["Location"])
@@ -560,9 +549,7 @@ class OAuthFlowAPITests(APITestCase):
     @override_settings(FRONTEND_URL="")
     def test_missing_frontend_url_uses_safe_same_origin_fallback(self):
         self._auth(None)
-        response = self.client.get(
-            "/api/v1/social/oauth/linkedin/callback/"
-        )
+        response = self.client.get("/api/v1/social/oauth/linkedin/callback/")
 
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         self.assertEqual(
@@ -574,9 +561,7 @@ class OAuthFlowAPITests(APITestCase):
     @override_settings(FRONTEND_URL="//attacker.example")
     def test_protocol_relative_frontend_url_falls_back_safely(self):
         self._auth(None)
-        response = self.client.get(
-            "/api/v1/social/oauth/linkedin/callback/"
-        )
+        response = self.client.get("/api/v1/social/oauth/linkedin/callback/")
 
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         self.assertEqual(

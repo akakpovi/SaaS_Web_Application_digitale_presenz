@@ -12,7 +12,9 @@ from websites.models import Website
 logger = logging.getLogger(__name__)
 
 
-def generate_report_data(website: Website, period_start: date, period_end: date) -> dict[str, Any]:
+def generate_report_data(
+    website: Website, period_start: date, period_end: date
+) -> dict[str, Any]:
     """
     Build report data from historical scans between period_start and period_end.
     Returns a dict matching Report model fields.
@@ -50,27 +52,31 @@ def generate_report_data(website: Website, period_start: date, period_end: date)
     ]
 
     # Current and previous scores
-    current_scan  = scans.last()
+    current_scan = scans.last()
     previous_scan = scans.first()
-    current_score  = current_scan.health_score  if current_scan  else None
+    current_score = current_scan.health_score if current_scan else None
     previous_score = previous_scan.health_score if previous_scan else None
-    score_change   = (current_score - previous_score) if (current_score is not None and previous_score is not None) else None
+    score_change = (
+        (current_score - previous_score)
+        if (current_score is not None and previous_score is not None)
+        else None
+    )
 
     # Check breakdown — average score per category across all scans
     check_breakdown: dict[str, Any] = {}
     for category in CheckResult.Category.values:
-        results = CheckResult.objects.filter(
-            scan__in=scans, category=category
-        ).exclude(score__isnull=True)
+        results = CheckResult.objects.filter(scan__in=scans, category=category).exclude(
+            score__isnull=True
+        )
         if results.exists():
             avg_score = results.aggregate(avg=Avg("score"))["avg"]
-            statuses  = list(results.values_list("status", flat=True))
+            statuses = list(results.values_list("status", flat=True))
             check_breakdown[category] = {
                 "avg_score": round(avg_score, 1) if avg_score else None,
                 "max_score": CHECK_WEIGHTS.get(category),
                 "critical_count": statuses.count("critical"),
-                "warning_count":  statuses.count("warning"),
-                "healthy_count":  statuses.count("healthy"),
+                "warning_count": statuses.count("warning"),
+                "healthy_count": statuses.count("healthy"),
             }
 
     # Improvements and problems from latest scan
@@ -89,15 +95,15 @@ def generate_report_data(website: Website, period_start: date, period_end: date)
                 recommendations.append(result.recommendation)
 
     return {
-        "current_score":   current_score,
-        "previous_score":  previous_score,
-        "score_change":    score_change,
+        "current_score": current_score,
+        "previous_score": previous_score,
+        "score_change": score_change,
         "check_breakdown": check_breakdown,
-        "improvements":    improvements[:10],
-        "problems":        problems[:10],
+        "improvements": improvements[:10],
+        "problems": problems[:10],
         "recommendations": recommendations[:10],
-        "score_history":   score_history,
-        "total_scans":     total_scans,
+        "score_history": score_history,
+        "total_scans": total_scans,
     }
 
 
@@ -111,7 +117,9 @@ def month_bounds(day: date) -> tuple[date, date]:
     return first, next_first - timedelta(days=1)
 
 
-def ensure_monthly_reports(user, months: int = 6, refresh_current: bool = False) -> list:
+def ensure_monthly_reports(
+    user, months: int = 6, refresh_current: bool = False
+) -> list:
     """Materialise monthly reports from stored scans.
 
     The monthly beat task only creates reports going forward, so a user whose

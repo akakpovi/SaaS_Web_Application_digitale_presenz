@@ -106,9 +106,7 @@ class NucleiIngestionLifecycleTests(TestCase):
                 _entry("outdated-tls", "Outdated TLS", "medium"),
             ]
         )
-        outcome = self._ingest(
-            [_entry("exposed-env-file", "Exposed .env File")]
-        )
+        outcome = self._ingest([_entry("exposed-env-file", "Exposed .env File")])
 
         self.assertEqual(outcome.resolved, 1)
         resolved = self._rows().get(vulnerability_name="Outdated TLS")
@@ -136,14 +134,15 @@ class NucleiIngestionLifecycleTests(TestCase):
         outcome = ingest_scan_findings(
             scan=self.scan,
             scanner_name="nuclei",
-            findings=[timeout, *_findings(_entry("exposed-env-file", "Exposed .env File"))],
+            findings=[
+                timeout,
+                *_findings(_entry("exposed-env-file", "Exposed .env File")),
+            ],
             complete=True,  # meta finding must force non-resolving ingest
         )
 
         self.assertEqual(outcome.resolved, 0)
-        self.assertEqual(
-            self._rows(status=SecurityFinding.Status.OPEN).count(), 2
-        )
+        self.assertEqual(self._rows(status=SecurityFinding.Status.OPEN).count(), 2)
 
     def test_empty_complete_report_resolves_but_empty_partial_does_not(self):
         self._ingest([_entry("exposed-env-file", "Exposed .env File")])
@@ -152,17 +151,13 @@ class NucleiIngestionLifecycleTests(TestCase):
             scan=self.scan, scanner_name="nuclei", findings=[], complete=False
         )
         self.assertEqual(partial.resolved, 0)
-        self.assertEqual(
-            self._rows(status=SecurityFinding.Status.OPEN).count(), 1
-        )
+        self.assertEqual(self._rows(status=SecurityFinding.Status.OPEN).count(), 1)
 
         complete = ingest_scan_findings(
             scan=self.scan, scanner_name="nuclei", findings=[], complete=True
         )
         self.assertEqual(complete.resolved, 1)
-        self.assertEqual(
-            self._rows(status=SecurityFinding.Status.OPEN).count(), 0
-        )
+        self.assertEqual(self._rows(status=SecurityFinding.Status.OPEN).count(), 0)
 
     def test_malformed_jsonl_line_cannot_create_a_phantom_finding(self):
         raw = _jsonl(_entry("exposed-env-file", "Exposed .env File")) + "\n{not-json"
@@ -192,6 +187,4 @@ class NucleiIngestionLifecycleTests(TestCase):
 
         other = SecurityFinding.objects.get(asset=self.other_website)
         self.assertEqual(other.status, SecurityFinding.Status.OPEN)
-        self.assertEqual(
-            self._rows(status=SecurityFinding.Status.OPEN).count(), 0
-        )
+        self.assertEqual(self._rows(status=SecurityFinding.Status.OPEN).count(), 0)

@@ -136,7 +136,9 @@ class RecommendationApiTests(APITestCase):
         self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_failed_run_returns_deterministic_fallback_without_persistence(self) -> None:
+    def test_failed_run_returns_deterministic_fallback_without_persistence(
+        self,
+    ) -> None:
         self.run.delete()
         AIRecommendationRun.objects.create(
             scan=self.scan,
@@ -161,7 +163,9 @@ class RecommendationApiTests(APITestCase):
                 for item in response.data["recommendations"]
             )
         )
-        self.assertEqual(AIRecommendation.objects.filter(run__scan=self.scan).count(), 0)
+        self.assertEqual(
+            AIRecommendation.objects.filter(run__scan=self.scan).count(), 0
+        )
 
     def test_viewer_cannot_accept_or_dismiss(self) -> None:
         self._auth(self.viewer)
@@ -216,9 +220,7 @@ class RecommendationApiTests(APITestCase):
 
     def test_outsider_cannot_accept_recommendation(self) -> None:
         self._auth(self.outsider)
-        url = (
-            f"/api/v1/advisory/recommendations/{self.recommendation.id}/accept/"
-        )
+        url = f"/api/v1/advisory/recommendations/{self.recommendation.id}/accept/"
 
         response = self.client.post(url)
 
@@ -231,9 +233,7 @@ class RecommendationApiTests(APITestCase):
 
     def test_accept_is_idempotent_and_keeps_first_timestamp(self) -> None:
         self._auth(self.owner)
-        url = (
-            f"/api/v1/advisory/recommendations/{self.recommendation.id}/accept/"
-        )
+        url = f"/api/v1/advisory/recommendations/{self.recommendation.id}/accept/"
 
         first = self.client.post(url)
         self.recommendation.refresh_from_db()

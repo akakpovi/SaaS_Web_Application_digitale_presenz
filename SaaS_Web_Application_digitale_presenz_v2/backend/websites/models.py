@@ -30,13 +30,12 @@ class Website(models.Model):
     domain = models.CharField(max_length=253, validators=[domain_validator])
     display_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(
-        default=True,
-        help_text="Whether monitoring is active for this website."
+        default=True, help_text="Whether monitoring is active for this website."
     )
     is_guest = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="Whether this website was created by an unauthenticated guest."
+        help_text="Whether this website was created by an unauthenticated guest.",
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)

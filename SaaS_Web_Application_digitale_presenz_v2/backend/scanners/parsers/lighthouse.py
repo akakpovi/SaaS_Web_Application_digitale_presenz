@@ -167,6 +167,7 @@ class LighthouseReport:
 # Parsing
 # ---------------------------------------------------------------------------
 
+
 def _load_json(output: str) -> dict[str, Any] | None:
     """Decode a Lighthouse JSON document, tolerating prefixed noise."""
     if not output or not output.strip():
@@ -183,7 +184,7 @@ def _load_json(output: str) -> dict[str, Any] | None:
         if start == -1 or end <= start:
             return None
         try:
-            data = json.loads(text[start:end + 1])
+            data = json.loads(text[start : end + 1])
         except json.JSONDecodeError:
             return None
 
@@ -257,9 +258,14 @@ def parse_lighthouse_json(
     if raw is None:
         return None
 
-    requested = tuple(
-        category for category in (categories or DEFAULT_CATEGORIES) if isinstance(category, str)
-    ) or DEFAULT_CATEGORIES
+    requested = (
+        tuple(
+            category
+            for category in (categories or DEFAULT_CATEGORIES)
+            if isinstance(category, str)
+        )
+        or DEFAULT_CATEGORIES
+    )
 
     categories_raw = raw.get("categories")
     if not isinstance(categories_raw, dict):

@@ -5,81 +5,203 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('websites', '0001_initial'),
+        ("websites", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Scan',
+            name="Scan",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.CharField(choices=[('queued', 'Queued'), ('running', 'Running'), ('completed', 'Completed'), ('failed', 'Failed')], default='queued', max_length=16)),
-                ('trigger', models.CharField(choices=[('manual', 'Manual'), ('onboarding', 'Onboarding'), ('monitoring', 'Monitoring'), ('public', 'Public')], default='manual', max_length=16)),
-                ('health_score', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('health_status', models.CharField(choices=[('healthy', 'Healthy'), ('warning', 'Warning'), ('critical', 'Critical'), ('neutral', 'Neutral')], default='neutral', max_length=12)),
-                ('failure_message', models.CharField(blank=True, max_length=500)),
-                ('started_at', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='scans', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("queued", "Queued"),
+                            ("running", "Running"),
+                            ("completed", "Completed"),
+                            ("failed", "Failed"),
+                        ],
+                        default="queued",
+                        max_length=16,
+                    ),
+                ),
+                (
+                    "trigger",
+                    models.CharField(
+                        choices=[
+                            ("manual", "Manual"),
+                            ("onboarding", "Onboarding"),
+                            ("monitoring", "Monitoring"),
+                            ("public", "Public"),
+                        ],
+                        default="manual",
+                        max_length=16,
+                    ),
+                ),
+                (
+                    "health_score",
+                    models.PositiveSmallIntegerField(blank=True, null=True),
+                ),
+                (
+                    "health_status",
+                    models.CharField(
+                        choices=[
+                            ("healthy", "Healthy"),
+                            ("warning", "Warning"),
+                            ("critical", "Critical"),
+                            ("neutral", "Neutral"),
+                        ],
+                        default="neutral",
+                        max_length=12,
+                    ),
+                ),
+                ("failure_message", models.CharField(blank=True, max_length=500)),
+                ("started_at", models.DateTimeField(blank=True, null=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="scans",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='CheckResult',
+            name="CheckResult",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category', models.CharField(choices=[('website', 'Website'), ('ssl', 'SSL'), ('dns', 'DNS'), ('email_security', 'Email Security'), ('security_headers', 'Security Headers'), ('performance', 'Performance'), ('uptime', 'Uptime')], max_length=32)),
-                ('status', models.CharField(choices=[('healthy', 'Healthy'), ('warning', 'Warning'), ('critical', 'Critical'), ('neutral', 'Neutral')], default='neutral', max_length=12)),
-                ('score', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('summary', models.TextField(blank=True)),
-                ('recommendation', models.TextField(blank=True)),
-                ('technical_details', models.JSONField(blank=True, default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('scan', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='check_results', to='scans.scan')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("website", "Website"),
+                            ("ssl", "SSL"),
+                            ("dns", "DNS"),
+                            ("email_security", "Email Security"),
+                            ("security_headers", "Security Headers"),
+                            ("performance", "Performance"),
+                            ("uptime", "Uptime"),
+                        ],
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("healthy", "Healthy"),
+                            ("warning", "Warning"),
+                            ("critical", "Critical"),
+                            ("neutral", "Neutral"),
+                        ],
+                        default="neutral",
+                        max_length=12,
+                    ),
+                ),
+                ("score", models.PositiveSmallIntegerField(blank=True, null=True)),
+                ("summary", models.TextField(blank=True)),
+                ("recommendation", models.TextField(blank=True)),
+                ("technical_details", models.JSONField(blank=True, default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "scan",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="check_results",
+                        to="scans.scan",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['category'],
+                "ordering": ["category"],
             },
         ),
         migrations.AddIndex(
-            model_name='scan',
-            index=models.Index(fields=['website', '-created_at'], name='scans_scan_website_e4ad78_idx'),
+            model_name="scan",
+            index=models.Index(
+                fields=["website", "-created_at"], name="scans_scan_website_e4ad78_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='scan',
-            index=models.Index(fields=['status', 'created_at'], name='scans_scan_status_7f4477_idx'),
+            model_name="scan",
+            index=models.Index(
+                fields=["status", "created_at"], name="scans_scan_status_7f4477_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='scan',
-            constraint=models.CheckConstraint(condition=models.Q(('health_score__isnull', True), models.Q(('health_score__gte', 0), ('health_score__lte', 100)), _connector='OR'), name='scan_health_score_range'),
+            model_name="scan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("health_score__isnull", True),
+                    models.Q(("health_score__gte", 0), ("health_score__lte", 100)),
+                    _connector="OR",
+                ),
+                name="scan_health_score_range",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='scan',
-            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['queued', 'running', 'completed', 'failed'])), name='scan_status_valid'),
+            model_name="scan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("status__in", ["queued", "running", "completed", "failed"])
+                ),
+                name="scan_status_valid",
+            ),
         ),
         migrations.AddIndex(
-            model_name='checkresult',
-            index=models.Index(fields=['scan', 'category'], name='scans_check_scan_id_2869ce_idx'),
+            model_name="checkresult",
+            index=models.Index(
+                fields=["scan", "category"], name="scans_check_scan_id_2869ce_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='checkresult',
-            index=models.Index(fields=['status'], name='scans_check_status_01fc2d_idx'),
+            model_name="checkresult",
+            index=models.Index(fields=["status"], name="scans_check_status_01fc2d_idx"),
         ),
         migrations.AddConstraint(
-            model_name='checkresult',
-            constraint=models.UniqueConstraint(fields=('scan', 'category'), name='unique_check_result_per_scan_category'),
+            model_name="checkresult",
+            constraint=models.UniqueConstraint(
+                fields=("scan", "category"),
+                name="unique_check_result_per_scan_category",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='checkresult',
-            constraint=models.CheckConstraint(condition=models.Q(('score__isnull', True), models.Q(('score__gte', 0), ('score__lte', 20)), _connector='OR'), name='check_result_score_range'),
+            model_name="checkresult",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("score__isnull", True),
+                    models.Q(("score__gte", 0), ("score__lte", 20)),
+                    _connector="OR",
+                ),
+                name="check_result_score_range",
+            ),
         ),
     ]

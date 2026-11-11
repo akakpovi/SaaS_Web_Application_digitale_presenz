@@ -7,12 +7,13 @@ from websites.models import Website
 
 class ReviewSourceTest(TestCase):
     def setUp(self):
-        self.user    = User.objects.create_user(email="rv@test.com", password="pass1234")
+        self.user = User.objects.create_user(email="rv@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="review.com")
 
     def test_create_source(self):
         source = ReviewSource.objects.create(
-            user=self.user, website=self.website,
+            user=self.user,
+            website=self.website,
             provider=ReviewSource.Provider.MANUAL,
             name="Manual Reviews",
         )
@@ -21,7 +22,8 @@ class ReviewSourceTest(TestCase):
 
     def test_str(self):
         source = ReviewSource.objects.create(
-            user=self.user, website=self.website,
+            user=self.user,
+            website=self.website,
             provider=ReviewSource.Provider.GOOGLE,
             name="Google Reviews",
         )
@@ -30,10 +32,11 @@ class ReviewSourceTest(TestCase):
 
 class ReviewModelTest(TestCase):
     def setUp(self):
-        self.user    = User.objects.create_user(email="rv2@test.com", password="pass1234")
+        self.user = User.objects.create_user(email="rv2@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="review2.com")
-        self.source  = ReviewSource.objects.create(
-            user=self.user, website=self.website,
+        self.source = ReviewSource.objects.create(
+            user=self.user,
+            website=self.website,
             provider=ReviewSource.Provider.MANUAL,
             name="Test Source",
         )
@@ -64,10 +67,11 @@ class ReviewModelTest(TestCase):
 
 class ResponseDraftTest(TestCase):
     def setUp(self):
-        self.user    = User.objects.create_user(email="rv3@test.com", password="pass1234")
+        self.user = User.objects.create_user(email="rv3@test.com", password="pass1234")
         self.website = Website.objects.create(owner=self.user, domain="review3.com")
-        self.source  = ReviewSource.objects.create(
-            user=self.user, website=self.website,
+        self.source = ReviewSource.objects.create(
+            user=self.user,
+            website=self.website,
             provider=ReviewSource.Provider.MANUAL,
             name="Source",
         )
@@ -77,7 +81,8 @@ class ResponseDraftTest(TestCase):
 
     def test_create_draft(self):
         draft = ResponseDraft.objects.create(
-            review=self.review, user=self.user,
+            review=self.review,
+            user=self.user,
             content="Thank you for your feedback!",
         )
         self.assertEqual(draft.status, ResponseDraft.Status.DRAFT)

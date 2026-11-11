@@ -10,12 +10,22 @@ class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
         fields = [
-            "id", "website_id", "website_domain", "scan_id",
-            "alert_type", "severity", "status",
-            "title", "message", "metadata",
+            "id",
+            "website_id",
+            "website_domain",
+            "scan_id",
+            "alert_type",
+            "severity",
+            "status",
+            "title",
+            "message",
+            "metadata",
             "notification_channels_sent",
-            "acknowledged_at", "acknowledged_by_id",
-            "resolved_at", "created_at", "updated_at",
+            "acknowledged_at",
+            "acknowledged_by_id",
+            "resolved_at",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = fields
 
@@ -45,7 +55,13 @@ class AlertRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AlertRule
         fields = "__all__"
-        read_only_fields = ["id", "user", "last_triggered_at", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "user",
+            "last_triggered_at",
+            "created_at",
+            "updated_at",
+        ]
 
     def validate_threshold(self, value):
         metric = self.initial_data.get("metric", "")
@@ -67,8 +83,15 @@ class MuteWindowSerializer(serializers.ModelSerializer):
     class Meta:
         model = MuteWindow
         fields = [
-            "id", "website_ids", "start_at", "end_at",
-            "reason", "note", "is_active", "created_at", "updated_at",
+            "id",
+            "website_ids",
+            "start_at",
+            "end_at",
+            "reason",
+            "note",
+            "is_active",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 

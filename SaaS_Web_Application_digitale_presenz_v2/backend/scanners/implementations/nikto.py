@@ -173,34 +173,43 @@ class NiktoScanner(BaseScanner):
         maxtime = max(5, int(self.timeout * 0.85))
         return [
             "nikto",
-            "-h", target,
+            "-h",
+            target,
             "-nointeractive",
-            "-ask", "no",
-            "-timeout", "10",
-            "-maxtime", f"{maxtime}s",
+            "-ask",
+            "no",
+            "-timeout",
+            "10",
+            "-maxtime",
+            f"{maxtime}s",
         ]
 
     def parse(self, output: str) -> list[dict[str, Any]]:
         return parse_nikto_json(output) or parse_nikto_text(output)
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         findings: list[NormalizedFinding] = []
         for item in parsed_results:
             msg = item.get("msg", "")
             osvdb = item.get("osvdb", "")
             ref = item.get("references", "")
 
-            findings.append(NormalizedFinding(
-                check_code=f"nikto.{item.get('id', 'finding')}",
-                category="security",
-                severity=Severity.MEDIUM,
-                status=FindingStatus.FAIL,
-                title=msg[:255] if msg else "Nikto finding",
-                description=msg,
-                evidence=item,
-                recommendation="Review the reported issue and apply appropriate remediation.",
-                reference_url=ref or (f"https://osvdb.org/{osvdb}" if osvdb else ""),
-            ))
+            findings.append(
+                NormalizedFinding(
+                    check_code=f"nikto.{item.get('id', 'finding')}",
+                    category="security",
+                    severity=Severity.MEDIUM,
+                    status=FindingStatus.FAIL,
+                    title=msg[:255] if msg else "Nikto finding",
+                    description=msg,
+                    evidence=item,
+                    recommendation="Review the reported issue and apply appropriate remediation.",
+                    reference_url=ref
+                    or (f"https://osvdb.org/{osvdb}" if osvdb else ""),
+                )
+            )
         return findings
 
 

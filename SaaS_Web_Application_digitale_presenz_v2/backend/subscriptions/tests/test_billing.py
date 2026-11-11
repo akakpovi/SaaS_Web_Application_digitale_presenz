@@ -323,9 +323,7 @@ class ApiKeyTest(TestCase):
         self.client.force_authenticate(self.user)
 
     def test_free_plan_cannot_create_api_key(self):
-        response = self.client.post(
-            "/api/v1/api-keys/", {"name": "CI"}, format="json"
-        )
+        response = self.client.post("/api/v1/api-keys/", {"name": "CI"}, format="json")
         self.assertEqual(response.status_code, 403)
         self.assertFalse(ApiKey.objects.filter(user=self.user).exists())
 
@@ -335,9 +333,7 @@ class ApiKeyTest(TestCase):
         sub.status = Subscription.Status.ACTIVE
         sub.save()
 
-        response = self.client.post(
-            "/api/v1/api-keys/", {"name": "CI"}, format="json"
-        )
+        response = self.client.post("/api/v1/api-keys/", {"name": "CI"}, format="json")
         self.assertEqual(response.status_code, 201)
         raw_key = response.data["api_key"]
         self.assertTrue(raw_key.startswith("pk_"))

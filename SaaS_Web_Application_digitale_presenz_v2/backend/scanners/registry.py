@@ -69,8 +69,7 @@ class _ScannerRegistry:
         except KeyError:
             available = ", ".join(sorted(self._registry)) or "<none>"
             raise KeyError(
-                f"No scanner registered under '{name}'. "
-                f"Available scanners: {available}"
+                f"No scanner registered under '{name}'. Available scanners: {available}"
             ) from None
 
     def get_or_none(self, name: str) -> "BaseScanner | None":

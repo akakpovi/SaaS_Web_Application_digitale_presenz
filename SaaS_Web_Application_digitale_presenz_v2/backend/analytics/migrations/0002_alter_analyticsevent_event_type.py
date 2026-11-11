@@ -4,15 +4,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('analytics', '0001_initial'),
+        ("analytics", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='analyticsevent',
-            name='event_type',
-            field=models.CharField(choices=[('page_view', 'Page View'), ('signup', 'Signup'), ('login', 'Login'), ('add_website', 'Add Website'), ('trigger_scan', 'Trigger Scan'), ('public_check', 'Public Check'), ('ad_click', 'Ad Click'), ('cookie_accept', 'Cookie Accept'), ('cookie_essential', 'Cookie Essential'), ('pwa_install', 'PWA Install'), ('pwa_dismiss', 'PWA Dismiss'), ('affiliate_click', 'Affiliate Click')], db_index=True, max_length=50),
+            model_name="analyticsevent",
+            name="event_type",
+            field=models.CharField(
+                choices=[
+                    ("page_view", "Page View"),
+                    ("signup", "Signup"),
+                    ("login", "Login"),
+                    ("add_website", "Add Website"),
+                    ("trigger_scan", "Trigger Scan"),
+                    ("public_check", "Public Check"),
+                    ("ad_click", "Ad Click"),
+                    ("cookie_accept", "Cookie Accept"),
+                    ("cookie_essential", "Cookie Essential"),
+                    ("pwa_install", "PWA Install"),
+                    ("pwa_dismiss", "PWA Dismiss"),
+                    ("affiliate_click", "Affiliate Click"),
+                ],
+                db_index=True,
+                max_length=50,
+            ),
         ),
     ]

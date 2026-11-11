@@ -41,15 +41,18 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
+
 class ScannerType:
     """Scanner type constants."""
-    INTERNAL = "internal"    # Pure-Python checker (no external binary)
-    CLI = "cli"              # External command-line tool
-    API = "api"              # External tool via API (e.g. ZAP REST)
+
+    INTERNAL = "internal"  # Pure-Python checker (no external binary)
+    CLI = "cli"  # External command-line tool
+    API = "api"  # External tool via API (e.g. ZAP REST)
 
 
 class Severity:
     """Finding severity constants (maps to Finding.Severity choices)."""
+
     INFO = "info"
     LOW = "low"
     MEDIUM = "medium"
@@ -59,6 +62,7 @@ class Severity:
 
 class FindingStatus:
     """Finding status constants (maps to Finding.Status choices)."""
+
     PASS = "pass"
     FAIL = "fail"
     WARNING = "warning"
@@ -77,33 +81,33 @@ class FindingStatus:
 # ---------------------------------------------------------------------------
 
 SEVERITY_BY_SCANNER_STATUS: Final[dict[str, str]] = {
-    "healthy":  Severity.INFO,
-    "passed":   Severity.INFO,
-    "good":     Severity.INFO,
-    "online":   Severity.INFO,
-    "neutral":  Severity.INFO,
-    "unknown":  Severity.INFO,
-    "warning":  Severity.MEDIUM,
-    "failed":   Severity.HIGH,
-    "error":    Severity.HIGH,
+    "healthy": Severity.INFO,
+    "passed": Severity.INFO,
+    "good": Severity.INFO,
+    "online": Severity.INFO,
+    "neutral": Severity.INFO,
+    "unknown": Severity.INFO,
+    "warning": Severity.MEDIUM,
+    "failed": Severity.HIGH,
+    "error": Severity.HIGH,
     "critical": Severity.HIGH,
-    "offline":  Severity.CRITICAL,
-    "down":     Severity.CRITICAL,
+    "offline": Severity.CRITICAL,
+    "down": Severity.CRITICAL,
 }
 
 FINDING_STATUS_BY_SCANNER_STATUS: Final[dict[str, str]] = {
-    "healthy":  FindingStatus.PASS,
-    "passed":   FindingStatus.PASS,
-    "good":     FindingStatus.PASS,
-    "online":   FindingStatus.PASS,
-    "neutral":  FindingStatus.UNKNOWN,
-    "unknown":  FindingStatus.UNKNOWN,
-    "warning":  FindingStatus.WARNING,
-    "failed":   FindingStatus.FAIL,
-    "error":    FindingStatus.FAIL,
+    "healthy": FindingStatus.PASS,
+    "passed": FindingStatus.PASS,
+    "good": FindingStatus.PASS,
+    "online": FindingStatus.PASS,
+    "neutral": FindingStatus.UNKNOWN,
+    "unknown": FindingStatus.UNKNOWN,
+    "warning": FindingStatus.WARNING,
+    "failed": FindingStatus.FAIL,
+    "error": FindingStatus.FAIL,
     "critical": FindingStatus.FAIL,
-    "offline":  FindingStatus.FAIL,
-    "down":     FindingStatus.FAIL,
+    "offline": FindingStatus.FAIL,
+    "down": FindingStatus.FAIL,
 }
 
 #: Used only when a scanner reports a status outside the maps above.
@@ -114,6 +118,7 @@ _FALLBACK_FINDING_STATUS: Final[str] = FindingStatus.UNKNOWN
 # ---------------------------------------------------------------------------
 # Result types
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ScanResult:
@@ -247,6 +252,7 @@ class ScanOutcome:
 # Base scanner
 # ---------------------------------------------------------------------------
 
+
 class BaseScanner(ABC):
     """Base class for all scanners.
 
@@ -358,7 +364,9 @@ class BaseScanner(ABC):
             f"{self.__class__.__name__} does not implement parse()"
         )
 
-    def normalize(self, parsed_results: list[dict[str, Any]]) -> list[NormalizedFinding]:
+    def normalize(
+        self, parsed_results: list[dict[str, Any]]
+    ) -> list[NormalizedFinding]:
         """Convert parsed dicts to :class:`NormalizedFinding` instances."""
         raise NotImplementedError(
             f"{self.__class__.__name__} does not implement normalize()"

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("scans", "0001_initial"),
     ]
@@ -36,7 +35,10 @@ class Migration(migrations.Migration):
             model_name="scan",
             constraint=models.CheckConstraint(
                 condition=models.Q(
-                    ("status__in", ["pending", "queued", "running", "completed", "failed"])
+                    (
+                        "status__in",
+                        ["pending", "queued", "running", "completed", "failed"],
+                    )
                 ),
                 name="scan_status_valid",
             ),

@@ -135,10 +135,7 @@ def _is_ip_literal(value: str) -> bool:
     candidate = value.strip()
 
     # Accept bracketed IPv6 for detection purposes.
-    if (
-        candidate.startswith("[")
-        and candidate.endswith("]")
-    ):
+    if candidate.startswith("[") and candidate.endswith("]"):
         candidate = candidate[1:-1]
 
     try:
@@ -162,118 +159,73 @@ def validate_domain_for_scan(domain: str) -> str:
     """
 
     if not isinstance(domain, str):
-        raise DomainValidationError(
-            "Domain is required."
-        )
+        raise DomainValidationError("Domain is required.")
 
     domain = domain.strip()
 
     if not domain:
-        raise DomainValidationError(
-            "Domain is required."
-        )
+        raise DomainValidationError("Domain is required.")
 
     domain = domain.lower().rstrip(".")
 
     if not domain:
-        raise DomainValidationError(
-            "Domain is required."
-        )
+        raise DomainValidationError("Domain is required.")
 
     # Reject complete URLs, paths, queries and fragments.
-    if (
-        "://" in domain
-        or "/" in domain
-        or "?" in domain
-        or "#" in domain
-    ):
+    if "://" in domain or "/" in domain or "?" in domain or "#" in domain:
         raise DomainValidationError(
             "Enter a domain name without a scheme, path, or query."
         )
 
     if "@" in domain:
-        raise DomainValidationError(
-            "Credentials in domain are not allowed."
-        )
+        raise DomainValidationError("Credentials in domain are not allowed.")
 
     # Reject raw IP literals before generic ":" rejection so IPv6 is
     # classified correctly.
     if _is_ip_literal(domain):
-        raise DomainValidationError(
-            "Raw IP addresses are not allowed."
-        )
+        raise DomainValidationError("Raw IP addresses are not allowed.")
 
     # Remaining ":" generally indicates an explicit port.
     if ":" in domain:
-        raise DomainValidationError(
-            "Port specifications are not allowed."
-        )
+        raise DomainValidationError("Port specifications are not allowed.")
 
     try:
-        ascii_domain = (
-            domain
-            .encode("idna")
-            .decode("ascii")
-        )
+        ascii_domain = domain.encode("idna").decode("ascii")
     except UnicodeError as exc:
-        raise DomainValidationError(
-            "Invalid internationalized domain name."
-        ) from exc
+        raise DomainValidationError("Invalid internationalized domain name.") from exc
 
     ascii_domain = ascii_domain.lower()
 
     if len(ascii_domain) > MAX_DOMAIN_LENGTH:
-        raise DomainValidationError(
-            f"Domain exceeds {MAX_DOMAIN_LENGTH} characters."
-        )
+        raise DomainValidationError(f"Domain exceeds {MAX_DOMAIN_LENGTH} characters.")
 
     labels = ascii_domain.split(".")
 
     # Do not permit single-label/internal-style hosts.
     if len(labels) < 2:
-        raise DomainValidationError(
-            "Single-label hostnames are not allowed."
-        )
+        raise DomainValidationError("Single-label hostnames are not allowed.")
 
     for label in labels:
         if not label:
-            raise DomainValidationError(
-                "Domain contains an empty label."
-            )
+            raise DomainValidationError("Domain contains an empty label.")
 
         if len(label) > MAX_LABEL_LENGTH:
             raise DomainValidationError(
                 f"Domain label exceeds {MAX_LABEL_LENGTH} characters."
             )
 
-        if (
-            label.startswith("-")
-            or label.endswith("-")
-        ):
-            raise DomainValidationError(
-                "Labels must not start or end with a hyphen."
-            )
+        if label.startswith("-") or label.endswith("-"):
+            raise DomainValidationError("Labels must not start or end with a hyphen.")
 
     if not _DOMAIN_RE.fullmatch(ascii_domain):
-        raise DomainValidationError(
-            "Domain contains invalid characters."
-        )
+        raise DomainValidationError("Domain contains invalid characters.")
 
     for suffix in _INTERNAL_SUFFIXES:
-        if (
-            ascii_domain == suffix
-            or ascii_domain.endswith(
-                f".{suffix}"
-            )
-        ):
-            raise DomainValidationError(
-                "Internal hostnames are not allowed."
-            )
+        if ascii_domain == suffix or ascii_domain.endswith(f".{suffix}"):
+            raise DomainValidationError("Internal hostnames are not allowed.")
 
     if ascii_domain in _METADATA_HOSTNAMES:
-        raise DomainValidationError(
-            "Metadata endpoints are not allowed."
-        )
+        raise DomainValidationError("Metadata endpoints are not allowed.")
 
     return ascii_domain
 
@@ -296,13 +248,8 @@ def _is_ip_safe(addr: str) -> bool:
         return False
 
     # IPv4 represented inside IPv6 must be validated as IPv4.
-    if (
-        isinstance(ip, ipaddress.IPv6Address)
-        and ip.ipv4_mapped is not None
-    ):
-        return _is_ip_safe(
-            str(ip.ipv4_mapped)
-        )
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        return _is_ip_safe(str(ip.ipv4_mapped))
 
     normalized = str(ip)
 
@@ -353,19 +300,13 @@ def _resolve_and_validate(
         if not sockaddr:
             continue
 
-        ip_str = str(
-            sockaddr[0]
-        )
+        ip_str = str(sockaddr[0])
 
         if ip_str not in addresses:
-            addresses.append(
-                ip_str
-            )
+            addresses.append(ip_str)
 
     if not addresses:
-        raise SSRFBlockedError(
-            "The target domain could not be resolved safely."
-        )
+        raise SSRFBlockedError("The target domain could not be resolved safely.")
 
     for ip_str in addresses:
         if not _is_ip_safe(ip_str):
@@ -416,9 +357,7 @@ class SafeResponse:
     body: bytes
     url: str
     elapsed_ms: int
-    redirect_chain: list[str] = field(
-        default_factory=list
-    )
+    redirect_chain: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -448,109 +387,55 @@ def safe_request(
     method = method.upper()
 
     if method not in ALLOWED_METHODS:
-        raise DomainValidationError(
-            "HTTP method is not allowed."
-        )
+        raise DomainValidationError("HTTP method is not allowed.")
 
     if connect_timeout <= 0:
-        raise ValueError(
-            "connect_timeout must be greater than zero."
-        )
+        raise ValueError("connect_timeout must be greater than zero.")
 
     if read_timeout <= 0:
-        raise ValueError(
-            "read_timeout must be greater than zero."
-        )
+        raise ValueError("read_timeout must be greater than zero.")
 
     if max_bytes <= 0:
-        raise ValueError(
-            "max_bytes must be greater than zero."
-        )
+        raise ValueError("max_bytes must be greater than zero.")
 
-    parsed = urlparse(
-        url
-    )
+    parsed = urlparse(url)
 
-    scheme = (
-        parsed.scheme
-        .lower()
-    )
+    scheme = parsed.scheme.lower()
 
     if scheme not in ALLOWED_SCHEMES:
-        raise DomainValidationError(
-            "Only HTTP and HTTPS are allowed."
-        )
+        raise DomainValidationError("Only HTTP and HTTPS are allowed.")
 
-    hostname = (
-        parsed.hostname
-        or ""
-    )
+    hostname = parsed.hostname or ""
 
     if not hostname:
-        raise DomainValidationError(
-            "URL hostname is required."
-        )
+        raise DomainValidationError("URL hostname is required.")
 
     try:
         explicit_port = parsed.port
     except ValueError as exc:
-        raise DomainValidationError(
-            "Invalid URL port."
-        ) from exc
+        raise DomainValidationError("Invalid URL port.") from exc
 
-    effective_port = (
-        explicit_port
-        or (
-            443
-            if scheme == "https"
-            else 80
-        )
-    )
+    effective_port = explicit_port or (443 if scheme == "https" else 80)
 
     if effective_port not in ALLOWED_PORTS:
-        raise DomainValidationError(
-            "The requested port is not allowed."
-        )
+        raise DomainValidationError("The requested port is not allowed.")
 
-    if (
-        parsed.username
-        or parsed.password
-    ):
-        raise DomainValidationError(
-            "Credentials in URLs are not allowed."
-        )
+    if parsed.username or parsed.password:
+        raise DomainValidationError("Credentials in URLs are not allowed.")
 
     if parsed.fragment:
-        raise DomainValidationError(
-            "URL fragments are not allowed."
-        )
+        raise DomainValidationError("URL fragments are not allowed.")
 
-    validated_hostname = (
-        validate_domain_for_scan(
-            hostname
-        )
-    )
+    validated_hostname = validate_domain_for_scan(hostname)
 
-    safe_ips = (
-        _resolve_and_validate(
-            validated_hostname
-        )
-    )
+    safe_ips = _resolve_and_validate(validated_hostname)
 
-    path = (
-        parsed.path
-        or "/"
-    )
+    path = parsed.path or "/"
 
     if parsed.query:
-        path = (
-            f"{path}?"
-            f"{parsed.query}"
-        )
+        path = f"{path}?{parsed.query}"
 
-    started_at = (
-        time.monotonic()
-    )
+    started_at = time.monotonic()
 
     return _do_request(
         scheme=scheme,
@@ -597,43 +482,28 @@ def safe_webhook_request(
     scheme = parsed.scheme.lower()
 
     if scheme not in ALLOWED_SCHEMES:
-        raise DomainValidationError(
-            "Only HTTP and HTTPS are allowed."
-        )
+        raise DomainValidationError("Only HTTP and HTTPS are allowed.")
 
     hostname = parsed.hostname or ""
 
     if not hostname:
-        raise DomainValidationError(
-            "URL hostname is required."
-        )
+        raise DomainValidationError("URL hostname is required.")
 
     try:
         explicit_port = parsed.port
     except ValueError as exc:
-        raise DomainValidationError(
-            "Invalid URL port."
-        ) from exc
+        raise DomainValidationError("Invalid URL port.") from exc
 
-    effective_port = (
-        explicit_port
-        or (443 if scheme == "https" else 80)
-    )
+    effective_port = explicit_port or (443 if scheme == "https" else 80)
 
     if effective_port not in ALLOWED_PORTS:
-        raise DomainValidationError(
-            "The requested port is not allowed."
-        )
+        raise DomainValidationError("The requested port is not allowed.")
 
     if parsed.username or parsed.password:
-        raise DomainValidationError(
-            "Credentials in URLs are not allowed."
-        )
+        raise DomainValidationError("Credentials in URLs are not allowed.")
 
     if parsed.fragment:
-        raise DomainValidationError(
-            "URL fragments are not allowed."
-        )
+        raise DomainValidationError("URL fragments are not allowed.")
 
     validated_hostname = validate_domain_for_scan(hostname)
     safe_ips = _resolve_and_validate(validated_hostname)
@@ -703,40 +573,21 @@ def _do_request(
     """
 
     if not path.startswith("/"):
-        path = (
-            f"/{path}"
-        )
+        path = f"/{path}"
 
-    default_port = (
-        443
-        if scheme == "https"
-        else 80
-    )
+    default_port = 443 if scheme == "https" else 80
 
     if port == default_port:
         authority = hostname
     else:
-        authority = (
-            f"{hostname}:{port}"
-        )
+        authority = f"{hostname}:{port}"
 
-    display_url = (
-        f"{scheme}://"
-        f"{authority}"
-        f"{path}"
-    )
+    display_url = f"{scheme}://{authority}{path}"
 
     merged_headers = {
         "Host": authority,
-        "User-Agent": (
-            "Presence-Scanner/1.0"
-        ),
-        "Accept": (
-            "text/html,"
-            "application/xhtml+xml,"
-            "application/xml;q=0.9,"
-            "*/*;q=0.8"
-        ),
+        "User-Agent": ("Presence-Scanner/1.0"),
+        "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
         **request_headers,
     }
 
@@ -745,38 +596,28 @@ def _do_request(
         read=read_timeout,
     )
 
-    pool: (
-        urllib3.HTTPConnectionPool
-        | urllib3.HTTPSConnectionPool
-    )
+    pool: urllib3.HTTPConnectionPool | urllib3.HTTPSConnectionPool
 
     if scheme == "https":
-        pool = (
-            urllib3.HTTPSConnectionPool(
-                host=target_ip,
-                port=port,
-                timeout=timeout,
-                retries=False,
-                cert_reqs="CERT_REQUIRED",
-                ca_certs=certifi.where(),
-                server_hostname=hostname,
-                assert_hostname=hostname,
-            )
+        pool = urllib3.HTTPSConnectionPool(
+            host=target_ip,
+            port=port,
+            timeout=timeout,
+            retries=False,
+            cert_reqs="CERT_REQUIRED",
+            ca_certs=certifi.where(),
+            server_hostname=hostname,
+            assert_hostname=hostname,
         )
     else:
-        pool = (
-            urllib3.HTTPConnectionPool(
-                host=target_ip,
-                port=port,
-                timeout=timeout,
-                retries=False,
-            )
+        pool = urllib3.HTTPConnectionPool(
+            host=target_ip,
+            port=port,
+            timeout=timeout,
+            retries=False,
         )
 
-    response: (
-        urllib3.HTTPResponse
-        | None
-    ) = None
+    response: urllib3.HTTPResponse | None = None
 
     try:
         response = pool.request(
@@ -788,138 +629,71 @@ def _do_request(
             redirect=False,
         )
 
-        status_code = int(
-            response.status
-        )
+        status_code = int(response.status)
 
         response_headers = {
-            str(key): str(value)
-            for key, value
-            in response.headers.items()
+            str(key): str(value) for key, value in response.headers.items()
         }
 
         # ---------------------------------------------------------------
         # Redirects
         # ---------------------------------------------------------------
 
-        location = (
-            response.headers.get(
-                "Location"
-            )
-        )
+        location = response.headers.get("Location")
 
-        if (
-            300 <= status_code < 400
-            and location
-        ):
+        if 300 <= status_code < 400 and location:
             if redirects_remaining <= 0:
                 raise DomainValidationError(
-                    f"Too many redirects "
-                    f"(max {MAX_REDIRECTS})."
+                    f"Too many redirects (max {MAX_REDIRECTS})."
                 )
 
-            location = str(
-                location
+            location = str(location)
+
+            absolute_redirect_url = urljoin(
+                display_url,
+                location,
             )
 
-            absolute_redirect_url = (
-                urljoin(
-                    display_url,
-                    location,
-                )
-            )
+            redirect_parsed = urlparse(absolute_redirect_url)
 
-            redirect_parsed = (
-                urlparse(
-                    absolute_redirect_url
-                )
-            )
+            redirect_scheme = redirect_parsed.scheme.lower()
 
-            redirect_scheme = (
-                redirect_parsed.scheme
-                .lower()
-            )
+            if redirect_scheme not in ALLOWED_SCHEMES:
+                raise SSRFBlockedError("Redirect target uses a prohibited scheme.")
 
-            if (
-                redirect_scheme
-                not in ALLOWED_SCHEMES
-            ):
-                raise SSRFBlockedError(
-                    "Redirect target uses a prohibited scheme."
-                )
-
-            redirect_hostname = (
-                redirect_parsed.hostname
-                or ""
-            )
+            redirect_hostname = redirect_parsed.hostname or ""
 
             if not redirect_hostname:
-                raise SSRFBlockedError(
-                    "Redirect target has no hostname."
-                )
+                raise SSRFBlockedError("Redirect target has no hostname.")
 
             try:
-                redirect_explicit_port = (
-                    redirect_parsed.port
-                )
+                redirect_explicit_port = redirect_parsed.port
             except ValueError as exc:
                 raise SSRFBlockedError(
                     "Redirect target contains an invalid port."
                 ) from exc
 
-            redirect_port = (
-                redirect_explicit_port
-                or (
-                    443
-                    if redirect_scheme
-                    == "https"
-                    else 80
-                )
+            redirect_port = redirect_explicit_port or (
+                443 if redirect_scheme == "https" else 80
             )
 
-            if (
-                redirect_port
-                not in ALLOWED_PORTS
-            ):
-                raise SSRFBlockedError(
-                    "Redirect target uses a prohibited port."
-                )
+            if redirect_port not in ALLOWED_PORTS:
+                raise SSRFBlockedError("Redirect target uses a prohibited port.")
 
-            if (
-                redirect_parsed.username
-                or redirect_parsed.password
-            ):
-                raise SSRFBlockedError(
-                    "Redirect target contains credentials."
-                )
+            if redirect_parsed.username or redirect_parsed.password:
+                raise SSRFBlockedError("Redirect target contains credentials.")
 
             if redirect_parsed.fragment:
-                raise SSRFBlockedError(
-                    "Redirect target contains a fragment."
-                )
+                raise SSRFBlockedError("Redirect target contains a fragment.")
 
-            validated_redirect_hostname = (
-                validate_domain_for_scan(
-                    redirect_hostname
-                )
-            )
+            validated_redirect_hostname = validate_domain_for_scan(redirect_hostname)
 
-            redirect_ips = (
-                _resolve_and_validate(
-                    validated_redirect_hostname
-                )
-            )
+            redirect_ips = _resolve_and_validate(validated_redirect_hostname)
 
-            redirect_path = (
-                redirect_parsed.path
-                or "/"
-            )
+            redirect_path = redirect_parsed.path or "/"
 
             if redirect_parsed.query:
-                redirect_path = (
-                    f"{redirect_path}?"
-                    f"{redirect_parsed.query}"
-                )
+                redirect_path = f"{redirect_path}?{redirect_parsed.query}"
 
             new_redirect_chain = [
                 *redirect_chain,
@@ -944,10 +718,7 @@ def _do_request(
                 max_bytes=max_bytes,
                 request_headers=request_headers,
                 redirect_chain=new_redirect_chain,
-                redirects_remaining=(
-                    redirects_remaining
-                    - 1
-                ),
+                redirects_remaining=(redirects_remaining - 1),
                 stream_body=stream_body,
                 request_started=request_started,
             )
@@ -956,27 +727,18 @@ def _do_request(
         # Body size validation
         # ---------------------------------------------------------------
 
-        content_length = (
-            response.headers.get(
-                "Content-Length"
-            )
-        )
+        content_length = response.headers.get("Content-Length")
 
         if content_length:
             try:
-                declared_length = int(
-                    content_length
-                )
+                declared_length = int(content_length)
             except (
                 TypeError,
                 ValueError,
             ):
                 declared_length = None
 
-            if (
-                declared_length is not None
-                and declared_length > max_bytes
-            ):
+            if declared_length is not None and declared_length > max_bytes:
                 raise ResponseTooLargeError(
                     "Response exceeds the configured size limit."
                 )
@@ -994,31 +756,22 @@ def _do_request(
                 if not chunk:
                     continue
 
-                total += len(
-                    chunk
-                )
+                total += len(chunk)
 
                 if total > max_bytes:
                     raise ResponseTooLargeError(
                         "Response exceeds the configured size limit."
                     )
 
-                chunks.append(
-                    chunk
-                )
+                chunks.append(chunk)
 
-            body = b"".join(
-                chunks
-            )
+            body = b"".join(chunks)
 
         else:
             # HEAD normally has no response body. For non-HEAD requests that
             # explicitly disable streaming, enforce the same hard size limit.
             if method != "HEAD":
-                data = (
-                    response.data
-                    or b""
-                )
+                data = response.data or b""
 
                 if len(data) > max_bytes:
                     raise ResponseTooLargeError(
@@ -1029,13 +782,7 @@ def _do_request(
 
         elapsed_ms = max(
             1,
-            round(
-                (
-                    time.monotonic()
-                    - request_started
-                )
-                * 1000
-            ),
+            round((time.monotonic() - request_started) * 1000),
         )
 
         return SafeResponse(
@@ -1044,16 +791,10 @@ def _do_request(
             body=body,
             url=display_url,
             elapsed_ms=elapsed_ms,
-            redirect_chain=(
-                list(
-                    redirect_chain
-                )
-            ),
+            redirect_chain=(list(redirect_chain)),
         )
 
-    except (
-        urllib3.exceptions.SSLError
-    ) as exc:
+    except urllib3.exceptions.SSLError as exc:
         logger.warning(
             "safe_http_tls_error",
             extra={
@@ -1061,13 +802,9 @@ def _do_request(
             },
         )
 
-        raise DomainValidationError(
-            "TLS validation failed."
-        ) from exc
+        raise DomainValidationError("TLS validation failed.") from exc
 
-    except (
-        urllib3.exceptions.ConnectTimeoutError
-    ) as exc:
+    except urllib3.exceptions.ConnectTimeoutError as exc:
         logger.warning(
             "safe_http_connect_timeout",
             extra={
@@ -1075,13 +812,9 @@ def _do_request(
             },
         )
 
-        raise DomainValidationError(
-            "Connection timed out."
-        ) from exc
+        raise DomainValidationError("Connection timed out.") from exc
 
-    except (
-        urllib3.exceptions.ReadTimeoutError
-    ) as exc:
+    except urllib3.exceptions.ReadTimeoutError as exc:
         logger.warning(
             "safe_http_read_timeout",
             extra={
@@ -1089,13 +822,9 @@ def _do_request(
             },
         )
 
-        raise DomainValidationError(
-            "The remote server timed out."
-        ) from exc
+        raise DomainValidationError("The remote server timed out.") from exc
 
-    except (
-        urllib3.exceptions.HTTPError
-    ) as exc:
+    except urllib3.exceptions.HTTPError as exc:
         logger.warning(
             "safe_http_error",
             extra={
@@ -1103,9 +832,7 @@ def _do_request(
             },
         )
 
-        raise DomainValidationError(
-            "The remote server could not be reached."
-        ) from exc
+        raise DomainValidationError("The remote server could not be reached.") from exc
 
     finally:
         if response is not None:
@@ -1145,8 +872,7 @@ def get_safe_request_kwargs(
         "allow_redirects": False,
         "stream": True,
         "headers": {
-            "User-Agent":
-                "Presence-Scanner/1.0",
+            "User-Agent": "Presence-Scanner/1.0",
         },
         "verify": True,
     }

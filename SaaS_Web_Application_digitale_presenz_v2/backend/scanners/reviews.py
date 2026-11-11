@@ -102,8 +102,7 @@ class ReviewsScanner(BaseScanner):
                 score=score,
                 status="healthy" if healthy else "warning",
                 message=(
-                    f"Published rating {value:g}/{best:g} "
-                    f"from {count} review(s)."
+                    f"Published rating {value:g}/{best:g} from {count} review(s)."
                 ),
                 recommendation=(
                     ""

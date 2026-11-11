@@ -11,7 +11,9 @@ from websites.models import Website
 
 class SocialSyncTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="social@test.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="social@test.com", password="pass1234"
+        )
         self.website = Website.objects.create(owner=self.user, domain="example.com")
         self.profile = SocialProfile.objects.create(
             website=self.website,
@@ -62,7 +64,9 @@ class SocialSyncTest(TestCase):
 
 class BrandMentionsTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="mentions@test.com", password="pass1234")
+        self.user = User.objects.create_user(
+            email="mentions@test.com", password="pass1234"
+        )
         self.website = Website.objects.create(owner=self.user, domain="presence.test")
 
     @patch("social.tasks.requests.get")

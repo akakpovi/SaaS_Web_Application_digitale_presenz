@@ -222,9 +222,9 @@ def _finalize_scan(
             report["check_results"],
         )
 
-    report["health_score"] = Scan.objects.filter(pk=scan_id).values_list(
-        "health_score", flat=True
-    ).first()
+    report["health_score"] = (
+        Scan.objects.filter(pk=scan_id).values_list("health_score", flat=True).first()
+    )
     report["repaired"] = bool(report.get("score_forced"))
 
     logger.info(
@@ -261,9 +261,7 @@ def run_authenticated_scan(self, scan_id: int) -> dict:
     logger.info("Starting scan task for scan_id=%d", scan_id)
     try:
         scan = (
-            Scan.objects.filter(pk=scan_id)
-            .only("id", "status", "journey_id")
-            .first()
+            Scan.objects.filter(pk=scan_id).only("id", "status", "journey_id").first()
         )
         if scan is None:
             logger.error("Scan task: scan %d not found", scan_id)
@@ -436,9 +434,7 @@ def reap_stale_scans() -> dict:
         with transaction.atomic():
             scan = Scan.objects.select_for_update().get(pk=scan_id)
             cutoff = (
-                running_cutoff
-                if scan.status == Scan.Status.RUNNING
-                else queued_cutoff
+                running_cutoff if scan.status == Scan.Status.RUNNING else queued_cutoff
             )
             if (
                 scan.status
@@ -537,8 +533,12 @@ def purge_guest_data() -> dict:
     from websites.models import Website
 
     cutoff = timezone.now() - timedelta(hours=24)
-    scans_deleted, _ = Scan.objects.filter(is_guest=True, created_at__lt=cutoff).delete()
-    websites_deleted, _ = Website.objects.filter(is_guest=True, created_at__lt=cutoff).delete()
+    scans_deleted, _ = Scan.objects.filter(
+        is_guest=True, created_at__lt=cutoff
+    ).delete()
+    websites_deleted, _ = Website.objects.filter(
+        is_guest=True, created_at__lt=cutoff
+    ).delete()
     logger.info(
         "Nightly purge: %d scans and %d guest websites deleted",
         scans_deleted,

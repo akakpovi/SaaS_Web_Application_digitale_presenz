@@ -8,33 +8,101 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('organizations', '0002_backfill_personal_organizations'),
+        ("organizations", "0002_backfill_personal_organizations"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='OrganizationInvitation',
+            name="OrganizationInvitation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('email', models.EmailField(db_index=True, max_length=254)),
-                ('role', models.CharField(choices=[('admin', 'Admin'), ('analyst', 'Analyst'), ('viewer', 'Viewer')], max_length=12)),
-                ('token_hash', models.CharField(editable=False, max_length=64, unique=True)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('revoked', 'Revoked'), ('expired', 'Expired')], db_index=True, default='pending', max_length=12)),
-                ('expires_at', models.DateTimeField(default=organizations.models.invitation_default_expiry)),
-                ('accepted_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('invited_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sent_organization_invitations', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invitations', to='organizations.organization')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("email", models.EmailField(db_index=True, max_length=254)),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("admin", "Admin"),
+                            ("analyst", "Analyst"),
+                            ("viewer", "Viewer"),
+                        ],
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "token_hash",
+                    models.CharField(editable=False, max_length=64, unique=True),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("accepted", "Accepted"),
+                            ("revoked", "Revoked"),
+                            ("expired", "Expired"),
+                        ],
+                        db_index=True,
+                        default="pending",
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "expires_at",
+                    models.DateTimeField(
+                        default=organizations.models.invitation_default_expiry
+                    ),
+                ),
+                ("accepted_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "invited_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="sent_organization_invitations",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="invitations",
+                        to="organizations.organization",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Organization invitation',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['organization', 'status'], name='organizatio_organiz_68c8d0_idx'), models.Index(fields=['email', 'status'], name='organizatio_email_2c8ec4_idx')],
-                'constraints': [models.UniqueConstraint(condition=models.Q(('status', 'pending')), fields=('organization', 'email'), name='unique_pending_invitation_per_organization_email')],
+                "verbose_name": "Organization invitation",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["organization", "status"],
+                        name="organizatio_organiz_68c8d0_idx",
+                    ),
+                    models.Index(
+                        fields=["email", "status"], name="organizatio_email_2c8ec4_idx"
+                    ),
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        condition=models.Q(("status", "pending")),
+                        fields=("organization", "email"),
+                        name="unique_pending_invitation_per_organization_email",
+                    )
+                ],
             },
         ),
     ]

@@ -223,6 +223,7 @@ def _command_result(**overrides) -> CommandResult:
 # Parser
 # ═══════════════════════════════════════════════════
 
+
 class LighthouseParserTests(SimpleTestCase):
     def test_parses_category_scores(self):
         report = parse_lighthouse_json(json.dumps(LIGHTHOUSE_REPORT))
@@ -238,11 +239,11 @@ class LighthouseParserTests(SimpleTestCase):
         ids = {audit.audit_id for audit in report.audits}
         self.assertIn("largest-contentful-paint", ids)
         self.assertIn("meta-description", ids)
-        self.assertNotIn("is-crawlable", ids)      # passing binary audit
-        self.assertNotIn("document-title", ids)    # passing binary audit
+        self.assertNotIn("is-crawlable", ids)  # passing binary audit
+        self.assertNotIn("document-title", ids)  # passing binary audit
         self.assertNotIn("network-requests", ids)  # informative
-        self.assertNotIn("errors-in-console", ids) # error, no score
-        self.assertNotIn("color-contrast", ids)    # category not requested
+        self.assertNotIn("errors-in-console", ids)  # error, no score
+        self.assertNotIn("color-contrast", ids)  # category not requested
 
     def test_core_metrics_are_always_kept(self):
         report = parse_lighthouse_json(json.dumps(LIGHTHOUSE_REPORT))
@@ -281,7 +282,9 @@ class LighthouseParserTests(SimpleTestCase):
 
     def test_run_warnings_are_captured(self):
         payload = dict(LIGHTHOUSE_REPORT)
-        payload["runWarnings"] = ["The page loaded too slowly to finish within the time limit."]
+        payload["runWarnings"] = [
+            "The page loaded too slowly to finish within the time limit."
+        ]
         report = parse_lighthouse_json(json.dumps(payload))
         self.assertEqual(len(report.run_warnings), 1)
 
@@ -289,6 +292,7 @@ class LighthouseParserTests(SimpleTestCase):
 # ═══════════════════════════════════════════════════
 # Scanner adapter (execution mocked)
 # ═══════════════════════════════════════════════════
+
 
 class LighthouseScannerTests(SimpleTestCase):
     def setUp(self):
@@ -389,7 +393,9 @@ class LighthouseScannerTests(SimpleTestCase):
         self.assertIn("--output=json", command)
         self.assertIn("--output-path=stdout", command)
         self.assertIn("--only-categories=performance,seo", command)
-        chrome_flags = next(flag for flag in command if flag.startswith("--chrome-flags="))
+        chrome_flags = next(
+            flag for flag in command if flag.startswith("--chrome-flags=")
+        )
         self.assertIn("MAP example.com 93.184.216.34", chrome_flags)
 
     def test_timeout_is_clamped_by_scan_context(self):
@@ -402,9 +408,7 @@ class LighthouseScannerTests(SimpleTestCase):
         )
         self.scanner.execute("example.com", context=context)
         self.executor.limits_for.assert_called_once()
-        self.assertEqual(
-            self.executor.limits_for.call_args.kwargs["timeout"], 25
-        )
+        self.assertEqual(self.executor.limits_for.call_args.kwargs["timeout"], 25)
 
     # ── Resource / failure paths ──
 
@@ -431,9 +435,7 @@ class LighthouseScannerTests(SimpleTestCase):
         )
         outcome = self.scanner.execute("example.com")
         self.assertEqual(outcome.result.score, 0)
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.memory_limit"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.memory_limit")
 
     def test_empty_output_is_a_failure_not_a_pass(self):
         self.executor.run.return_value = _command_result(
@@ -447,9 +449,7 @@ class LighthouseScannerTests(SimpleTestCase):
         self.executor.run.return_value = _command_result(stdout="<html>oops</html>")
         outcome = self.scanner.execute("example.com")
         self.assertEqual(outcome.result.score, 0)
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.parse_error"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.parse_error")
 
     def test_runtime_error_is_high_severity(self):
         payload = dict(LIGHTHOUSE_REPORT)
@@ -461,9 +461,7 @@ class LighthouseScannerTests(SimpleTestCase):
         outcome = self.scanner.execute("example.com")
 
         self.assertEqual(outcome.result.score, 0)
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.runtime_error"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.runtime_error")
         self.assertEqual(outcome.findings[0].severity, Severity.HIGH)
 
     def test_sandbox_error_is_reported_not_raised(self):
@@ -488,9 +486,7 @@ class LighthouseScannerTests(SimpleTestCase):
         self.executor.run.assert_not_called()
         self.assertEqual(outcome.result.status, "critical")
         self.assertIsNone(outcome.result.score)
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.target_validation"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.target_validation")
 
     def test_redirect_to_private_address_is_rejected(self):
         payload = dict(LIGHTHOUSE_REPORT)
@@ -508,9 +504,7 @@ class LighthouseScannerTests(SimpleTestCase):
 
         self.assertEqual(outcome.result.status, "critical")
         self.assertIn("prohibited URL", outcome.result.message)
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.target_validation"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.target_validation")
 
     def test_unavailable_binary_returns_neutral_result(self):
         with patch(
@@ -522,14 +516,13 @@ class LighthouseScannerTests(SimpleTestCase):
         self.executor.run.assert_not_called()
         self.assertIsNone(outcome.result.score)
         self.assertEqual(outcome.result.status, "neutral")
-        self.assertEqual(
-            outcome.findings[0].check_code, "lighthouse.unavailable"
-        )
+        self.assertEqual(outcome.findings[0].check_code, "lighthouse.unavailable")
 
 
 # ═══════════════════════════════════════════════════
 # Settings integration
 # ═══════════════════════════════════════════════════
+
 
 @override_settings(
     SCANNER_CONFIG={

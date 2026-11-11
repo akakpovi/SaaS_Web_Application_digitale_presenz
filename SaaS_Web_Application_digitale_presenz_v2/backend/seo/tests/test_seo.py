@@ -6,9 +6,12 @@ from seo.scanners.technical import TechnicalSEOScanner
 
 User = get_user_model()
 
+
 class SEOTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="seo@test.com", password="password123")
+        self.user = User.objects.create_user(
+            email="seo@test.com", password="password123"
+        )
         self.website = Website.objects.create(owner=self.user, domain="example.com")
 
     def test_seo_audit_model(self):

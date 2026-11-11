@@ -22,8 +22,7 @@ urlpatterns = [
         name="oauth-connections",
     ),
     path(
-        "organizations/<uuid:organization_id>/social/connections/"
-        "<uuid:connection_id>/",
+        "organizations/<uuid:organization_id>/social/connections/<uuid:connection_id>/",
         OAuthConnectionDetailView.as_view(),
         name="oauth-connection-detail",
     ),

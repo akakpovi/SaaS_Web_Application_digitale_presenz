@@ -3,6 +3,7 @@ from seo.models import SEOAudit
 from seo.scanners.technical import TechnicalSEOScanner
 from websites.models import Website
 
+
 @shared_task
 def run_seo_audit(website_id: int) -> dict:
     website = Website.objects.get(id=website_id)
@@ -22,6 +23,6 @@ def run_seo_audit(website_id: int) -> dict:
         meta_tags=data["meta_tags"],
         robots_txt=data["robots_txt"],
         sitemap=data["sitemap"],
-        issues=data.get("issues", [])
+        issues=data.get("issues", []),
     )
     return {"audit_id": str(audit.id), "score": overall}

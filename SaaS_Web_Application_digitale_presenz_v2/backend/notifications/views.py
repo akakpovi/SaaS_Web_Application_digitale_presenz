@@ -64,12 +64,16 @@ class TestNotificationChannelView(APIView):
         try:
             channel = NotificationChannel.objects.get(pk=pk, user=request.user)
         except NotificationChannel.DoesNotExist:
-            return Response({"detail": "Canal introuvable."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Canal introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         provider = get_provider(channel)
         if provider is None:
             return Response(
-                {"detail": f"Type de canal non pris en charge : {channel.channel_type}."},
+                {
+                    "detail": f"Type de canal non pris en charge : {channel.channel_type}."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -83,11 +87,18 @@ class TestNotificationChannelView(APIView):
         if not provider.send(_TestAlert(), request.user):
             logger.warning("Test notification failed for channel %s", channel.pk)
             return Response(
-                {"detail": f"Échec de l'envoi via « {channel.name} ». Vérifiez la configuration."},
+                {
+                    "detail": f"Échec de l'envoi via « {channel.name} ». Vérifiez la configuration."
+                },
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        return Response({"status": "success", "message": f"Notification de test envoyée via « {channel.name} »."})
+        return Response(
+            {
+                "status": "success",
+                "message": f"Notification de test envoyée via « {channel.name} ».",
+            }
+        )
 
 
 class PushPublicKeyView(APIView):
@@ -104,9 +115,7 @@ class PushPublicKeyView(APIView):
 
     def get(self, request):
         public_key = getattr(settings, "VAPID_PUBLIC_KEY", "")
-        return Response(
-            {"public_key": public_key, "configured": bool(public_key)}
-        )
+        return Response({"public_key": public_key, "configured": bool(public_key)})
 
 
 class SubscribePushView(APIView):
@@ -120,7 +129,10 @@ class SubscribePushView(APIView):
         auth = keys.get("auth")
 
         if not endpoint or not p256dh or not auth:
-            return Response({"detail": "Données push invalides."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Données push invalides."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         sub, created = WebPushSubscription.objects.update_or_create(
             endpoint=endpoint,
@@ -128,9 +140,11 @@ class SubscribePushView(APIView):
                 "user": request.user,
                 "p256dh": p256dh,
                 "auth": auth,
-            }
+            },
         )
-        return Response({"status": "subscribed", "created": created}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"status": "subscribed", "created": created}, status=status.HTTP_201_CREATED
+        )
 
 
 class TestPushNotificationView(APIView):
@@ -144,39 +158,39 @@ class TestPushNotificationView(APIView):
             "down": {
                 "title": "🚨 ALERTE CRITIQUE : Site Inaccessible !",
                 "body": "Votre site google.com ne répond plus (Erreur 502 Bad Gateway). Cliquez pour diagnostiquer.",
-                "url": "/app/monitoring"
+                "url": "/app/monitoring",
             },
             "ssl": {
                 "title": "⚠️ ATTENTION SSL : Expiration imminente",
                 "body": "Le certificat SSL de allopneus.com expire dans 5 jours. Renouvellement requis.",
-                "url": "/app/websites"
+                "url": "/app/websites",
             },
             "seo": {
                 "title": "🎉 NOUVEAU SCORE : Audit SEO Terminé",
                 "body": "Félicitations ! Votre santé SEO globale pour decathlon.fr est montée à 92/100.",
-                "url": "/app/seo"
-            }
+                "url": "/app/seo",
+            },
         }
 
         config = scenarios.get(scenario, scenarios["down"])
 
         try:
             from notifications.services.webpush import send_web_push_notification
+
             result = send_web_push_notification(
-                user=user,
-                title=config["title"],
-                body=config["body"],
-                url=config["url"]
+                user=user, title=config["title"], body=config["body"], url=config["url"]
             )
-            return Response({
-                "status": "success",
-                "scenario": scenario,
-                "result": result,
-                "message": f"Notification '{scenario}' envoyée."
-            })
+            return Response(
+                {
+                    "status": "success",
+                    "scenario": scenario,
+                    "result": result,
+                    "message": f"Notification '{scenario}' envoyée.",
+                }
+            )
         except Exception as e:
             logger.error(f"Erreur push: {e}")
-            return Response({
-                "status": "error",
-                "detail": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"status": "error", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

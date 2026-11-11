@@ -4,6 +4,7 @@ Test d'intégration — Détection Accept-Language
 Le scan invité doit appartenir à la session du visiteur (P0-03) : l'endpoint
 ``/email/`` refuse désormais tout scan d'un autre visiteur ou d'un compte tiers.
 """
+
 import uuid
 from unittest.mock import patch
 
@@ -37,7 +38,9 @@ class PublicScanEmailLanguageDetectionTests(TestCase):
     def test_german_header_is_forwarded_to_celery_task(self, mock_task):
         url = f"/api/v1/public/scan/{self.scan.id}/email/"
         resp = self.client.post(
-            url, {"email": "test-de@example.com"}, format="json",
+            url,
+            {"email": "test-de@example.com"},
+            format="json",
             HTTP_ACCEPT_LANGUAGE="de-DE,de;q=0.9,en;q=0.8",
         )
         self.assertEqual(resp.status_code, 200)

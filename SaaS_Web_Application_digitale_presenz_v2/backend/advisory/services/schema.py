@@ -53,9 +53,7 @@ class RecommendationItemSerializer(serializers.Serializer):
 
     def to_internal_value(self, data: Any) -> dict[str, Any]:
         if not isinstance(data, dict):
-            raise serializers.ValidationError(
-                "Each recommendation must be an object."
-            )
+            raise serializers.ValidationError("Each recommendation must be an object.")
         unknown = sorted(set(data) - set(self.fields))
         if unknown:
             raise serializers.ValidationError(
@@ -84,9 +82,7 @@ class RecommendationPayloadSerializer(serializers.Serializer):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(self.initial_data, dict):
-            raise serializers.ValidationError(
-                "The payload must be a JSON object."
-            )
+            raise serializers.ValidationError("The payload must be a JSON object.")
         unknown = sorted(set(self.initial_data) - set(self.fields))
         if unknown:
             raise serializers.ValidationError(
@@ -137,9 +133,7 @@ def parse_recommendation_content(content: str) -> dict[str, Any]:
             "The AI response is not valid JSON."
         ) from exc
     if not isinstance(payload, dict):
-        raise RecommendationValidationError(
-            "The AI response must be a JSON object."
-        )
+        raise RecommendationValidationError("The AI response must be a JSON object.")
     return payload
 
 
@@ -156,9 +150,7 @@ def validate_recommendations(
         )
 
     findings = list(
-        Finding.objects.filter(scanner_run__scan=scan).select_related(
-            "scanner_run"
-        )
+        Finding.objects.filter(scanner_run__scan=scan).select_related("scanner_run")
     )
     findings_by_id = {finding.id: finding for finding in findings}
     findings_by_code: dict[str, Finding] = {}
@@ -169,9 +161,7 @@ def validate_recommendations(
     check_results_by_code: dict[str, CheckResult] = {}
     for result in check_results:
         check_results_by_code.setdefault(result.category, result)
-        check_results_by_code.setdefault(
-            f"{result.category}.overall", result
-        )
+        check_results_by_code.setdefault(f"{result.category}.overall", result)
 
     resolved: list[ResolvedRecommendation] = []
     for item in serializer.validated_data["recommendations"]:

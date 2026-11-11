@@ -75,7 +75,9 @@ class GDPRAccountAPITests(APITestCase):
         self.analytics_event = AnalyticsEvent.objects.create(
             user=self.user, event_type=AnalyticsEvent.EventType.LOGIN
         )
-        self.traffic_log = TrafficLog.objects.create(user=self.user, path="/app/dashboard")
+        self.traffic_log = TrafficLog.objects.create(
+            user=self.user, path="/app/dashboard"
+        )
         self.authenticate(self.user)
 
     def authenticate(self, user: User) -> None:
@@ -95,7 +97,9 @@ class GDPRAccountAPITests(APITestCase):
 
     def test_delete_requires_authentication(self) -> None:
         self.client.credentials()
-        response = self.client.delete("/api/v1/auth/me/", {"password": self.password}, format="json")
+        response = self.client.delete(
+            "/api/v1/auth/me/", {"password": self.password}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertTrue(User.objects.filter(pk=self.user.pk).exists())
 
@@ -117,7 +121,9 @@ class GDPRAccountAPITests(APITestCase):
         self.assertEqual(payload["scans"][0]["id"], self.scan.pk)
         self.assertEqual(len(payload["check_results"]), 1)
         self.assertEqual(len(payload["scanner_runs"]), 1)
-        self.assertEqual([f["title"] for f in payload["findings"]], ["Certificate expiring soon"])
+        self.assertEqual(
+            [f["title"] for f in payload["findings"]], ["Certificate expiring soon"]
+        )
         self.assertEqual(len(payload["alerts"]), 1)
         self.assertEqual(len(payload["monitoring_configs"]), 1)
         self.assertTrue(payload["alert_preferences"])
@@ -130,7 +136,9 @@ class GDPRAccountAPITests(APITestCase):
         self.assertIsInstance(payload["account"]["date_joined"], str)
 
     def test_export_never_leaks_credentials_or_other_users(self) -> None:
-        other = User.objects.create_user(email="other@example.com", password=self.password)
+        other = User.objects.create_user(
+            email="other@example.com", password=self.password
+        )
         Website.objects.create(owner=other, domain="other-site.com")
         Alert.objects.create(
             user=other,
@@ -147,7 +155,9 @@ class GDPRAccountAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn("password", payload["account"])
         self.assertEqual([w["domain"] for w in payload["websites"]], ["example.de"])
-        self.assertEqual([a["title"] for a in payload["alerts"]], ["SSL certificate expiring"])
+        self.assertEqual(
+            [a["title"] for a in payload["alerts"]], ["SSL certificate expiring"]
+        )
 
         body = response.content.decode("utf-8")
         self.assertNotIn("other@example.com", body)
@@ -199,7 +209,9 @@ class GDPRAccountAPITests(APITestCase):
         self.assertFalse(ScannerRun.objects.filter(scan_id=scan_id).exists())
         self.assertFalse(Finding.objects.filter(pk=finding_id).exists())
         self.assertFalse(Alert.objects.filter(pk=alert_id).exists())
-        self.assertFalse(MonitoringConfig.objects.filter(website_id=website_id).exists())
+        self.assertFalse(
+            MonitoringConfig.objects.filter(website_id=website_id).exists()
+        )
         self.assertFalse(NotificationChannel.objects.filter(user_id=user_id).exists())
         self.assertFalse(AlertPreference.objects.filter(user_id=user_id).exists())
         self.assertFalse(AlertRule.objects.filter(user_id=user_id).exists())
@@ -215,21 +227,27 @@ class GDPRAccountAPITests(APITestCase):
     def test_delete_also_erases_public_scan_leads(self) -> None:
         """A lead row keeps the visitor's e-mail: erasure must remove it."""
         mine = PublicLead.objects.create(
-            email="maria@example.com", url_scanned="example.de", converted_to_user=self.user
+            email="maria@example.com",
+            url_scanned="example.de",
+            converted_to_user=self.user,
         )
         same_address = PublicLead.objects.create(
             email="Maria@Example.com", url_scanned="example.de"
         )
         other = PublicLead.objects.create(email="someone@else.com", url_scanned="x.com")
 
-        self.client.delete("/api/v1/auth/me/", {"password": self.password}, format="json")
+        self.client.delete(
+            "/api/v1/auth/me/", {"password": self.password}, format="json"
+        )
 
         self.assertFalse(PublicLead.objects.filter(pk=mine.pk).exists())
         self.assertFalse(PublicLead.objects.filter(pk=same_address.pk).exists())
         self.assertTrue(PublicLead.objects.filter(pk=other.pk).exists())
 
     def test_deleted_account_can_no_longer_authenticate(self) -> None:
-        self.client.delete("/api/v1/auth/me/", {"password": self.password}, format="json")
+        self.client.delete(
+            "/api/v1/auth/me/", {"password": self.password}, format="json"
+        )
 
         self.client.credentials()
         login = self.client.post(
@@ -240,11 +258,17 @@ class GDPRAccountAPITests(APITestCase):
         self.assertEqual(login.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_only_affects_the_calling_account(self) -> None:
-        survivor = User.objects.create_user(email="survivor@example.com", password=self.password)
+        survivor = User.objects.create_user(
+            email="survivor@example.com", password=self.password
+        )
         Website.objects.create(owner=survivor, domain="survivor.com")
 
-        self.client.delete("/api/v1/auth/me/", {"password": self.password}, format="json")
+        self.client.delete(
+            "/api/v1/auth/me/", {"password": self.password}, format="json"
+        )
 
         self.assertFalse(User.objects.filter(email="maria@example.com").exists())
         self.assertTrue(User.objects.filter(email="survivor@example.com").exists())
-        self.assertTrue(Website.objects.filter(owner=survivor, domain="survivor.com").exists())
+        self.assertTrue(
+            Website.objects.filter(owner=survivor, domain="survivor.com").exists()
+        )

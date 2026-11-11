@@ -150,7 +150,9 @@ def issue_invitation(
 ) -> tuple[OrganizationInvitation, str]:
     """Create or refresh the pending invitation and return its raw token."""
     normalized_email = normalize_email(email)
-    if role not in {choice for choice, _ in OrganizationInvitation.ASSIGNABLE_ROLE_CHOICES}:
+    if role not in {
+        choice for choice, _ in OrganizationInvitation.ASSIGNABLE_ROLE_CHOICES
+    }:
         raise ValueError("Invalid invitation role.")
 
     token = secrets.token_urlsafe(32)
@@ -189,7 +191,10 @@ def accept_invitation(token: str, user: Any) -> Membership:
             .filter(token_hash=_token_digest(token))
             .first()
         )
-        if invitation is None or invitation.status == OrganizationInvitation.Status.REVOKED:
+        if (
+            invitation is None
+            or invitation.status == OrganizationInvitation.Status.REVOKED
+        ):
             raise InvitationNotFound()
         if invitation.status == OrganizationInvitation.Status.ACCEPTED:
             existing = Membership.objects.filter(

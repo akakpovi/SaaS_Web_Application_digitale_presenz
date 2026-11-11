@@ -51,9 +51,7 @@ def _normalise_alert(alert: dict[str, Any]) -> dict[str, Any]:
         "riskcode": str(alert.get("riskcode", "") or ""),
         "confidence": str(alert.get("confidence", "") or ""),
         "severity": _severity(alert),
-        "description": str(
-            alert.get("desc") or alert.get("description") or ""
-        ),
+        "description": str(alert.get("desc") or alert.get("description") or ""),
         "solution": str(alert.get("solution", "") or ""),
         "reference": str(alert.get("reference", "") or ""),
         "instances": alert.get("instances", []) or [],

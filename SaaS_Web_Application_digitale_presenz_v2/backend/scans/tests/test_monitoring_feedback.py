@@ -101,6 +101,4 @@ class CoverageAlertEscalationTests(TestCase):
 
         self.assertEqual(result["created"], 0)
         self.assertEqual(Alert.objects.filter(website=self.website).count(), 1)
-        self.assertEqual(
-            Alert.objects.get(website=self.website).scan_id, second.pk
-        )
+        self.assertEqual(Alert.objects.get(website=self.website).scan_id, second.pk)

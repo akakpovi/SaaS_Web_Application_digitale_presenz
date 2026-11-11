@@ -30,8 +30,7 @@ def _report() -> str:
                 "authorization": "Bearer should-not-survive",
             },
             "matched-at": (
-                "https://example.com/.env?code=AUTH_CODE"
-                "&state=CSRF_STATE&ordinary=kept"
+                "https://example.com/.env?code=AUTH_CODE&state=CSRF_STATE&ordinary=kept"
             ),
             "request": (
                 "GET /.env HTTP/1.1\r\n"
@@ -193,9 +192,7 @@ class ArchiveStorageTests(SimpleTestCase):
         self.assertEqual(len(list(self.root.rglob("*.meta.json"))), 2)
 
     def test_max_bytes_truncates_without_claiming_completeness(self):
-        with override_settings(
-            **{**self.settings, "SCANNER_ARCHIVE_MAX_BYTES": 250}
-        ):
+        with override_settings(**{**self.settings, "SCANNER_ARCHIVE_MAX_BYTES": 250}):
             result = archive_report(
                 scanner_name="nuclei",
                 scan_id=1,
@@ -218,9 +215,7 @@ class ArchiveStorageTests(SimpleTestCase):
         self.assertEqual(result.detail, "OSError")
 
     def test_unsafe_archive_root_is_rejected(self):
-        with override_settings(
-            **{**self.settings, "SCANNER_ARCHIVE_DIR": "/"}
-        ):
+        with override_settings(**{**self.settings, "SCANNER_ARCHIVE_DIR": "/"}):
             result = archive_report(
                 scanner_name="nuclei",
                 scan_id=1,

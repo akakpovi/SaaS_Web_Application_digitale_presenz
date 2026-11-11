@@ -6,11 +6,11 @@ User = settings.AUTH_USER_MODEL
 
 class NotificationChannel(models.Model):
     class ChannelType(models.TextChoices):
-        EMAIL   = "email",   "Email"
-        SLACK   = "slack",   "Slack"
+        EMAIL = "email", "Email"
+        SLACK = "slack", "Slack"
         DISCORD = "discord", "Discord"
         WEBHOOK = "webhook", "Webhook"
-        SMS     = "sms",     "SMS"
+        SMS = "sms", "SMS"
 
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notification_channels"
@@ -18,11 +18,17 @@ class NotificationChannel(models.Model):
     channel_type = models.CharField(max_length=10, choices=ChannelType.choices)
     name = models.CharField(max_length=100)
     enabled = models.BooleanField(default=True)
-    config = models.JSONField(default=dict, help_text='e.g. {"webhook_url": "https://..."}')
+    config = models.JSONField(
+        default=dict, help_text='e.g. {"webhook_url": "https://..."}'
+    )
 
     # Filters — empty list = accept all
-    severities  = models.JSONField(default=list, help_text='["critical","warning"] or [] = all')
-    alert_types = models.JSONField(default=list, help_text='["ssl_expired"] or [] = all')
+    severities = models.JSONField(
+        default=list, help_text='["critical","warning"] or [] = all'
+    )
+    alert_types = models.JSONField(
+        default=list, help_text='["ssl_expired"] or [] = all'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -44,7 +50,11 @@ class NotificationChannel(models.Model):
 
 
 class WebPushSubscription(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_subscriptions",
+    )
     endpoint = models.URLField(max_length=500, unique=True)
     p256dh = models.CharField(max_length=255)
     auth = models.CharField(max_length=255)

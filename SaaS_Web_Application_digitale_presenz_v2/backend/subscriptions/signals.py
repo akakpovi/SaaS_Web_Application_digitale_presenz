@@ -13,6 +13,7 @@ def create_free_subscription(sender, instance, created: bool, **kwargs) -> None:
     if not created:
         return
     from subscriptions.models import Plan, Subscription
+
     try:
         free_plan = Plan.objects.get(tier=Plan.Tier.FREE)
         _, was_created = Subscription.objects.get_or_create(
@@ -22,4 +23,6 @@ def create_free_subscription(sender, instance, created: bool, **kwargs) -> None:
         if was_created:
             logger.info("Free subscription created for user %s", instance.email)
     except Plan.DoesNotExist:
-        logger.warning("Free plan not found — subscription not created for %s", instance.email)
+        logger.warning(
+            "Free plan not found — subscription not created for %s", instance.email
+        )

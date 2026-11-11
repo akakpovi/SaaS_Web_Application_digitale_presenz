@@ -55,6 +55,7 @@ _ACTIVE_SCAN_STATES = ("pending", "queued", "running")
 #: Child scans states after which ``on_stage_completed`` may decide.
 _TERMINAL_SCAN_STATES = ("completed", "partial", "failed", "cancelled")
 
+
 def check_write_permission(user: Any, website: Any) -> bool:
     """Return True when *user* may launch a scan on *website*.
 
@@ -145,8 +146,7 @@ class JourneyService:
         )
         if active_journey is not None:
             raise JourneyConflictError(
-                f"Parcours actif {active_journey.id} en état "
-                f"{active_journey.state}"
+                f"Parcours actif {active_journey.id} en état {active_journey.state}"
             )
 
         # Quota admission: the organization lock is held until commit, so the
@@ -174,8 +174,7 @@ class JourneyService:
         cls._publish_stage(scan)
 
         logger.info(
-            "journey_created journey_id=%s website_id=%s stage=1 scan_id=%s "
-            "trigger=%s",
+            "journey_created journey_id=%s website_id=%s stage=1 scan_id=%s trigger=%s",
             journey.pk,
             locked_website.pk,
             scan.pk,
@@ -207,9 +206,7 @@ class JourneyService:
         from scans.models import JourneyState, Scan, ScanJourney
 
         journey_id = (
-            Scan.objects.filter(pk=scan_id)
-            .values_list("journey_id", flat=True)
-            .first()
+            Scan.objects.filter(pk=scan_id).values_list("journey_id", flat=True).first()
         )
         if journey_id is None:
             return None
@@ -220,8 +217,7 @@ class JourneyService:
 
         if journey.state != JourneyState.RUNNING:
             logger.info(
-                "journey_stage_callback_ignored journey_id=%s state=%s "
-                "scan_id=%s",
+                "journey_stage_callback_ignored journey_id=%s state=%s scan_id=%s",
                 journey.pk,
                 journey.state,
                 scan_id,
@@ -334,15 +330,13 @@ class JourneyService:
         now = timezone.now()
         if journey.expires_at is not None and journey.expires_at <= now:
             raise JourneyExpiredError(
-                f"Parcours {journey.pk} expiré depuis "
-                f"{journey.expires_at.isoformat()}"
+                f"Parcours {journey.pk} expiré depuis {journey.expires_at.isoformat()}"
             )
 
         next_stage = journey.current_stage + 1
         if next_stage > journey.total_stages:
             raise JourneyStateError(
-                f"Parcours {journey.pk} : aucun palier après "
-                f"{journey.current_stage}"
+                f"Parcours {journey.pk} : aucun palier après {journey.current_stage}"
             )
 
         # Monitoring must keep working while a journey waits.  If a classic
@@ -425,8 +419,7 @@ class JourneyService:
             JourneyState.AWAITING_CONFIRMATION,
         ):
             raise JourneyStateError(
-                f"Parcours {journey.pk} en état {journey.state} : "
-                "annulation impossible"
+                f"Parcours {journey.pk} en état {journey.state} : annulation impossible"
             )
 
         active_scans = Scan.objects.select_for_update().filter(

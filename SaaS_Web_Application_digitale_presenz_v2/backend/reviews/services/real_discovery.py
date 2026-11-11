@@ -42,21 +42,21 @@ class RealReviewDiscoveryService:
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
                 }
-                
+
                 resp = safe_request(url, method="GET", headers=headers)
                 if not resp or resp.status_code != 200:
                     continue
 
                 html = resp.text
                 reviews = self._parse_trustpilot_html(html, url)
-                
+
                 if reviews:
                     source, _ = ReviewSource.objects.get_or_create(
                         website=self.website,
                         provider="trustpilot",
-                        defaults={"url": url, "is_active": True}
+                        defaults={"url": url, "is_active": True},
                     )
-                    
+
                     saved = 0
                     for r in reviews:
                         if self._save_real_review(
@@ -65,10 +65,10 @@ class RealReviewDiscoveryService:
                             author_name=r["author"],
                             rating=r["rating"],
                             text=r["text"],
-                            date_str=r.get("date")
+                            date_str=r.get("date"),
                         ):
                             saved += 1
-                    
+
                     return {
                         "status": "success",
                         "url": url,
@@ -94,20 +94,26 @@ class RealReviewDiscoveryService:
                 props = data.get("props", {}).get("pageProps", {})
                 raw_reviews = props.get("reviews", [])
                 for r in raw_reviews:
-                    author = r.get("consumer", {}).get("displayName", "Client Trustpilot")
+                    author = r.get("consumer", {}).get(
+                        "displayName", "Client Trustpilot"
+                    )
                     rating = r.get("rating", 5)
                     text = r.get("text", "") or r.get("title", "")
                     date = r.get("dates", {}).get("publishedDate")
                     if text:
-                        h_id = hashlib.md5(f"tp_{author}_{text[:40]}".encode()).hexdigest()[:16]
-                        reviews.append({
-                            "id": f"tp_{r.get('id', h_id)}",
-                            "author": author,
-                            "rating": rating,
-                            "text": text.strip(),
-                            "date": date,
-                            "source": "trustpilot",
-                        })
+                        h_id = hashlib.md5(
+                            f"tp_{author}_{text[:40]}".encode()
+                        ).hexdigest()[:16]
+                        reviews.append(
+                            {
+                                "id": f"tp_{r.get('id', h_id)}",
+                                "author": author,
+                                "rating": rating,
+                                "text": text.strip(),
+                                "date": date,
+                                "source": "trustpilot",
+                            }
+                        )
                 if reviews:
                     return reviews
             except Exception:
@@ -119,22 +125,32 @@ class RealReviewDiscoveryService:
                 data = json.loads(script.string or "{}")
                 items = data if isinstance(data, list) else [data]
                 for item in items:
-                    if item.get("@type") in ("LocalBusiness", "Organization", "Product"):
+                    if item.get("@type") in (
+                        "LocalBusiness",
+                        "Organization",
+                        "Product",
+                    ):
                         for r in item.get("review", []):
                             author = r.get("author", {}).get("name", "Client")
-                            rating = float(r.get("reviewRating", {}).get("ratingValue", 5))
+                            rating = float(
+                                r.get("reviewRating", {}).get("ratingValue", 5)
+                            )
                             text = r.get("reviewBody", "")
                             date = r.get("datePublished")
                             if text:
-                                h_id = hashlib.md5(f"tp_{author}_{text[:40]}".encode()).hexdigest()[:16]
-                                reviews.append({
-                                    "id": f"tp_ld_{h_id}",
-                                    "author": author,
-                                    "rating": int(rating),
-                                    "text": text.strip(),
-                                    "date": date,
-                                    "source": "trustpilot",
-                                })
+                                h_id = hashlib.md5(
+                                    f"tp_{author}_{text[:40]}".encode()
+                                ).hexdigest()[:16]
+                                reviews.append(
+                                    {
+                                        "id": f"tp_ld_{h_id}",
+                                        "author": author,
+                                        "rating": int(rating),
+                                        "text": text.strip(),
+                                        "date": date,
+                                        "source": "trustpilot",
+                                    }
+                                )
             except Exception:
                 pass
 
@@ -142,29 +158,41 @@ class RealReviewDiscoveryService:
             return reviews
 
         # Fallback 3: DOM Selectors
-        review_cards = soup.select("article[data-service-review-card-item], div.styles_reviewCard__hcK1l, div.review-card")
+        review_cards = soup.select(
+            "article[data-service-review-card-item], div.styles_reviewCard__hcK1l, div.review-card"
+        )
         for card in review_cards:
             try:
-                author_el = card.select_one("[data-consumer-name-typography], .typography_heading-xxs__s5HGa, .consumer-info__details")
-                author = author_el.get_text(strip=True) if author_el else "Client Trustpilot"
+                author_el = card.select_one(
+                    "[data-consumer-name-typography], .typography_heading-xxs__s5HGa, .consumer-info__details"
+                )
+                author = (
+                    author_el.get_text(strip=True) if author_el else "Client Trustpilot"
+                )
 
-                text_el = card.select_one("[data-service-review-text-typography], .typography_body-l__KUYFJ, .review-content__text")
+                text_el = card.select_one(
+                    "[data-service-review-text-typography], .typography_body-l__KUYFJ, .review-content__text"
+                )
                 title_el = card.select_one("[data-review-title-typography], h2")
-                
+
                 full_text = ""
                 if title_el:
                     full_text += title_el.get_text(strip=True) + " - "
                 if text_el:
                     full_text += text_el.get_text(strip=True)
-                
+
                 full_text = full_text.strip()
                 if not full_text:
                     continue
 
                 rating = 5
-                rating_img = card.select_one("img[src*='stars-'], [data-service-review-rating]")
+                rating_img = card.select_one(
+                    "img[src*='stars-'], [data-service-review-rating]"
+                )
                 if rating_img:
-                    alt = rating_img.get("alt", "") or rating_img.get("data-service-review-rating", "")
+                    alt = rating_img.get("alt", "") or rating_img.get(
+                        "data-service-review-rating", ""
+                    )
                     match = re.search(r"(\d)", str(alt))
                     if match:
                         rating = int(match.group(1))
@@ -172,15 +200,19 @@ class RealReviewDiscoveryService:
                 date_el = card.select_one("time")
                 date_str = date_el.get("datetime") if date_el else None
 
-                h_id = hashlib.md5(f"tp_{author}_{full_text[:40]}".encode()).hexdigest()[:16]
-                reviews.append({
-                    "id": f"tp_{h_id}",
-                    "author": author,
-                    "rating": rating,
-                    "text": full_text,
-                    "date": date_str,
-                    "source": "trustpilot",
-                })
+                h_id = hashlib.md5(
+                    f"tp_{author}_{full_text[:40]}".encode()
+                ).hexdigest()[:16]
+                reviews.append(
+                    {
+                        "id": f"tp_{h_id}",
+                        "author": author,
+                        "rating": rating,
+                        "text": full_text,
+                        "date": date_str,
+                        "source": "trustpilot",
+                    }
+                )
             except Exception:
                 continue
 
@@ -208,20 +240,32 @@ class RealReviewDiscoveryService:
                             if not isinstance(r, dict):
                                 continue
                             author = r.get("author", {})
-                            author_name = author.get("name", "Client vérifié") if isinstance(author, dict) else str(author)
+                            author_name = (
+                                author.get("name", "Client vérifié")
+                                if isinstance(author, dict)
+                                else str(author)
+                            )
                             rating_obj = r.get("reviewRating", {})
-                            rating = int(float(rating_obj.get("ratingValue", 5))) if isinstance(rating_obj, dict) else 5
+                            rating = (
+                                int(float(rating_obj.get("ratingValue", 5)))
+                                if isinstance(rating_obj, dict)
+                                else 5
+                            )
                             text = r.get("reviewBody", "") or r.get("description", "")
                             if text:
-                                h_id = hashlib.md5(f"web_{author_name}_{text[:30]}".encode()).hexdigest()[:16]
-                                reviews.append({
-                                    "id": f"web_{h_id}",
-                                    "author": author_name,
-                                    "rating": rating,
-                                    "text": text.strip(),
-                                    "date": r.get("datePublished"),
-                                    "source": "website_schema",
-                                })
+                                h_id = hashlib.md5(
+                                    f"web_{author_name}_{text[:30]}".encode()
+                                ).hexdigest()[:16]
+                                reviews.append(
+                                    {
+                                        "id": f"web_{h_id}",
+                                        "author": author_name,
+                                        "rating": rating,
+                                        "text": text.strip(),
+                                        "date": r.get("datePublished"),
+                                        "source": "website_schema",
+                                    }
+                                )
                 except Exception:
                     continue
 
@@ -229,7 +273,7 @@ class RealReviewDiscoveryService:
                 source, _ = ReviewSource.objects.get_or_create(
                     website=self.website,
                     provider="google",
-                    defaults={"url": site_url, "is_active": True}
+                    defaults={"url": site_url, "is_active": True},
                 )
                 saved = 0
                 for r in reviews:
@@ -239,10 +283,10 @@ class RealReviewDiscoveryService:
                         author_name=r["author"],
                         rating=r["rating"],
                         text=r["text"],
-                        date_str=r.get("date")
+                        date_str=r.get("date"),
                     ):
                         saved += 1
-                
+
                 return {
                     "status": "success",
                     "reviews_found": len(reviews),
@@ -254,15 +298,16 @@ class RealReviewDiscoveryService:
 
         return {"status": "not_found", "reviews": []}
 
-    def _save_real_review(self, source, external_id, author_name, rating, text, date_str) -> bool:
+    def _save_real_review(
+        self, source, external_id, author_name, rating, text, date_str
+    ) -> bool:
         clean_text = text.strip()
         if not clean_text:
             return False
 
         # Vérification doublon par texte exact sur ce site
         exists = Review.objects.filter(
-            source__website=self.website,
-            text__iexact=clean_text
+            source__website=self.website, text__iexact=clean_text
         ).exists()
 
         if exists:
@@ -287,12 +332,13 @@ class RealReviewDiscoveryService:
                 "rating": max(1, min(5, int(rating))),
                 "text": clean_text,
                 "review_date": review_date,
-            }
+            },
         )
 
         if created:
             try:
                 from reviews.tasks import analyze_review_sentiment
+
                 analyze_review_sentiment.delay(str(review.id))
             except Exception:
                 pass

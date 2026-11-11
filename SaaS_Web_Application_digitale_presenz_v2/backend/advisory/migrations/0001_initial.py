@@ -7,69 +7,194 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('scans', '0004_finding_scannerrun_remove_scan_scan_status_valid_and_more'),
+        ("scans", "0004_finding_scannerrun_remove_scan_scan_status_valid_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AIRecommendationRun',
+            name="AIRecommendationRun",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('input_hash', models.CharField(help_text='SHA-256 of the canonical prompt input and model list.', max_length=64)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('running', 'Running'), ('succeeded', 'Succeeded'), ('failed', 'Failed')], default='pending', max_length=12)),
-                ('model_used', models.CharField(blank=True, default='', help_text='AKA model that produced the persisted recommendations.', max_length=128)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('scan', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ai_recommendation_runs', to='scans.scan')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "input_hash",
+                    models.CharField(
+                        help_text="SHA-256 of the canonical prompt input and model list.",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("running", "Running"),
+                            ("succeeded", "Succeeded"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "model_used",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="AKA model that produced the persisted recommendations.",
+                        max_length=128,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "scan",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="ai_recommendation_runs",
+                        to="scans.scan",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'AI recommendation run',
-                'ordering': ['-created_at'],
+                "verbose_name": "AI recommendation run",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='AIRecommendation',
+            name="AIRecommendation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=255)),
-                ('summary', models.TextField()),
-                ('action', models.TextField()),
-                ('effort', models.CharField(choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium', max_length=8)),
-                ('priority', models.CharField(choices=[('critical', 'Critical'), ('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], default='medium', max_length=8)),
-                ('confidence', models.FloatField(help_text='Model confidence between 0 and 1.', validators=[django.core.validators.MinValueValidator(0.0), django.core.validators.MaxValueValidator(1.0)])),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('check_result', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ai_recommendations', to='scans.checkresult')),
-                ('finding', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ai_recommendations', to='scans.finding')),
-                ('run', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recommendations', to='advisory.airecommendationrun')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("summary", models.TextField()),
+                ("action", models.TextField()),
+                (
+                    "effort",
+                    models.CharField(
+                        choices=[
+                            ("low", "Low"),
+                            ("medium", "Medium"),
+                            ("high", "High"),
+                        ],
+                        default="medium",
+                        max_length=8,
+                    ),
+                ),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            ("critical", "Critical"),
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        default="medium",
+                        max_length=8,
+                    ),
+                ),
+                (
+                    "confidence",
+                    models.FloatField(
+                        help_text="Model confidence between 0 and 1.",
+                        validators=[
+                            django.core.validators.MinValueValidator(0.0),
+                            django.core.validators.MaxValueValidator(1.0),
+                        ],
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "check_result",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="ai_recommendations",
+                        to="scans.checkresult",
+                    ),
+                ),
+                (
+                    "finding",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="ai_recommendations",
+                        to="scans.finding",
+                    ),
+                ),
+                (
+                    "run",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="recommendations",
+                        to="advisory.airecommendationrun",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'AI recommendation',
-                'ordering': ['created_at'],
+                "verbose_name": "AI recommendation",
+                "ordering": ["created_at"],
             },
         ),
         migrations.AddIndex(
-            model_name='airecommendationrun',
-            index=models.Index(fields=['scan', 'status'], name='advisory_ai_scan_id_d18975_idx'),
+            model_name="airecommendationrun",
+            index=models.Index(
+                fields=["scan", "status"], name="advisory_ai_scan_id_d18975_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='airecommendationrun',
-            index=models.Index(fields=['status', 'created_at'], name='advisory_ai_status_2a1218_idx'),
+            model_name="airecommendationrun",
+            index=models.Index(
+                fields=["status", "created_at"], name="advisory_ai_status_2a1218_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='airecommendationrun',
-            constraint=models.UniqueConstraint(fields=('scan', 'input_hash'), name='unique_ai_run_per_scan_input'),
+            model_name="airecommendationrun",
+            constraint=models.UniqueConstraint(
+                fields=("scan", "input_hash"), name="unique_ai_run_per_scan_input"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='airecommendation',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('check_result__isnull', True), ('finding__isnull', False)), models.Q(('check_result__isnull', False), ('finding__isnull', True)), _connector='OR'), name='ai_recommendation_one_target'),
+            model_name="airecommendation",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    models.Q(
+                        ("check_result__isnull", True), ("finding__isnull", False)
+                    ),
+                    models.Q(
+                        ("check_result__isnull", False), ("finding__isnull", True)
+                    ),
+                    _connector="OR",
+                ),
+                name="ai_recommendation_one_target",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='airecommendation',
-            constraint=models.CheckConstraint(condition=models.Q(('confidence__gte', 0.0), ('confidence__lte', 1.0)), name='ai_recommendation_confidence_range'),
+            model_name="airecommendation",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("confidence__gte", 0.0), ("confidence__lte", 1.0)),
+                name="ai_recommendation_confidence_range",
+            ),
         ),
     ]

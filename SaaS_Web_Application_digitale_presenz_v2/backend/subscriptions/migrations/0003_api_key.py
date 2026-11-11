@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("subscriptions", "0002_billing_provider_fields"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

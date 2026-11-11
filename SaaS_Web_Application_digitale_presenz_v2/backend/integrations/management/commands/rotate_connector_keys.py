@@ -76,9 +76,7 @@ class Command(BaseCommand):
                     target,
                     batch_size=options["batch_size"],
                 )
-                connections = sum(
-                    result.connections_reencrypted for result in results
-                )
+                connections = sum(result.connections_reencrypted for result in results)
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"Rotated {len(results)} organization DEK(s) under "

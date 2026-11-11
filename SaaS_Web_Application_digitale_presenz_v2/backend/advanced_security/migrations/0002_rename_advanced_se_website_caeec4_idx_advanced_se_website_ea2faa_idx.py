@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('advanced_security', '0001_initial'),
+        ("advanced_security", "0001_initial"),
     ]
 
     operations = [
         migrations.RenameIndex(
-            model_name='securityincident',
-            new_name='advanced_se_website_ea2faa_idx',
-            old_name='advanced_se_website_caeec4_idx',
+            model_name="securityincident",
+            new_name="advanced_se_website_ea2faa_idx",
+            old_name="advanced_se_website_caeec4_idx",
         ),
     ]

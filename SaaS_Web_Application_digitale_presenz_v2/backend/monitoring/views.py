@@ -84,11 +84,17 @@ class MonitoringConfigListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return MonitoringConfig.objects.filter(
-            Q(website__organization__billing_owner=self.request.user)
-            | Q(website__organization__memberships__user=self.request.user)
-            | Q(website__organization__isnull=True, website__owner=self.request.user)
-        ).select_related("website").distinct()
+        return (
+            MonitoringConfig.objects.filter(
+                Q(website__organization__billing_owner=self.request.user)
+                | Q(website__organization__memberships__user=self.request.user)
+                | Q(
+                    website__organization__isnull=True, website__owner=self.request.user
+                )
+            )
+            .select_related("website")
+            .distinct()
+        )
 
 
 class MonitoringConfigDetailView(APIView):
@@ -163,7 +169,9 @@ class TriggerImmediateScanView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        raw_scan_type = str((request.data or {}).get("scan_type", "") or "").strip().lower()
+        raw_scan_type = (
+            str((request.data or {}).get("scan_type", "") or "").strip().lower()
+        )
         allowed = {choice.lower() for choice, _label in Scan.ScanType.choices}
         if raw_scan_type and raw_scan_type not in allowed:
             return Response(

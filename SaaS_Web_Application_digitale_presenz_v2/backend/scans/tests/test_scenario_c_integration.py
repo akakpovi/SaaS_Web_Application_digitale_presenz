@@ -115,8 +115,7 @@ class ScenarioCNucleiProfileTests(SimpleTestCase):
         self.assertEqual(
             sorted(f.check_code for f in stage_two),
             sorted(
-                f"nuclei.http-missing-security-headers.{header}"
-                for header in headers
+                f"nuclei.http-missing-security-headers.{header}" for header in headers
             ),
         )
         # Retro-compatibility: the standard/thorough/deep paths still collapse
@@ -197,9 +196,7 @@ class EffectiveTimeoutTests(SimpleTestCase):
         orchestrator._deadline = time.monotonic() + 500
         scanner = SimpleNamespace(timeout=45)
         with override_settings(SCANNER_SANDBOX={"max_timeout": 300}):
-            self.assertEqual(
-                orchestrator._effective_timeout(scanner, "gobuster"), 45
-            )
+            self.assertEqual(orchestrator._effective_timeout(scanner, "gobuster"), 45)
 
 
 class GobusterExtraPassTests(SimpleTestCase):
@@ -255,15 +252,16 @@ class GobusterExtraPassTests(SimpleTestCase):
             timeouts.append(kwargs.get("timeout"))
             return first if len(commands) == 1 else second
 
-        with self._settings(), patch.object(
-            GobusterScanner, "is_available", return_value=True
-        ), patch.object(
-            gobuster_module, "run_tool", side_effect=runner
-        ), patch.object(
-            gobuster_module,
-            "probe_soft_404",
-            return_value=gobuster_module.Soft404Probe(
-                sampled_path="/.presence-soft404-test", status_code=404
+        with (
+            self._settings(),
+            patch.object(GobusterScanner, "is_available", return_value=True),
+            patch.object(gobuster_module, "run_tool", side_effect=runner),
+            patch.object(
+                gobuster_module,
+                "probe_soft_404",
+                return_value=gobuster_module.Soft404Probe(
+                    sampled_path="/.presence-soft404-test", status_code=404
+                ),
             ),
         ):
             outcome = GobusterScanner().execute("example.com")
@@ -293,23 +291,24 @@ class GobusterExtraPassTests(SimpleTestCase):
                 duration_ms=5,
             )
 
-        with override_settings(
-            SCANNER_CONFIG={
-                **settings.SCANNER_CONFIG,
-                "gobuster": {
-                    **settings.SCANNER_CONFIG["gobuster"],
-                    "extra_wordlist": "",
-                },
-            }
-        ), patch.object(
-            GobusterScanner, "is_available", return_value=True
-        ), patch.object(
-            gobuster_module, "run_tool", side_effect=runner
-        ), patch.object(
-            gobuster_module,
-            "probe_soft_404",
-            return_value=gobuster_module.Soft404Probe(
-                sampled_path="/.presence-soft404-test", status_code=404
+        with (
+            override_settings(
+                SCANNER_CONFIG={
+                    **settings.SCANNER_CONFIG,
+                    "gobuster": {
+                        **settings.SCANNER_CONFIG["gobuster"],
+                        "extra_wordlist": "",
+                    },
+                }
+            ),
+            patch.object(GobusterScanner, "is_available", return_value=True),
+            patch.object(gobuster_module, "run_tool", side_effect=runner),
+            patch.object(
+                gobuster_module,
+                "probe_soft_404",
+                return_value=gobuster_module.Soft404Probe(
+                    sampled_path="/.presence-soft404-test", status_code=404
+                ),
             ),
         ):
             outcome = GobusterScanner().execute("example.com")
@@ -396,9 +395,7 @@ class FindingDedupTests(TestCase):
 
     def test_gobuster_path_is_folded_into_content_finding(self):
         scan = self._scan(journey_stage=2)
-        nuclei = self._finding(
-            "nuclei.git-config", "https://example.com/.git/config"
-        )
+        nuclei = self._finding("nuclei.git-config", "https://example.com/.git/config")
         gobuster = NormalizedFinding(
             check_code="gobuster.path.git-config",
             category="security",
@@ -426,9 +423,7 @@ class FindingDedupTests(TestCase):
 
     def test_classic_scan_still_persists_both_sources(self):
         scan = self._scan(journey_stage=None)
-        nuclei = self._finding(
-            "nuclei.git-config", "https://example.com/.git/config"
-        )
+        nuclei = self._finding("nuclei.git-config", "https://example.com/.git/config")
         gobuster = NormalizedFinding(
             check_code="gobuster.path.git-config",
             category="security",
@@ -483,9 +478,7 @@ class FindingDedupTests(TestCase):
         self.assertEqual(Finding.objects.filter(scanner_run__scan=scan).count(), 2)
 
     def test_merge_keeps_structured_evidence_without_secrets(self):
-        target = self._finding(
-            "nuclei.git-config", "https://example.com/.git/config"
-        )
+        target = self._finding("nuclei.git-config", "https://example.com/.git/config")
         source = NormalizedFinding(
             check_code="gobuster.path.git-config",
             category="security",

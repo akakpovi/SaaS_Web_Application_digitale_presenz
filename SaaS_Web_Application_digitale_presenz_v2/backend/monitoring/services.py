@@ -77,10 +77,7 @@ def _uptime_rows(user, period: Period, website_id: int | None):
 
 
 def _series(user, period: Period, website_id: int | None) -> list[dict]:
-    buckets = [
-        {"up": 0, "total": 0}
-        for _ in range(period.bucket_count)
-    ]
+    buckets = [{"up": 0, "total": 0} for _ in range(period.bucket_count)]
 
     for created_at, details, status in _uptime_rows(user, period, website_id):
         index = int((created_at - period.start) / period.bucket)
@@ -96,9 +93,7 @@ def _series(user, period: Period, website_id: int | None) -> list[dict]:
             continue
         series.append(
             {
-                "bucket_start": (
-                    period.start + index * period.bucket
-                ).isoformat(),
+                "bucket_start": (period.start + index * period.bucket).isoformat(),
                 "uptime_percent": round(bucket["up"] / bucket["total"] * 100, 2),
                 "checks": bucket["total"],
                 "downtime_checks": bucket["total"] - bucket["up"],
@@ -147,14 +142,12 @@ def _summary(user, period: Period, website_id: int | None) -> dict:
         "healthy_websites": sum(
             1
             for website in websites
-            if getattr(latest_scans.get(website.id), "health_status", None)
-            == "healthy"
+            if getattr(latest_scans.get(website.id), "health_status", None) == "healthy"
         ),
         "warning_websites": sum(
             1
             for website in websites
-            if getattr(latest_scans.get(website.id), "health_status", None)
-            == "warning"
+            if getattr(latest_scans.get(website.id), "health_status", None) == "warning"
         ),
         "critical_websites": sum(
             1

@@ -69,33 +69,36 @@ class SandboxUnavailableJourneyTests(TestCase):
 
         executor = MagicMock()
         executor.mode = SandboxMode.DOCKER
-        executor.run.side_effect = SandboxError(
-            "Bind mount source is not a directory"
-        )
-        executor.limits_for.return_value = SandboxLimits(
-            timeout_s=60, cpu_seconds=65
-        )
+        executor.run.side_effect = SandboxError("Bind mount source is not a directory")
+        executor.limits_for.return_value = SandboxLimits(timeout_s=60, cpu_seconds=65)
 
-        with patch("scanners.registry.ScannerRegistry") as registry, patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=[_step("nuclei", "nuclei")],
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ), patch(
-            "scanners.executors.sandbox.get_sandbox_executor",
-            return_value=executor,
-        ), patch(
-            "scanners.implementations.nuclei.get_sandbox_executor",
-            return_value=executor,
-        ), patch(
-            "scanners.features.advanced_security_enabled",
-            return_value=True,
-        ), patch(
-            "scanners.implementations.nuclei.advanced_security_enabled",
-            return_value=True,
-        ), patch.object(
-            NucleiScanner, "is_available", return_value=True
+        with (
+            patch("scanners.registry.ScannerRegistry") as registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=[_step("nuclei", "nuclei")],
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch(
+                "scanners.executors.sandbox.get_sandbox_executor",
+                return_value=executor,
+            ),
+            patch(
+                "scanners.implementations.nuclei.get_sandbox_executor",
+                return_value=executor,
+            ),
+            patch(
+                "scanners.features.advanced_security_enabled",
+                return_value=True,
+            ),
+            patch(
+                "scanners.implementations.nuclei.advanced_security_enabled",
+                return_value=True,
+            ),
+            patch.object(NucleiScanner, "is_available", return_value=True),
         ):
             registry.get.return_value = NucleiScanner()
             ScanOrchestrator(scan.pk).run()
@@ -109,9 +112,7 @@ class SandboxUnavailableJourneyTests(TestCase):
         run = ScannerRun.objects.get(scan=scan)
         self.assertEqual(run.status, ScannerRun.Status.PARTIAL)
         self.assertFalse(run.metadata["scan_complete"])
-        self.assertEqual(
-            run.metadata["partial_reason"], "sandbox_unavailable"
-        )
+        self.assertEqual(run.metadata["partial_reason"], "sandbox_unavailable")
 
         journey = JourneyService.on_stage_completed(scan.pk)
         self.assertEqual(journey.state, JourneyState.PARTIAL)

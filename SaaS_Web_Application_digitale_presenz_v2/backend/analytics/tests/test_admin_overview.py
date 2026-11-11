@@ -46,9 +46,7 @@ class AdminOverviewMRRTests(TestCase):
         trial_user = User.objects.create_user(
             email="trial@test.com", password="pass1234"
         )
-        free_user = User.objects.create_user(
-            email="free@test.com", password="pass1234"
-        )
+        free_user = User.objects.create_user(email="free@test.com", password="pass1234")
 
         # Signup already provisions a free subscription (one-to-one), so the
         # fixtures update that row instead of inserting a second one.

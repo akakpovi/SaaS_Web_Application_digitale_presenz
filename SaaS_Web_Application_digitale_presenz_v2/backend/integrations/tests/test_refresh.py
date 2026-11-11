@@ -191,9 +191,7 @@ class RefreshExpiringTokensTests(TestCase):
     def test_missing_refresh_token_marks_an_expired_connection_without_network(self):
         self.connection.refresh_token_ciphertext = ""
         self.connection.expires_at = timezone.now() - timedelta(minutes=1)
-        self.connection.save(
-            update_fields=["refresh_token_ciphertext", "expires_at"]
-        )
+        self.connection.save(update_fields=["refresh_token_ciphertext", "expires_at"])
         client = self._refresh_client()
 
         with patch(

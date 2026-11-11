@@ -100,9 +100,21 @@ class ScanViewSet(ReadOnlyModelViewSet[Scan]):
     @extend_schema(
         summary="List findings for a scan",
         parameters=[
-            OpenApiParameter("severity", description="Filter by severity (info/low/medium/high/critical)", required=False),
-            OpenApiParameter("category", description="Filter by category (ssl/dns/security/etc.)", required=False),
-            OpenApiParameter("status", description="Filter by finding status (pass/fail/warning/etc.)", required=False),
+            OpenApiParameter(
+                "severity",
+                description="Filter by severity (info/low/medium/high/critical)",
+                required=False,
+            ),
+            OpenApiParameter(
+                "category",
+                description="Filter by category (ssl/dns/security/etc.)",
+                required=False,
+            ),
+            OpenApiParameter(
+                "status",
+                description="Filter by finding status (pass/fail/warning/etc.)",
+                required=False,
+            ),
         ],
         responses={200: FindingSerializer(many=True)},
         tags=["scans"],
@@ -162,6 +174,7 @@ class ScanViewSet(ReadOnlyModelViewSet[Scan]):
         """GET /api/v1/scans/{id}/recommendations/"""
         scan = self.get_object()
         from scans.services.recommendation_engine import RecommendationEngine
+
         engine = RecommendationEngine(scan)
         return Response({"recommendations": engine.to_dict_list()})
 
@@ -173,8 +186,7 @@ class CheckResultViewSet(ReadOnlyModelViewSet[CheckResult]):
     def get_queryset(self) -> QuerySet[CheckResult]:
         scan_id = self.kwargs["scan_pk"]
         return (
-            CheckResult.objects
-            .filter(
+            CheckResult.objects.filter(
                 check_result_access_q(self.request.user),
                 scan_id=scan_id,
             )

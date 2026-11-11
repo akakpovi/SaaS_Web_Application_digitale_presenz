@@ -24,12 +24,32 @@ class StepStatus:
 # Canonical step definitions per scan type.
 # Order matters — steps are presented in this order in the UI.
 _HEALTH_STEPS: list[dict[str, Any]] = [
-    {"key": "website", "label": "Website Availability", "scanner": "website", "weight": 15},
+    {
+        "key": "website",
+        "label": "Website Availability",
+        "scanner": "website",
+        "weight": 15,
+    },
     {"key": "ssl", "label": "SSL / TLS Certificate", "scanner": "ssl", "weight": 15},
     {"key": "dns", "label": "DNS Configuration", "scanner": "dns", "weight": 15},
-    {"key": "email_security", "label": "Email Security", "scanner": "email_security", "weight": 15},
-    {"key": "security_headers", "label": "Security Headers", "scanner": "security_headers", "weight": 15},
-    {"key": "performance", "label": "Performance", "scanner": "performance", "weight": 15},
+    {
+        "key": "email_security",
+        "label": "Email Security",
+        "scanner": "email_security",
+        "weight": 15,
+    },
+    {
+        "key": "security_headers",
+        "label": "Security Headers",
+        "scanner": "security_headers",
+        "weight": 15,
+    },
+    {
+        "key": "performance",
+        "label": "Performance",
+        "scanner": "performance",
+        "weight": 15,
+    },
     {
         "key": "lighthouse",
         "label": "Performance & SEO (Lighthouse)",
@@ -45,12 +65,42 @@ _HEALTH_STEPS: list[dict[str, Any]] = [
 
 _SECURITY_STEPS: list[dict[str, Any]] = [
     {"key": "nmap", "label": "Port Scan (Nmap)", "scanner": "nmap", "weight": 15},
-    {"key": "nikto", "label": "Web Vulnerabilities (Nikto)", "scanner": "nikto", "weight": 20},
-    {"key": "nuclei", "label": "Template Scan (Nuclei)", "scanner": "nuclei", "weight": 20},
-    {"key": "whatweb", "label": "Technology Detection (WhatWeb)", "scanner": "whatweb", "weight": 10},
-    {"key": "testssl", "label": "TLS Deep Analysis (testssl.sh)", "scanner": "testssl", "weight": 15},
-    {"key": "dnsrecon", "label": "DNS Recon (dnsrecon)", "scanner": "dnsrecon", "weight": 10},
-    {"key": "gobuster", "label": "Directory Enumeration (Gobuster)", "scanner": "gobuster", "weight": 5},
+    {
+        "key": "nikto",
+        "label": "Web Vulnerabilities (Nikto)",
+        "scanner": "nikto",
+        "weight": 20,
+    },
+    {
+        "key": "nuclei",
+        "label": "Template Scan (Nuclei)",
+        "scanner": "nuclei",
+        "weight": 20,
+    },
+    {
+        "key": "whatweb",
+        "label": "Technology Detection (WhatWeb)",
+        "scanner": "whatweb",
+        "weight": 10,
+    },
+    {
+        "key": "testssl",
+        "label": "TLS Deep Analysis (testssl.sh)",
+        "scanner": "testssl",
+        "weight": 15,
+    },
+    {
+        "key": "dnsrecon",
+        "label": "DNS Recon (dnsrecon)",
+        "scanner": "dnsrecon",
+        "weight": 10,
+    },
+    {
+        "key": "gobuster",
+        "label": "Directory Enumeration (Gobuster)",
+        "scanner": "gobuster",
+        "weight": 5,
+    },
     {"key": "zap", "label": "Active Scan (OWASP ZAP)", "scanner": "zap", "weight": 5},
 ]
 
@@ -176,9 +226,14 @@ def compute_overall_progress(steps: list[dict[str, Any]]) -> int:
         step_weight = step.get("weight", 1)
         step_progress = step.get("progress", 0)
 
-        if status in (StepStatus.COMPLETED, StepStatus.PARTIAL,
-                      StepStatus.FAILED, StepStatus.TIMEOUT,
-                      StepStatus.UNAVAILABLE, StepStatus.SKIPPED):
+        if status in (
+            StepStatus.COMPLETED,
+            StepStatus.PARTIAL,
+            StepStatus.FAILED,
+            StepStatus.TIMEOUT,
+            StepStatus.UNAVAILABLE,
+            StepStatus.SKIPPED,
+        ):
             # Completed steps contribute their full weight.
             weighted_sum += step_weight * 100
         elif status == StepStatus.RUNNING:

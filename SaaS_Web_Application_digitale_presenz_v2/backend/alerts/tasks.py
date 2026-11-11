@@ -224,7 +224,9 @@ def detect_alerts(self, scan_id: int) -> dict:
             active_mutes.filter(websites__isnull=True).exists()
             or active_mutes.filter(websites=website).exists()
         ):
-            logger.info("detect_alerts skipped — mute window active for %s", website.domain)
+            logger.info(
+                "detect_alerts skipped — mute window active for %s", website.domain
+            )
             return {"skipped": "mute_window"}
 
         alerts_to_fire: list[Alert] = []
@@ -237,94 +239,166 @@ def detect_alerts(self, scan_id: int) -> dict:
             ssl_valid = details.get("is_valid", True)
 
             if not ssl_valid and should_create_alert("ssl_invalid", preferences):
-                alerts_to_fire.append(_build_alert(
-                    user, website, scan,
-                    Alert.AlertType.SSL_INVALID, Alert.Severity.CRITICAL,
-                    f"SSL certificate invalid for {website.domain}",
-                    details.get("error", "SSL certificate is invalid."),
-                ))
+                alerts_to_fire.append(
+                    _build_alert(
+                        user,
+                        website,
+                        scan,
+                        Alert.AlertType.SSL_INVALID,
+                        Alert.Severity.CRITICAL,
+                        f"SSL certificate invalid for {website.domain}",
+                        details.get("error", "SSL certificate is invalid."),
+                    )
+                )
             elif isinstance(days_remaining, (int, float)):
-                if days_remaining <= preferences.ssl_expiry_critical_days and should_create_alert("ssl_expired", preferences):
-                    sev = compute_severity("critical", consecutive_failures, preferences)
-                    alerts_to_fire.append(_build_alert(
-                        user, website, scan,
-                        Alert.AlertType.SSL_EXPIRED, sev,
-                        f"SSL certificate expiring critically soon for {website.domain}",
-                        f"SSL certificate expires in {days_remaining} days.",
-                        {"days_remaining": days_remaining},
-                    ))
-                elif days_remaining <= preferences.ssl_expiry_warning_days and should_create_alert("ssl_expiring", preferences):
-                    alerts_to_fire.append(_build_alert(
-                        user, website, scan,
-                        Alert.AlertType.SSL_EXPIRING, Alert.Severity.WARNING,
-                        f"SSL certificate expiring for {website.domain}",
-                        f"SSL certificate expires in {days_remaining} days.",
-                        {"days_remaining": days_remaining},
-                    ))
+                if (
+                    days_remaining <= preferences.ssl_expiry_critical_days
+                    and should_create_alert("ssl_expired", preferences)
+                ):
+                    sev = compute_severity(
+                        "critical", consecutive_failures, preferences
+                    )
+                    alerts_to_fire.append(
+                        _build_alert(
+                            user,
+                            website,
+                            scan,
+                            Alert.AlertType.SSL_EXPIRED,
+                            sev,
+                            f"SSL certificate expiring critically soon for {website.domain}",
+                            f"SSL certificate expires in {days_remaining} days.",
+                            {"days_remaining": days_remaining},
+                        )
+                    )
+                elif (
+                    days_remaining <= preferences.ssl_expiry_warning_days
+                    and should_create_alert("ssl_expiring", preferences)
+                ):
+                    alerts_to_fire.append(
+                        _build_alert(
+                            user,
+                            website,
+                            scan,
+                            Alert.AlertType.SSL_EXPIRING,
+                            Alert.Severity.WARNING,
+                            f"SSL certificate expiring for {website.domain}",
+                            f"SSL certificate expires in {days_remaining} days.",
+                            {"days_remaining": days_remaining},
+                        )
+                    )
 
         # 2. Website offline
         web_result = CheckResult.objects.filter(scan=scan, category="website").first()
-        if web_result and web_result.status == "critical" and should_create_alert("website_offline", preferences):
+        if (
+            web_result
+            and web_result.status == "critical"
+            and should_create_alert("website_offline", preferences)
+        ):
             sev = compute_severity("critical", consecutive_failures, preferences)
-            alerts_to_fire.append(_build_alert(
-                user, website, scan,
-                Alert.AlertType.WEBSITE_OFFLINE, sev,
-                f"{website.domain} is offline or unreachable",
-                web_result.summary,
-            ))
+            alerts_to_fire.append(
+                _build_alert(
+                    user,
+                    website,
+                    scan,
+                    Alert.AlertType.WEBSITE_OFFLINE,
+                    sev,
+                    f"{website.domain} is offline or unreachable",
+                    web_result.summary,
+                )
+            )
 
         # 3. DNS problem
         dns_result = CheckResult.objects.filter(scan=scan, category="dns").first()
-        if dns_result and dns_result.status == "critical" and should_create_alert("dns_problem", preferences):
+        if (
+            dns_result
+            and dns_result.status == "critical"
+            and should_create_alert("dns_problem", preferences)
+        ):
             sev = compute_severity("critical", consecutive_failures, preferences)
-            alerts_to_fire.append(_build_alert(
-                user, website, scan,
-                Alert.AlertType.DNS_PROBLEM, sev,
-                f"DNS problem detected for {website.domain}",
-                dns_result.summary,
-            ))
+            alerts_to_fire.append(
+                _build_alert(
+                    user,
+                    website,
+                    scan,
+                    Alert.AlertType.DNS_PROBLEM,
+                    sev,
+                    f"DNS problem detected for {website.domain}",
+                    dns_result.summary,
+                )
+            )
 
         # 4. E-mail authentication (SPF/DKIM/DMARC)
-        email_result = CheckResult.objects.filter(scan=scan, category="email_security").first()
+        email_result = CheckResult.objects.filter(
+            scan=scan, category="email_security"
+        ).first()
         if (
             email_result
             and email_result.status == "critical"
             and should_create_alert("email_security", preferences)
         ):
             sev = compute_severity("warning", consecutive_failures, preferences)
-            alerts_to_fire.append(_build_alert(
-                user, website, scan,
-                Alert.AlertType.EMAIL_SECURITY, sev,
-                f"E-mail authentication issues for {website.domain}",
-                email_result.summary,
-                email_result.technical_details,
-            ))
+            alerts_to_fire.append(
+                _build_alert(
+                    user,
+                    website,
+                    scan,
+                    Alert.AlertType.EMAIL_SECURITY,
+                    sev,
+                    f"E-mail authentication issues for {website.domain}",
+                    email_result.summary,
+                    email_result.technical_details,
+                )
+            )
 
         # 5. Security headers
-        hdr_result = CheckResult.objects.filter(scan=scan, category="security_headers").first()
-        if hdr_result and hdr_result.status == "critical" and should_create_alert("security_headers", preferences):
+        hdr_result = CheckResult.objects.filter(
+            scan=scan, category="security_headers"
+        ).first()
+        if (
+            hdr_result
+            and hdr_result.status == "critical"
+            and should_create_alert("security_headers", preferences)
+        ):
             sev = compute_severity("warning", consecutive_failures, preferences)
-            alerts_to_fire.append(_build_alert(
-                user, website, scan,
-                Alert.AlertType.SECURITY_HEADERS, sev,
-                f"Security headers issues on {website.domain}",
-                hdr_result.summary,
-            ))
+            alerts_to_fire.append(
+                _build_alert(
+                    user,
+                    website,
+                    scan,
+                    Alert.AlertType.SECURITY_HEADERS,
+                    sev,
+                    f"Security headers issues on {website.domain}",
+                    hdr_result.summary,
+                )
+            )
 
         # 5. Performance
-        perf_result = CheckResult.objects.filter(scan=scan, category="performance").first()
-        if perf_result and perf_result.status == "critical" and should_create_alert("performance", preferences):
+        perf_result = CheckResult.objects.filter(
+            scan=scan, category="performance"
+        ).first()
+        if (
+            perf_result
+            and perf_result.status == "critical"
+            and should_create_alert("performance", preferences)
+        ):
             sev = compute_severity("warning", consecutive_failures, preferences)
-            alerts_to_fire.append(_build_alert(
-                user, website, scan,
-                Alert.AlertType.PERFORMANCE, sev,
-                f"Performance issues detected for {website.domain}",
-                perf_result.summary,
-                perf_result.technical_details,
-            ))
+            alerts_to_fire.append(
+                _build_alert(
+                    user,
+                    website,
+                    scan,
+                    Alert.AlertType.PERFORMANCE,
+                    sev,
+                    f"Performance issues detected for {website.domain}",
+                    perf_result.summary,
+                    perf_result.technical_details,
+                )
+            )
 
         # 6. Score drop
-        if scan.health_score is not None and should_create_alert("score_drop", preferences):
+        if scan.health_score is not None and should_create_alert(
+            "score_drop", preferences
+        ):
             prev = (
                 Scan.objects.filter(website=website, status=Scan.Status.COMPLETED)
                 .exclude(id=scan.id)
@@ -335,13 +409,22 @@ def detect_alerts(self, scan_id: int) -> dict:
                 drop = prev.health_score - scan.health_score
                 if drop >= preferences.score_drop_threshold:
                     sev = compute_severity("warning", consecutive_failures, preferences)
-                    alerts_to_fire.append(_build_alert(
-                        user, website, scan,
-                        Alert.AlertType.SCORE_DROP, sev,
-                        f"Health score dropped for {website.domain}",
-                        f"Score dropped from {prev.health_score} to {scan.health_score} (-{drop} points).",
-                        {"previous_score": prev.health_score, "current_score": scan.health_score, "drop": drop},
-                    ))
+                    alerts_to_fire.append(
+                        _build_alert(
+                            user,
+                            website,
+                            scan,
+                            Alert.AlertType.SCORE_DROP,
+                            sev,
+                            f"Health score dropped for {website.domain}",
+                            f"Score dropped from {prev.health_score} to {scan.health_score} (-{drop} points).",
+                            {
+                                "previous_score": prev.health_score,
+                                "current_score": scan.health_score,
+                                "drop": drop,
+                            },
+                        )
+                    )
 
         # Save + dispatch (with deduplication)
         created = 0
@@ -368,12 +451,20 @@ def detect_alerts(self, scan_id: int) -> dict:
         raise self.retry(exc=exc)
 
 
-def _build_alert(user, website, scan, alert_type, severity, title, message, metadata=None):
+def _build_alert(
+    user, website, scan, alert_type, severity, title, message, metadata=None
+):
     from alerts.models import Alert
+
     return Alert(
-        user=user, website=website, scan=scan,
-        alert_type=alert_type, severity=severity,
-        title=title, message=message, metadata=metadata or {},
+        user=user,
+        website=website,
+        scan=scan,
+        alert_type=alert_type,
+        severity=severity,
+        title=title,
+        message=message,
+        metadata=metadata or {},
     )
 
 
@@ -397,7 +488,11 @@ def _auto_resolve(scan, website) -> int:
             cr = check_results.get("website")
             if cr and cr.status != "critical":
                 should_resolve = True
-        elif alert.alert_type in (Alert.AlertType.SSL_EXPIRING, Alert.AlertType.SSL_EXPIRED, Alert.AlertType.SSL_INVALID):
+        elif alert.alert_type in (
+            Alert.AlertType.SSL_EXPIRING,
+            Alert.AlertType.SSL_EXPIRED,
+            Alert.AlertType.SSL_INVALID,
+        ):
             cr = check_results.get("ssl")
             if cr and cr.status in ("healthy", "warning"):
                 should_resolve = True
@@ -442,6 +537,7 @@ def _auto_resolve(scan, website) -> int:
 @shared_task
 def cleanup_old_alerts() -> dict:
     from alerts.models import Alert
+
     cutoff = timezone.now() - timezone.timedelta(days=90)
     deleted, _ = Alert.objects.filter(
         status=Alert.Status.RESOLVED, resolved_at__lt=cutoff

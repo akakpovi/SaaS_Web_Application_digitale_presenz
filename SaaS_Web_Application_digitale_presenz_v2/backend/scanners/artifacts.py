@@ -68,9 +68,7 @@ _HEADER_LINE_RE = re.compile(
     r"x-api-key)\s*:\s*)(.*)$"
 )
 _BEARER_RE = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
-_JWT_RE = re.compile(
-    r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"
-)
+_JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b")
 _PRIVATE_KEY_RE = re.compile(
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----",
     re.DOTALL,
@@ -126,6 +124,7 @@ class ArchiveResult:
 # ---------------------------------------------------------------------------
 # Redaction
 # ---------------------------------------------------------------------------
+
 
 def _redact_text(text: str, state: dict[str, int]) -> str:
     """Redact common credentials and PII from a free-form string."""
@@ -232,6 +231,7 @@ def redact_report(text: str) -> tuple[str, int, int]:
 # Storage helpers
 # ---------------------------------------------------------------------------
 
+
 def _archive_root() -> Path:
     """Return the configured private archive root, rejecting unsafe paths."""
     configured = getattr(settings, "SCANNER_ARCHIVE_DIR", "") or ""
@@ -243,7 +243,9 @@ def _archive_root() -> Path:
     root = root.resolve()
 
     if root == Path(root.anchor):
-        raise ArchiveConfigurationError("SCANNER_ARCHIVE_DIR cannot be a filesystem root")
+        raise ArchiveConfigurationError(
+            "SCANNER_ARCHIVE_DIR cannot be a filesystem root"
+        )
     media_root = getattr(settings, "MEDIA_ROOT", None)
     if media_root:
         media = Path(os.fspath(media_root)).expanduser().resolve()
@@ -346,6 +348,7 @@ def _count_json_records(text: str) -> int:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def archive_report(
     *,
     scanner_name: str,
@@ -366,7 +369,10 @@ def archive_report(
     """
     retention_days = max(
         0,
-        int(getattr(settings, "SCANNER_ARCHIVE_RETENTION_DAYS", DEFAULT_RETENTION_DAYS) or 0),
+        int(
+            getattr(settings, "SCANNER_ARCHIVE_RETENTION_DAYS", DEFAULT_RETENTION_DAYS)
+            or 0
+        ),
     )
     if not getattr(settings, "SCANNER_ARCHIVE_ENABLED", False):
         return ArchiveResult(
@@ -398,7 +404,10 @@ def archive_report(
 
     max_bytes = max(
         1,
-        int(getattr(settings, "SCANNER_ARCHIVE_MAX_BYTES", DEFAULT_MAX_BYTES) or DEFAULT_MAX_BYTES),
+        int(
+            getattr(settings, "SCANNER_ARCHIVE_MAX_BYTES", DEFAULT_MAX_BYTES)
+            or DEFAULT_MAX_BYTES
+        ),
     )
 
     try:
@@ -453,9 +462,12 @@ def archive_report(
         }
         _write_private(
             sidecar_path,
-            (json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n").encode(
-                "utf-8"
-            ),
+            (
+                json.dumps(
+                    sidecar, ensure_ascii=False, indent=2, sort_keys=True, default=str
+                )
+                + "\n"
+            ).encode("utf-8"),
         )
 
         return ArchiveResult(
@@ -513,7 +525,9 @@ def prune_scan_archives(
     configured_days = getattr(
         settings, "SCANNER_ARCHIVE_RETENTION_DAYS", DEFAULT_RETENTION_DAYS
     )
-    days = max(0, int(retention_days if retention_days is not None else configured_days or 0))
+    days = max(
+        0, int(retention_days if retention_days is not None else configured_days or 0)
+    )
     if days == 0:
         return {"enabled": False, "deleted": 0, "kept": 0, "errors": 0}
 
@@ -549,7 +563,9 @@ def prune_scan_archives(
             logger.warning("scanner_archive_prune_failed path=%s", path.name)
 
     # Remove only empty directories; a failed rmdir leaves the tree untouched.
-    for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+    for directory in sorted(
+        directories, key=lambda item: len(item.parts), reverse=True
+    ):
         if directory == root:
             continue
         try:

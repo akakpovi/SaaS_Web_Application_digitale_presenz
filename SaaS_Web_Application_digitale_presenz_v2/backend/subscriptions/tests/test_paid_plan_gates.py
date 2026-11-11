@@ -77,9 +77,7 @@ class PaidSuiteGateTest(TestCase):
     @patch("social.views.sync_social_profiles.delay")
     def test_pro_can_sync_reputation(self, sync, mentions) -> None:
         self.client.force_authenticate(self.pro_user)
-        response = self.client.post(
-            f"/api/v1/websites/{self.pro_site.id}/social/sync/"
-        )
+        response = self.client.post(f"/api/v1/websites/{self.pro_site.id}/social/sync/")
         self.assertEqual(response.status_code, 202)
         self.assertTrue(sync.called)
         self.assertTrue(mentions.called)

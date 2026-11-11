@@ -68,15 +68,17 @@ def parse_testssl_json(output: str) -> list[dict[str, Any]]:
             continue
         seen.add(key)
 
-        findings.append({
-            "type": "tls_check",
-            "id": check_id,
-            "ip": ip,
-            "port": str(item.get("port", "443") or "443"),
-            "severity": _SEVERITY_MAP.get(severity_raw, "info"),
-            "finding": finding_text,
-            "cve": item.get("cve", ""),
-            "cwe": item.get("cwe", ""),
-        })
+        findings.append(
+            {
+                "type": "tls_check",
+                "id": check_id,
+                "ip": ip,
+                "port": str(item.get("port", "443") or "443"),
+                "severity": _SEVERITY_MAP.get(severity_raw, "info"),
+                "finding": finding_text,
+                "cve": item.get("cve", ""),
+                "cwe": item.get("cwe", ""),
+            }
+        )
 
     return findings

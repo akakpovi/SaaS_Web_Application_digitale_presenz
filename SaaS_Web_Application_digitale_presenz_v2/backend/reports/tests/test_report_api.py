@@ -12,7 +12,9 @@ from websites.models import Website
 class ReportApiTest(TestCase):
     def setUp(self) -> None:
         self.user = User.objects.create_user("report-api@example.com", "CorrectHorse1!")
-        self.other = User.objects.create_user("report-api2@example.com", "CorrectHorse2!")
+        self.other = User.objects.create_user(
+            "report-api2@example.com", "CorrectHorse2!"
+        )
         self.website = Website.objects.create(owner=self.user, domain="reports.example")
         self.scan = Scan.objects.create(
             website=self.website,

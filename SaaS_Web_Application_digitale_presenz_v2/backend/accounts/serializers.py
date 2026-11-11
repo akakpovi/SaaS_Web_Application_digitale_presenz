@@ -8,7 +8,10 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 
 from .models import User
 
@@ -16,7 +19,14 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer[User]):
     class Meta:
         model = User
-        fields = ("id", "email", "full_name", "is_email_verified", "date_joined", "updated_at")
+        fields = (
+            "id",
+            "email",
+            "full_name",
+            "is_email_verified",
+            "date_joined",
+            "updated_at",
+        )
         read_only_fields = fields
 
 
@@ -42,9 +52,7 @@ class RegistrationSerializer(serializers.ModelSerializer[User]):
     password = serializers.CharField(write_only=True, min_length=12)
     # Language of the sign-up experience.  The verification e-mail is sent in
     # this language; omitting it keeps the model default (English).
-    language = serializers.ChoiceField(
-        choices=User.Language.choices, required=False
-    )
+    language = serializers.ChoiceField(choices=User.Language.choices, required=False)
 
     class Meta:
         model = User
@@ -58,7 +66,8 @@ class RegistrationSerializer(serializers.ModelSerializer[User]):
     def create(self, validated_data: dict[str, Any]) -> User:
         user = User.objects.create_user(**validated_data)
         from django.conf import settings
-        if getattr(settings, 'DEBUG', False):
+
+        if getattr(settings, "DEBUG", False):
             user.is_email_verified = True
             user.save(update_fields=["is_email_verified"])
         return user
@@ -118,7 +127,9 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         uid = force_str(urlsafe_base64_decode(self.validated_data["uidb64"]))
         user = User.objects.get(pk=uid)
         if not default_token_generator.check_token(user, self.validated_data["token"]):
-            raise serializers.ValidationError({"token": "Invalid or expired reset token."})
+            raise serializers.ValidationError(
+                {"token": "Invalid or expired reset token."}
+            )
         user.set_password(self.validated_data["new_password"])
         user.save()
         # Invalidate all existing refresh tokens after password change.
@@ -135,7 +146,9 @@ class EmailVerificationSerializer(serializers.Serializer):
         uid = force_str(urlsafe_base64_decode(self.validated_data["uidb64"]))
         user = User.objects.get(pk=uid)
         if not default_token_generator.check_token(user, self.validated_data["token"]):
-            raise serializers.ValidationError({"token": "Invalid or expired verification token."})
+            raise serializers.ValidationError(
+                {"token": "Invalid or expired verification token."}
+            )
         user.is_email_verified = True
         user.save(update_fields=["is_email_verified"])
         return user

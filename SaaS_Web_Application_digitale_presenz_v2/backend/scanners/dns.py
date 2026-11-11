@@ -1,4 +1,5 @@
 """DNS resolution scanner."""
+
 import logging
 import time
 from typing import Any
@@ -13,43 +14,43 @@ logger = logging.getLogger(__name__)
 
 class DNSScanner(BaseScanner):
     """Check DNS resolution."""
-    
+
     name = "dns"
     timeout = 10
-    
+
     def scan(self, domain: str) -> ScanResult:
         """Scan DNS configuration."""
         start_time = time.time()
         try:
             validated_domain = validate_domain_for_scan(domain)
-            
+
             resolver = dns.resolver.Resolver()
             resolver.timeout = self.timeout
             resolver.lifetime = self.timeout
-            
+
             a_records = []
             try:
-                answers = resolver.resolve(validated_domain, 'A')
+                answers = resolver.resolve(validated_domain, "A")
                 a_records = [str(rdata) for rdata in answers]
             except dns.resolver.NoAnswer:
                 pass
-            
+
             aaaa_records = []
             try:
-                answers = resolver.resolve(validated_domain, 'AAAA')
+                answers = resolver.resolve(validated_domain, "AAAA")
                 aaaa_records = [str(rdata) for rdata in answers]
             except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
                 pass
-            
+
             mx_records = []
             try:
-                answers = resolver.resolve(validated_domain, 'MX')
+                answers = resolver.resolve(validated_domain, "MX")
                 mx_records = [str(rdata.exchange) for rdata in answers]
             except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
                 pass
-            
+
             duration_ms = int((time.time() - start_time) * 1000)
-            
+
             if a_records or aaaa_records:
                 return self._create_result(
                     score=15,
@@ -69,7 +70,7 @@ class DNSScanner(BaseScanner):
                     recommendation="Configure A or AAAA records for your domain.",
                     duration_ms=duration_ms,
                 )
-                
+
         except DomainValidationError as e:
             return self._create_result(
                 score=0,

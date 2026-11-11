@@ -105,17 +105,18 @@ class SSLScoringSeparationTests(TestCase):
         self.website = _website(self.user)
 
     def _run(self, scanners: list[MagicMock], steps: list[dict]) -> Scan:
-        scan = Scan.objects.create(
-            website=self.website, status=Scan.Status.QUEUED
-        )
-        with patch("scanners.registry.ScannerRegistry") as mock_registry, patch(
-            "scans.services.steps_builder.build_initial_steps",
-            return_value=steps,
-        ), patch(
-            "scanners.security.target_validator.validate_target",
-            return_value=_target(),
-        ), patch(
-            "scans.services.scoring.recalculate_scan_health"
+        scan = Scan.objects.create(website=self.website, status=Scan.Status.QUEUED)
+        with (
+            patch("scanners.registry.ScannerRegistry") as mock_registry,
+            patch(
+                "scans.services.steps_builder.build_initial_steps",
+                return_value=steps,
+            ),
+            patch(
+                "scanners.security.target_validator.validate_target",
+                return_value=_target(),
+            ),
+            patch("scans.services.scoring.recalculate_scan_health"),
         ):
             mock_registry.get.side_effect = scanners
             ScanOrchestrator(scan.id).run()
@@ -138,9 +139,7 @@ class SSLScoringSeparationTests(TestCase):
 
         scan = self._run([scanner], [_step("ssl", "ssl")])
 
-        result = CheckResult.objects.get(
-            scan=scan, category=CheckResult.Category.SSL
-        )
+        result = CheckResult.objects.get(scan=scan, category=CheckResult.Category.SSL)
         self.assertEqual(result.score, 16)
         self.assertEqual(result.technical_details["scanner"], "ssl")
         self.assertEqual(
@@ -219,14 +218,8 @@ class SSLScoringSeparationTests(TestCase):
         self.assertEqual(result.score, 16)
         self.assertEqual(result.technical_details["scanner"], "ssl")
 
+        self.assertEqual(Finding.objects.filter(scanner_run__scan=scan).count(), 4)
         self.assertEqual(
-            Finding.objects.filter(scanner_run__scan=scan).count(), 4
-        )
-        self.assertEqual(
-            set(
-                ScannerRun.objects.filter(scan=scan).values_list(
-                    "status", flat=True
-                )
-            ),
+            set(ScannerRun.objects.filter(scan=scan).values_list("status", flat=True)),
             {ScannerRun.Status.COMPLETED},
         )

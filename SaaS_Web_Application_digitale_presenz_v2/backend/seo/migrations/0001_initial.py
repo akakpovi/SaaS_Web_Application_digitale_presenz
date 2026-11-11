@@ -3,73 +3,125 @@ import uuid
 from django.db import migrations, models
 import django.db.models.deletion
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('websites', '0001_initial'),
+        ("websites", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SEOAudit',
+            name="SEOAudit",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('overall_score', models.PositiveSmallIntegerField(default=0)),
-                ('technical_score', models.PositiveSmallIntegerField(default=0)),
-                ('content_score', models.PositiveSmallIntegerField(default=0)),
-                ('mobile_score', models.PositiveSmallIntegerField(default=0)),
-                ('meta_tags', models.JSONField(blank=True, default=dict)),
-                ('robots_txt', models.CharField(default='unknown', max_length=50)),
-                ('sitemap', models.CharField(default='unknown', max_length=50)),
-                ('issues', models.JSONField(blank=True, default=list)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='seo_audits', to='websites.website')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("overall_score", models.PositiveSmallIntegerField(default=0)),
+                ("technical_score", models.PositiveSmallIntegerField(default=0)),
+                ("content_score", models.PositiveSmallIntegerField(default=0)),
+                ("mobile_score", models.PositiveSmallIntegerField(default=0)),
+                ("meta_tags", models.JSONField(blank=True, default=dict)),
+                ("robots_txt", models.CharField(default="unknown", max_length=50)),
+                ("sitemap", models.CharField(default="unknown", max_length=50)),
+                ("issues", models.JSONField(blank=True, default=list)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="seo_audits",
+                        to="websites.website",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='Keyword',
+            name="Keyword",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('term', models.CharField(max_length=255)),
-                ('country', models.CharField(default='FR', max_length=2)),
-                ('search_volume', models.PositiveIntegerField(blank=True, null=True)),
-                ('difficulty', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('current_rank', models.PositiveIntegerField(blank=True, null=True)),
-                ('previous_rank', models.PositiveIntegerField(blank=True, null=True)),
-                ('tracked', models.BooleanField(default=True)),
-                ('last_checked_at', models.DateTimeField(blank=True, null=True)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='seo_keywords', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("term", models.CharField(max_length=255)),
+                ("country", models.CharField(default="FR", max_length=2)),
+                ("search_volume", models.PositiveIntegerField(blank=True, null=True)),
+                ("difficulty", models.PositiveSmallIntegerField(blank=True, null=True)),
+                ("current_rank", models.PositiveIntegerField(blank=True, null=True)),
+                ("previous_rank", models.PositiveIntegerField(blank=True, null=True)),
+                ("tracked", models.BooleanField(default=True)),
+                ("last_checked_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="seo_keywords",
+                        to="websites.website",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Backlink',
+            name="Backlink",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('source_url', models.URLField(max_length=2048)),
-                ('target_url', models.URLField(max_length=2048)),
-                ('anchor_text', models.CharField(blank=True, max_length=500)),
-                ('domain_authority', models.PositiveSmallIntegerField(default=0)),
-                ('is_dofollow', models.BooleanField(default=True)),
-                ('first_seen', models.DateTimeField(auto_now_add=True)),
-                ('last_seen', models.DateTimeField(auto_now=True)),
-                ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='seo_backlinks', to='websites.website')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("source_url", models.URLField(max_length=2048)),
+                ("target_url", models.URLField(max_length=2048)),
+                ("anchor_text", models.CharField(blank=True, max_length=500)),
+                ("domain_authority", models.PositiveSmallIntegerField(default=0)),
+                ("is_dofollow", models.BooleanField(default=True)),
+                ("first_seen", models.DateTimeField(auto_now_add=True)),
+                ("last_seen", models.DateTimeField(auto_now=True)),
+                (
+                    "website",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="seo_backlinks",
+                        to="websites.website",
+                    ),
+                ),
             ],
         ),
         migrations.AddIndex(
-            model_name='seoaudit',
-            index=models.Index(fields=['website', '-created_at'], name='seo_seoaudi_website_72cb05_idx'),
+            model_name="seoaudit",
+            index=models.Index(
+                fields=["website", "-created_at"], name="seo_seoaudi_website_72cb05_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='keyword',
-            constraint=models.UniqueConstraint(fields=('website', 'term', 'country'), name='unique_keyword_per_site'),
+            model_name="keyword",
+            constraint=models.UniqueConstraint(
+                fields=("website", "term", "country"), name="unique_keyword_per_site"
+            ),
         ),
         migrations.AddIndex(
-            model_name='backlink',
-            index=models.Index(fields=['website', '-domain_authority'], name='seo_backlin_website_0f7bbd_idx'),
+            model_name="backlink",
+            index=models.Index(
+                fields=["website", "-domain_authority"],
+                name="seo_backlin_website_0f7bbd_idx",
+            ),
         ),
     ]

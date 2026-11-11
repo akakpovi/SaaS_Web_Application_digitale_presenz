@@ -94,8 +94,12 @@ class StaleAIRunReaperTests(TestCase):
         self.assertEqual(entry["schedule"], 300.0)
 
     def test_terminal_labels_reflect_the_cause(self) -> None:
-        self.assertEqual(_terminal_status("rate_limit_exceeded"), "failed_quota_exhausted")
-        self.assertEqual(_terminal_status("guest_quota_exceeded"), "failed_quota_exhausted")
+        self.assertEqual(
+            _terminal_status("rate_limit_exceeded"), "failed_quota_exhausted"
+        )
+        self.assertEqual(
+            _terminal_status("guest_quota_exceeded"), "failed_quota_exhausted"
+        )
         self.assertEqual(_terminal_status("invalid_api_key"), "failed_configuration")
         self.assertEqual(_terminal_status("client_unavailable"), "failed_configuration")
         self.assertEqual(_terminal_status("AkaServerError"), "failed_upstream_error")

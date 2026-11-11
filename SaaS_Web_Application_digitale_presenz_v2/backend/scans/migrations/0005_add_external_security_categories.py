@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("scans", "0004_finding_scannerrun_remove_scan_scan_status_valid_and_more"),
     ]
