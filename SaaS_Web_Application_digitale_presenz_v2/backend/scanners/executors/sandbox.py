@@ -847,7 +847,8 @@ class SandboxedCommandExecutor:
             argv += ["--entrypoint", docker_entrypoint]
         argv += [
             "--tmpfs",
-            f"/tmp:rw,nosuid,nodev,size={_DEFAULT_TMPFS_MB}m",
+            # Docker tmpfs target inside the container, not a host temp dir.
+            f"/tmp:rw,nosuid,nodev,size={_DEFAULT_TMPFS_MB}m",  # nosec B108
             "--shm-size",
             f"{shm_mb}m",
             "--pids-limit",

@@ -378,7 +378,7 @@ class ZAPScanner(BaseScanner):
             ) from exc
         # The ZAP image runs as an unprivileged, image-specific UID; the
         # directory is disposable and contains no secret.
-        os.chmod(workdir, 0o777)
+        os.chmod(workdir, 0o777)  # nosec B103
         report_path = os.path.join(workdir, "zap-report.json")
 
         try:
@@ -414,7 +414,8 @@ class ZAPScanner(BaseScanner):
                 # starts.  The container remains one-shot, capability-free
                 # and limited to the validated /zap/wrk bind mount.
                 read_only=False,
-                env_extra={"HOME": "/tmp"},
+                # HOME is inside the sandbox container, not a host temp dir.
+                env_extra={"HOME": "/tmp"},  # nosec B108
             )
 
             if result.timed_out or result.memory_exceeded:

@@ -24,8 +24,10 @@ Example fixture for tests::
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from typing import Any
+
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 
 def parse_nmap_xml(output: str) -> list[dict[str, Any]]:
@@ -40,7 +42,7 @@ def parse_nmap_xml(output: str) -> list[dict[str, Any]]:
 
     try:
         root = ET.fromstring(output)
-    except ET.ParseError:
+    except (ET.ParseError, DefusedXmlException):
         return []
 
     for host in root.findall("host"):

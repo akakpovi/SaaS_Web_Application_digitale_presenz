@@ -69,7 +69,7 @@ def report_workdir(prefix: str = "presence-tool-") -> Iterator[str]:
     root = shared_work_dir()
     workdir = tempfile.mkdtemp(prefix=prefix, dir=root or None)
     try:
-        os.chmod(workdir, 0o777)
+        os.chmod(workdir, 0o777)  # nosec B103
     except OSError:  # pragma: no cover - defensive
         logger.warning("Could not widen permissions on sandbox workdir %s", workdir)
     try:

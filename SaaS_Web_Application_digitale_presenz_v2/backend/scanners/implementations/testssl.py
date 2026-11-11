@@ -200,7 +200,8 @@ class TestSSLScanner(BaseScanner):
         limits: Any,
     ) -> ScanOutcome:
         """Docker mode: mount a host directory and read the JSON from there."""
-        container_dir = "/tmp/testssl-report"
+        # Container-side mount path; the host side is a tempfile.mkdtemp.
+        container_dir = "/tmp/testssl-report"  # nosec B108
         report_path = f"{container_dir}/testssl.json"
         run = ToolRun.from_command_result(
             executor.run(

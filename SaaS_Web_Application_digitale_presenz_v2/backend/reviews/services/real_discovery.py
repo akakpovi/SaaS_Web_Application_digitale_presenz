@@ -101,7 +101,7 @@ class RealReviewDiscoveryService:
                     text = r.get("text", "") or r.get("title", "")
                     date = r.get("dates", {}).get("publishedDate")
                     if text:
-                        h_id = hashlib.md5(
+                        h_id = hashlib.sha256(
                             f"tp_{author}_{text[:40]}".encode()
                         ).hexdigest()[:16]
                         reviews.append(
@@ -138,7 +138,7 @@ class RealReviewDiscoveryService:
                             text = r.get("reviewBody", "")
                             date = r.get("datePublished")
                             if text:
-                                h_id = hashlib.md5(
+                                h_id = hashlib.sha256(
                                     f"tp_{author}_{text[:40]}".encode()
                                 ).hexdigest()[:16]
                                 reviews.append(
@@ -200,7 +200,7 @@ class RealReviewDiscoveryService:
                 date_el = card.select_one("time")
                 date_str = date_el.get("datetime") if date_el else None
 
-                h_id = hashlib.md5(
+                h_id = hashlib.sha256(
                     f"tp_{author}_{full_text[:40]}".encode()
                 ).hexdigest()[:16]
                 reviews.append(
@@ -253,7 +253,7 @@ class RealReviewDiscoveryService:
                             )
                             text = r.get("reviewBody", "") or r.get("description", "")
                             if text:
-                                h_id = hashlib.md5(
+                                h_id = hashlib.sha256(
                                     f"web_{author_name}_{text[:30]}".encode()
                                 ).hexdigest()[:16]
                                 reviews.append(
@@ -313,7 +313,7 @@ class RealReviewDiscoveryService:
         if exists:
             return False
 
-        stable_id = f"rev_{hashlib.md5((source.provider + clean_text.lower()).encode()).hexdigest()[:20]}"
+        stable_id = f"rev_{hashlib.sha256((source.provider + clean_text.lower()).encode()).hexdigest()[:20]}"
         review_date = timezone.now()
         if date_str:
             try:
