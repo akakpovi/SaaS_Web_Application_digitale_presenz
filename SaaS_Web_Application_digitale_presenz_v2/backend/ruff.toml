@@ -1,0 +1,10 @@
+# Baseline Ruff configuration for the Django backend.
+#
+# The repository has a large pre-existing style backlog (868 findings under
+# Ruff's default rules on 2026-11-11). The first blocking gate deliberately
+# checks syntax and undefined-name correctness only; expand this selection as
+# the backlog is paid down. `ruff format --check` remains report-only in CI.
+target-version = "py312"
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]
