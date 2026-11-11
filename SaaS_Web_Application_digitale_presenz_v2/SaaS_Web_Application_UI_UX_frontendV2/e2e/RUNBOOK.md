@@ -17,6 +17,7 @@ issue, un log, un fichier suivi ou une commande enregistrée dans l'historique.
    - `Wait for API through nginx`
    - `Seed E2E test data`
    - `Run French i18n E2E`
+   - `Upload Playwright artifacts` (uniquement sur échec)
 3. Chercher les lignes `✘`, `Error:` et `TimeoutError` de Playwright. Noter le
    nom exact du test et la ligne du fichier `e2e/i18n-french.spec.ts`.
 4. Télécharger le log complet :
@@ -124,10 +125,59 @@ E2E_WEBSITE_ID="$E2E_WEBSITE_ID" \
 ```
 
 Les traces et captures locales sont écrites dans `test-results/` (ignoré par
-Git). La CI ne publie pas d'artefact Playwright : le log du job est la source
-principale pour un échec distant.
+Git). En CI, un échec déclenche l'étape `Upload Playwright artifacts` ; les
+fichiers sont conservés sept jours et documentés ci-dessous.
 
-## 5. Vérifier les secrets CI
+## 5. Artefacts Playwright (échec CI)
+
+Quand le job `E2E Tests (i18n)` échoue, l'étape
+`Upload Playwright artifacts` publie l'artefact **`playwright-artifacts`**
+pendant **7 jours**. L'étape est conditionnée par `if: failure()` : elle est
+ignorée sur un run vert.
+
+Contenu attendu selon le point d'échec :
+
+| Fichier | Description |
+| --- | --- |
+| `test-results/<test>/trace.zip` | Trace Playwright : DOM, réseau, console |
+| `test-results/<test>/test-failed-*.png` | Capture au moment de l'échec, si la page a été ouverte |
+| `test-results/<test>/video.webm` | Vidéo du test, si la page a été ouverte |
+| `playwright-report/index.html` | Rapport HTML interactif |
+| `playwright-report/data/*.zip` | Données de trace intégrées au rapport |
+
+Un test qui échoue avant toute navigation (par exemple une assertion
+synthétique) peut ne produire que `trace.zip` et le rapport HTML : c'est
+normal, Playwright n'a pas encore de page à capturer ou à filmer.
+
+### Télécharger l'artefact
+
+Depuis la racine du dépôt :
+
+```bash
+gh run list --repo akakpovi/SaaS_Web_Application_digitale_presenz \
+  --workflow ci.yml --status failure --limit 5
+gh run download <run-id> \
+  --repo akakpovi/SaaS_Web_Application_digitale_presenz \
+  --name playwright-artifacts --dir /tmp/pw-artifacts
+find /tmp/pw-artifacts -type f | sort
+```
+
+### Lire la trace et le rapport
+
+1. Ouvrir `playwright-report/index.html` dans un navigateur.
+2. Pour une trace seule :
+
+```bash
+cd SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
+pnpm exec playwright show-trace \
+  /tmp/pw-artifacts/test-results/<test>/trace.zip
+```
+
+La trace contient la timeline, les snapshots DOM, les requêtes réseau et les
+logs console. Les captures et vidéos, lorsqu'elles existent, sont nommées
+d'après le test et l'étape qui a échoué.
+
+## 6. Vérifier les secrets CI
 
 ```bash
 gh secret list --repo akakpovi/SaaS_Web_Application_digitale_presenz \
@@ -143,7 +193,7 @@ gh secret set E2E_PASSWORD --repo akakpovi/SaaS_Web_Application_digitale_presenz
 gh secret set E2E_WEBSITE_ID --repo akakpovi/SaaS_Web_Application_digitale_presenz
 ```
 
-## 6. Corriger et vérifier
+## 7. Corriger et vérifier
 
 1. Corriger la cause dans le code ou les données de seed, pas le test.
 2. Relancer le test local, puis la suite i18n complète.

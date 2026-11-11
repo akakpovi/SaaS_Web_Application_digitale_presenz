@@ -86,7 +86,9 @@ exists, and never prints the password. Do not commit these values.
 
 En cas d'échec du job E2E, suivre le [runbook E2E](./RUNBOOK.md). Il décrit
 les étapes à inspecter, la classification des erreurs et la reproduction
-locale sans exposer les secrets.
+locale sans exposer les secrets. Les traces, captures, vidéos et le rapport
+HTML sont téléchargeables depuis l'artefact `playwright-artifacts` (7 jours) ;
+voir [Artefacts Playwright](./RUNBOOK.md#5-artefacts-playwright-échec-ci).
 
 Failed runs keep a trace and a screenshot in `test-results/` (gitignored).
 
