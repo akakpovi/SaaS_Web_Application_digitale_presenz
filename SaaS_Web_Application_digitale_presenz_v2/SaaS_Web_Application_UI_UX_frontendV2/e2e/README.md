@@ -63,7 +63,9 @@ Useful environment variables:
 ### Seeding the authenticated checks
 
 The authenticated French checks need an existing account and website. The CI
-job creates them after the Docker stack is healthy and before Playwright runs:
+job creates the Free plan first (so the user-creation signal can attach a
+subscription), then the QA account and website, after the Docker stack is
+healthy and before Playwright runs:
 
 ```bash
 # from the repository root
@@ -77,7 +79,14 @@ docker compose exec -T \
 `E2E_EMAIL` and `E2E_PASSWORD` are required. `E2E_WEBSITE_ID` is optional
 locally; when set, the script creates or reuses a website with that exact
 primary key and verifies that it belongs to the seeded account. The script is
-idempotent and never prints the password. Do not commit these values.
+idempotent, ensures an existing QA account has a Free subscription when none
+exists, and never prints the password. Do not commit these values.
+
+### Diagnostic
+
+En cas d'échec du job E2E, suivre le [runbook E2E](./RUNBOOK.md). Il décrit
+les étapes à inspecter, la classification des erreurs et la reproduction
+locale sans exposer les secrets.
 
 Failed runs keep a trace and a screenshot in `test-results/` (gitignored).
 
@@ -98,7 +107,7 @@ Do not put the password in a tracked file. CI passes the values from the
 ### CI
 
 The workflow supports manual `workflow_dispatch` runs. The E2E job seeds the
-account and website with
+Free plan, account and website with
 `SaaS_Web_Application_digitale_presenz_v2/backend/scripts/seed_e2e.py`, then
 runs `i18n-french.spec.ts`. It is blocking: an E2E failure makes the workflow
 fail (no `continue-on-error`).
