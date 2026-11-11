@@ -1,11 +1,12 @@
 # E2E tests (Playwright)
 
-Two critical user journeys are covered end to end against the real stack:
+The end-to-end suite covers these journeys against the real stack:
 
 | Test | Flow |
 | --- | --- |
 | `registration-verification.spec.ts` | sign-up → real verification e-mail in Mailpit → link → verified account → login |
 | `public-scan.spec.ts` | visitor scans a domain → real API report → `/report/:id` redirect → share link → lead capture e-mail |
+| `i18n-french.spec.ts` | French public pages plus authenticated dashboard, website and settings checks (private checks use the seeded QA account) |
 | `legal-seo-dist.spec.ts` | serves the built `dist/` with the nginx rules and checks the pre-rendered legal pages, sitemap and robots (no Docker needed) |
 | `bilingual-shell-dist.spec.ts` | same harness: every URL advertised by `hreflang` serves that language as raw HTML, plus hydration, noindex and switcher behaviour |
 
@@ -57,7 +58,26 @@ Useful environment variables:
 | `E2E_SKIP_DOCKER_SETUP` | unset | do not touch Docker (remote stack, no cleanup) |
 | `E2E_EMAIL` | unset | existing account for the French private-screen checks |
 | `E2E_PASSWORD` | unset | password for `E2E_EMAIL`; never committed |
-| `E2E_WEBSITE_ID` | first listed website | optional site used by the French detail check |
+| `E2E_WEBSITE_ID` | first listed website | site ID used by the French detail check; CI seeds this exact ID |
+
+### Seeding the authenticated checks
+
+The authenticated French checks need an existing account and website. The CI
+job creates them after the Docker stack is healthy and before Playwright runs:
+
+```bash
+# from the repository root
+docker compose exec -T \
+  -e E2E_EMAIL="$E2E_EMAIL" \
+  -e E2E_PASSWORD="$E2E_PASSWORD" \
+  -e E2E_WEBSITE_ID="$E2E_WEBSITE_ID" \
+  web python scripts/seed_e2e.py
+```
+
+`E2E_EMAIL` and `E2E_PASSWORD` are required. `E2E_WEBSITE_ID` is optional
+locally; when set, the script creates or reuses a website with that exact
+primary key and verifies that it belongs to the seeded account. The script is
+idempotent and never prints the password. Do not commit these values.
 
 Failed runs keep a trace and a screenshot in `test-results/` (gitignored).
 
@@ -68,12 +88,20 @@ dashboard, website-detail and settings checks use an existing account and are
 skipped when `E2E_EMAIL`/`E2E_PASSWORD` are absent. Run them with:
 
 ```bash
-E2E_EMAIL='...' E2E_PASSWORD='...' E2E_WEBSITE_ID=38 \
+E2E_EMAIL='...' E2E_PASSWORD='...' E2E_WEBSITE_ID='<id>' \
   pnpm exec playwright test e2e/i18n-french.spec.ts --reporter=list
 ```
 
 Do not put the password in a tracked file. CI passes the values from the
-`E2E_EMAIL`, `E2E_PASSWORD` and optional `E2E_WEBSITE_ID` repository secrets.
+`E2E_EMAIL`, `E2E_PASSWORD` and `E2E_WEBSITE_ID` repository secrets.
+
+### CI
+
+The workflow supports manual `workflow_dispatch` runs. The E2E job seeds the
+account and website with
+`SaaS_Web_Application_digitale_presenz_v2/backend/scripts/seed_e2e.py`, then
+runs `i18n-french.spec.ts`. It is blocking: an E2E failure makes the workflow
+fail (no `continue-on-error`).
 
 ## Test data hygiene
 
@@ -82,4 +110,5 @@ Do not put the password in a tracked file. CI passes the values from the
   runs stay deterministic (the public endpoint allows 5 requests/hour/IP).
 - `global-teardown.ts` deletes only accounts and public leads whose address
   starts with `e2e-`. Guest scans are anonymous and are purged by the nightly
-  cleanup task.
+  cleanup task. The QA account and its website are intentionally outside that
+  prefix so the CI seed can reuse them on a repeat run.
