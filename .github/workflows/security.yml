@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,17 +33,20 @@ jobs:
         run: python -m pip install "bandit[toml]==1.8.6"
 
       - name: Run Bandit
+        # Bandit 1.8.6 has no SARIF formatter; JSON is its supported
+        # machine-readable output and is uploaded as an artifact below.
         run: |
           bandit -r SaaS_Web_Application_digitale_presenz_v2/backend \
             -x "*/migrations/*,*/tests/*,*/__pycache__/*" \
-            -f sarif -o bandit-results.sarif --exit-zero
+            -f json -o bandit-results.json --exit-zero
 
-      - name: Upload Bandit SARIF
-        if: always() && hashFiles('bandit-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Bandit report
+        if: always() && hashFiles('bandit-results.json') != ''
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: bandit-results.sarif
-          category: bandit
+          name: bandit-results
+          path: bandit-results.json
+          retention-days: 30
         continue-on-error: true
 
   pip-audit:
