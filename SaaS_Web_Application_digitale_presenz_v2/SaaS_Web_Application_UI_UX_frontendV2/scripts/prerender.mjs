@@ -547,7 +547,9 @@ function mapWpPosts(posts) {
       // Fields added by wordpress/mu-plugins/presence-i18n.php; the same
       // defaults as src/api/blog.ts, so the shell and the hydrated head
       // describe an article the same way.
-      lang: post.presence_lang?.code === "de" ? "de" : "en",
+      lang: ["de", "en", "fr"].includes(post.presence_lang?.code)
+        ? post.presence_lang.code
+        : "en",
       translations: (post.presence_translations ?? [])
         .filter((entry) => entry.slug && entry.lang)
         .map((entry) => ({ lang: String(entry.lang), slug: String(entry.slug) })),

@@ -17,7 +17,7 @@ export interface BlogPost {
   readTime: string
   related: string[]
   image?: string
-  /** Language of this article as stored in the CMS (`de` | `en`). */
+  /** Language of this article as stored in the CMS (`de` | `en` | `fr`). */
   lang: string
   /** Published sibling articles, used for the language switch and hreflang. */
   translations: { lang: string; slug: string; title: string }[]
@@ -109,7 +109,9 @@ function toBlogPost(post: WpPost, all: WpPost[] = []): BlogPost {
       .slice(0, 2)
       .map((candidate) => candidate.slug),
     image,
-    lang: post.presence_lang?.code ?? "en",
+    lang: ["de", "en", "fr"].includes(post.presence_lang?.code ?? "")
+      ? post.presence_lang!.code!
+      : "en",
     translations: (post.presence_translations ?? [])
       .filter((entry) => entry.slug && entry.lang)
       .map((entry) => ({
@@ -142,7 +144,16 @@ export async function fetchPosts(
   const posts = await wpFetch(
     `${postsEndpoint()}?per_page=${perPage}&_embed=1&orderby=date&order=desc${language}`,
   )
-  return posts.map((post) => toBlogPost(post, posts))
+  // The CMS filter is authoritative when it knows the locale. French has no
+  // language term yet, so WordPress returns the whole catalogue for
+  // `presence_lang=fr`; never let that fallback leak DE/EN articles onto a
+  // French page (or let a future CMS change reintroduce a mixed list).
+  const localized = locale
+    ? posts.filter(
+        (post) => (post.presence_lang?.code ?? "en") === locale,
+      )
+    : posts
+  return localized.map((post) => toBlogPost(post, localized))
 }
 
 export async function fetchPostBySlug(
@@ -155,8 +166,13 @@ export async function fetchPostBySlug(
   const posts = await wpFetch(
     `${postsEndpoint()}?slug=${encodeURIComponent(slug)}&_embed=1${language}`,
   )
-  if (posts.length === 0) return null
-  return toBlogPost(posts[0], posts)
+  const localized = locale
+    ? posts.filter(
+        (post) => (post.presence_lang?.code ?? "en") === locale,
+      )
+    : posts
+  if (localized.length === 0) return null
+  return toBlogPost(localized[0], localized)
 }
 
 /**

@@ -355,7 +355,7 @@
     "loadError": "Impossible de charger les articles.",
     "articleError": "Impossible de charger cet article.",
     "retry": "Réessayer",
-    "empty": "Aucun article publié pour l'instant.",
+    "empty": "Aucun article disponible en français pour le moment.",
     "readArticle": "Lire l'article",
     "readTime": "{minutes} lire",
     "minutes": "min",

@@ -41,7 +41,7 @@ function readInitialBlogData(): InitialBlogData | null {
     const parsed = JSON.parse(node.textContent) as InitialBlogData
     if (
       parsed &&
-      (parsed.locale === "de" || parsed.locale === "en") &&
+      isLocale(parsed.locale) &&
       Array.isArray(parsed.posts)
     ) {
       return parsed

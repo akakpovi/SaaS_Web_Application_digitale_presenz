@@ -355,7 +355,7 @@
     "loadError": "Unable to load articles.",
     "articleError": "Unable to load this article.",
     "retry": "Retry",
-    "empty": "No articles published yet.",
+    "empty": "No articles available in English yet.",
     "readArticle": "Read article",
     "readTime": "{minutes} read",
     "minutes": "min",

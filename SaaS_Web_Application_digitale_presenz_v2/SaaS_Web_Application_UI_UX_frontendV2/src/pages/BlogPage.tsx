@@ -10,31 +10,37 @@ import { fetchPosts, type BlogPost } from "../api/blog"
 export default function BlogPage() {
   const { locale, t } = useI18n()
   // The build renders this page with the posts it already fetched from
-  // WordPress and embeds the same list for hydration. Without it the first
-  // server render would only contain the loading state.
+  // WordPress and embeds the same locale-specific list for hydration. Without
+  // it the first server render would only contain the loading state.
   const initial = useInitialBlogData()
-  const [posts, setPosts] = useState<BlogPost[]>(initial?.posts ?? [])
-  const [loading, setLoading] = useState(!initial)
+  const initialPosts = initial?.locale === locale ? initial.posts : null
+  const [posts, setPosts] = useState<BlogPost[]>(initialPosts ?? [])
+  const [loading, setLoading] = useState(!initialPosts)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      // The SSG payload stays locale-specific for hreflang/SEO. The hydrated
-      // index then loads the complete catalogue so all published articles are
-      // reachable from every language, without mixing languages in the static
-      // HTML checked by the SEO build.
-      setPosts(await fetchPosts(12))
+      // Filter on the server too: the hydrated index must never replace a
+      // localized list with the complete multilingual catalogue. A French
+      // page with no French article stays empty instead of showing German or
+      // English content.
+      setPosts(await fetchPosts(12, locale))
     } catch (err) {
       setError(err instanceof Error ? err.message : t("blog.loadError"))
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [locale, t])
 
   useEffect(() => {
+    setPosts(initialPosts ?? [])
+    setLoading(!initialPosts)
     void load()
+    // `initialPosts` is derived from the build payload; `load` already changes
+    // with the locale and is the only fetch that should run after hydration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load])
 
   return (

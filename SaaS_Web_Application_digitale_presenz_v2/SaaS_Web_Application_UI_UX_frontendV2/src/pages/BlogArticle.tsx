@@ -5,7 +5,7 @@ import SEO, { articleSchema } from "../components/SEO"
 import BlogBody from "../components/BlogBody"
 import LanguageSwitcher from "../components/LanguageSwitcher"
 import NotFound from "./NotFound"
-import { useI18n } from "../i18n"
+import { isLocale, useI18n } from "../i18n"
 import { fetchPostBySlug, fetchPosts, type BlogPost } from "../api/blog"
 
 function PublicNav() {
@@ -119,7 +119,7 @@ export default function BlogArticle() {
         description={article.excerpt}
         path={`/blog/${article.slug}`}
         bilingual={false}
-        lang={article.lang === "de" ? "de" : "en"}
+        lang={isLocale(article.lang) ? article.lang : "en"}
         alternates={[
           { lang: article.lang, path: `/blog/${article.slug}` },
           ...article.translations.map((translation) => ({
