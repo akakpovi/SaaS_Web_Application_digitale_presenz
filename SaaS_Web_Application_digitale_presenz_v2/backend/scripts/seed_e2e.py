@@ -32,7 +32,7 @@ from django.contrib.auth import get_user_model  # noqa: E402
 from django.db import transaction  # noqa: E402
 
 from subscriptions.models import Plan, Subscription  # noqa: E402
-from subscriptions.pricing import get_catalogue_entry  # noqa: E402
+from subscriptions.pricing import PLAN_CATALOGUE  # noqa: E402
 from websites.models import Website  # noqa: E402
 
 DEFAULT_DOMAIN = "e2e.presence.local"
@@ -76,16 +76,23 @@ def run_seed() -> None:
     User = get_user_model()
 
     with transaction.atomic():
-        # The user post_save signal only creates a Free subscription when the
-        # Free plan already exists. Create it first, using the same catalogue
-        # as the create_plans management command, so a fresh CI database does
-        # not emit "Free plan not found" and the QA account receives a plan.
-        free_plan_data = dict(get_catalogue_entry(Plan.Tier.FREE.value))
-        free_plan_data.pop("tier", None)
-        free_plan, plan_created = Plan.objects.get_or_create(
-            tier=Plan.Tier.FREE,
-            defaults=free_plan_data,
-        )
+        # A fresh CI database has no plans. Seed the whole catalogue with the
+        # same source of truth as `create_plans`, so pricing and subscriptions
+        # work before the QA account is created. Keep any provider price IDs
+        # already stored on existing plans: they are not part of the catalogue.
+        plans: dict[str, Plan] = {}
+        plans_created = 0
+        for entry in PLAN_CATALOGUE:
+            plan_data = dict(entry)
+            plan_data["tier"] = Plan.Tier(plan_data["tier"])
+            plan_data["is_active"] = True
+            plan, plan_created = Plan.objects.update_or_create(
+                tier=plan_data["tier"],
+                defaults=plan_data,
+            )
+            plans[plan.tier] = plan
+            plans_created += int(plan_created)
+        free_plan = plans[Plan.Tier.FREE]
 
         user = User.objects.filter(email__iexact=email).first()
         created_user = user is None
@@ -94,6 +101,11 @@ def run_seed() -> None:
         user.email = email
         user.is_active = True
         user.is_email_verified = True
+        # `admin.spec.ts` logs into Django admin with the same QA account.
+        # These flags are scoped to the disposable E2E database/account and
+        # make the admin checks independent from a manually prepared fixture.
+        user.is_staff = True
+        user.is_superuser = True
         if not user.full_name:
             user.full_name = "Presence QA"
         user.set_password(password)
@@ -148,8 +160,14 @@ def run_seed() -> None:
             if website.organization_id is None:
                 website.save()
 
-    print(f"seed-e2e: plan free {'created' if plan_created else 'reused'}")
-    print(f"seed-e2e: user {'created' if created_user else 'updated'} id={user.pk}")
+    print(
+        f"seed-e2e: plans ensured={len(plans)} created={plans_created} "
+        f"tiers={','.join(sorted(plans))}"
+    )
+    print(
+        f"seed-e2e: user {'created' if created_user else 'updated'} id={user.pk} "
+        "staff=True superuser=True"
+    )
     print(
         f"seed-e2e: website {'created' if created_website else 'reused'} "
         f"id={website.pk}"

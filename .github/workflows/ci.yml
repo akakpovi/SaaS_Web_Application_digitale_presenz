@@ -165,9 +165,11 @@ jobs:
           test -f dist/blog/index.html
 
   e2e:
-    name: E2E Tests (i18n)
+    name: E2E Tests
     runs-on: ubuntu-latest
     needs: [frontend]
+    # The full suite currently takes ~3 minutes locally. Keep a generous
+    # ceiling for the fresh Docker build and avoid a flaky 10-minute cutoff.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -188,7 +190,7 @@ jobs:
 
       - name: Install Chromium
         working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
-        run: pnpm exec playwright install chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Create CI environment file
         # The Compose stack requires backend/.env, which is intentionally not
@@ -247,13 +249,16 @@ jobs:
             -e E2E_WEBSITE_ID="$E2E_WEBSITE_ID" \
             web python scripts/seed_e2e.py
 
-      - name: Run French i18n E2E
+      - name: Run full E2E suite
         working-directory: SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_WEBSITE_ID: ${{ secrets.E2E_WEBSITE_ID }}
-        run: pnpm exec playwright test e2e/i18n-french.spec.ts
+        # The default playwright.config.ts also contains historical dist/dev
+        # specs. The smoke config is the 9-file, 35-test suite against the
+        # Docker/nginx stack started above.
+        run: pnpm exec playwright test --config=playwright.smoke.config.ts
 
       - name: Upload Playwright artifacts
         if: failure()
@@ -261,8 +266,8 @@ jobs:
         with:
           name: playwright-artifacts
           path: |
-            SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/test-results/
-            SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/playwright-report/
+            SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/test-results-smoke/
+            SaaS_Web_Application_digitale_presenz_v2/SaaS_Web_Application_UI_UX_frontendV2/playwright-report-smoke/
           if-no-files-found: ignore
           retention-days: 7
 
