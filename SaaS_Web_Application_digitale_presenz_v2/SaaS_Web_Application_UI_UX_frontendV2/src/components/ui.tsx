@@ -163,6 +163,7 @@ export function Button({
   onClick,
   disabled,
   type = "button",
+  "aria-label": ariaLabel,
 }: {
   children: React.ReactNode
   variant?: "primary" | "secondary" | "ghost" | "danger" | "outline"
@@ -171,6 +172,7 @@ export function Button({
   onClick?: () => void
   disabled?: boolean
   type?: "button" | "submit"
+  "aria-label"?: string
 }) {
   const variants = {
     primary: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
@@ -189,6 +191,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}

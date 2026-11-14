@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
-import { useParams, Link } from "react-router-dom"
-import { ArrowLeft, RefreshCw, ChevronDown, Clock, ShieldCheck } from "lucide-react"
+import { useParams, Link, useNavigate } from "react-router-dom"
+import { ArrowLeft, RefreshCw, ChevronDown, Clock, ShieldCheck, Trash2 } from "lucide-react"
 import {
   Card,
   StatusBadge,
@@ -128,10 +128,13 @@ export default function WebsiteDetails() {
   } = useFormat()
   const { id } = useParams()
   const websiteId = Number(id)
+  const navigate = useNavigate()
   const { showToast } = useToast()
   const [refreshKey, setRefreshKey] = useState(0)
   const [starting, setStarting] = useState(false)
   const [activatingMonitoring, setActivatingMonitoring] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const monitoring = useApiResource<MonitoringConfig>(
     Number.isFinite(websiteId) ? endpoints.monitoring.detail(websiteId) : null,
@@ -229,6 +232,19 @@ export default function WebsiteDetails() {
   const checks = site.checks ?? []
   const score = site.health_score
 
+  const confirmDelete = async () => {
+    setDeleting(true)
+    try {
+      await api.delete(endpoints.websites.detail(websiteId))
+      showToast(t("websites.deleted", { domain: site.domain }), "success")
+      navigate("/app/websites")
+    } catch (err) {
+      showToast(apiErrorMessage(err), "error")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Breadcrumb */}
@@ -275,6 +291,15 @@ export default function WebsiteDetails() {
             {starting || activeScan
               ? t("websiteDetails.scanning")
               : t("websiteDetails.runCheck")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+            aria-label={t("websites.delete")}
+            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={14} />
           </Button>
         </div>
       </div>
@@ -468,6 +493,40 @@ export default function WebsiteDetails() {
           ))
         )}
       </Card>
+
+      {deleteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("websites.deleteTitle")}
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <h2 className="font-bold text-slate-900">
+              {t("websites.deleteTitle")}
+            </h2>
+            <p className="text-sm text-slate-600 mt-2">
+              {t("websites.deleteConfirm", { domain: site.domain })}
+            </p>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+              >
+                {t("websites.cancel")}
+              </Button>
+              <Button
+                onClick={() => void confirmDelete()}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleting ? t("websites.deleting") : t("websites.delete")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

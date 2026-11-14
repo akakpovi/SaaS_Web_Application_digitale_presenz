@@ -31,6 +31,7 @@ export default function Websites() {
   const [domain, setDomain] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [busySite, setBusySite] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Website | null>(null)
 
   const { data: websites, error, loading, refetch } = useApiList<Website>(
     endpoints.websites.list,
@@ -86,16 +87,16 @@ export default function Websites() {
     }
   }
 
-  const handleDelete = async (site: Website) => {
-    if (
-      !window.confirm(t("websites.deleteConfirm", { domain: site.domain }))
-    ) {
-      return
-    }
-    setBusySite(site.id)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setBusySite(deleteTarget.id)
     try {
-      await api.delete(endpoints.websites.detail(site.id))
-      showToast(t("websites.deleted", { domain: site.domain }), "success")
+      await api.delete(endpoints.websites.detail(deleteTarget.id))
+      showToast(
+        t("websites.deleted", { domain: deleteTarget.domain }),
+        "success",
+      )
+      setDeleteTarget(null)
       refresh()
     } catch (err) {
       showToast(apiErrorMessage(err), "error")
@@ -223,7 +224,8 @@ export default function Websites() {
                     size="sm"
                     variant="ghost"
                     disabled={busySite === site.id}
-                    onClick={() => handleDelete(site)}
+                    onClick={() => setDeleteTarget(site)}
+                    aria-label={t("websites.delete")}
                     className="text-red-500 hover:text-red-600 hover:bg-red-50"
                   >
                     <Trash2 size={13} />
@@ -300,6 +302,42 @@ export default function Websites() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("websites.deleteTitle")}
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <h2 className="font-bold text-slate-900">
+              {t("websites.deleteTitle")}
+            </h2>
+            <p className="text-sm text-slate-600 mt-2">
+              {t("websites.deleteConfirm", { domain: deleteTarget.domain })}
+            </p>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={busySite === deleteTarget.id}
+              >
+                {t("websites.cancel")}
+              </Button>
+              <Button
+                onClick={() => void confirmDelete()}
+                disabled={busySite === deleteTarget.id}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {busySite === deleteTarget.id
+                  ? t("websites.deleting")
+                  : t("websites.delete")}
+              </Button>
+            </div>
           </div>
         </div>
       )}
