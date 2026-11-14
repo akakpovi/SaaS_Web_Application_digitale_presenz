@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "../components/LocaleLink"
 import { ArrowRight, Clock, AlertTriangle, Loader2 } from "lucide-react"
 import SEO from "../components/SEO"
@@ -16,30 +16,26 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>(initial?.posts ?? [])
   const [loading, setLoading] = useState(!initial)
   const [error, setError] = useState<string | null>(null)
-  const loadedLocale = useRef(initial?.locale)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      // Only articles written in the active language: the German blog shows
-      // German posts, the English blog English ones.
-      setPosts(await fetchPosts(12, locale))
-      loadedLocale.current = locale
+      // The SSG payload stays locale-specific for hreflang/SEO. The hydrated
+      // index then loads the complete catalogue so all published articles are
+      // reachable from every language, without mixing languages in the static
+      // HTML checked by the SEO build.
+      setPosts(await fetchPosts(12))
     } catch (err) {
       setError(err instanceof Error ? err.message : t("blog.loadError"))
     } finally {
       setLoading(false)
     }
-  }, [locale, t])
+  }, [t])
 
   useEffect(() => {
-    // The initial list belongs to one locale. A later switch must refetch,
-    // while the first client render keeps the build-time list (no flash and no
-    // markup mismatch during hydration).
-    if (loadedLocale.current === locale) return
     void load()
-  }, [locale, load])
+  }, [load])
 
   return (
     <div className="min-h-full bg-white">
