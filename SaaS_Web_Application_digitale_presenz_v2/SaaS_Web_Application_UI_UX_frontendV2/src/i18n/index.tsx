@@ -17,6 +17,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 import de from "./de.json"
@@ -176,6 +177,18 @@ function readStoredLocale(): Locale | null {
 }
 
 /**
+ * Locale explicitly chosen by the visitor on this device.
+ *
+ * `detectLocale` uses it as a fallback, while `RouteLocaleSync` needs the raw
+ * value to decide whether a bare public URL should be upgraded to its
+ * localized canonical URL after hydration.
+ */
+export function getStoredLocale(): Locale | null {
+  if (typeof window === "undefined") return null
+  return readStoredLocale()
+}
+
+/**
  * Locale carried by `?lang=`, which is the URL form of the English variant
  * (`?lang=en`) advertised by the hreflang alternates and served by nginx as a
  * distinct pre-rendered file. Without this the English URL would show the
@@ -263,15 +276,27 @@ export function I18nProvider({
   const [locale, setLocaleState] = useState<Locale>(
     () => initialLocale ?? detectLocale(),
   )
+  const mounted = useRef(false)
 
   useEffect(() => {
     applyDocumentLanguage(locale)
+
+    // A pre-rendered German page hydrates with `initialLocale="de"` even when
+    // the visitor previously chose French. Do not overwrite that preference
+    // before RouteLocaleSync has had a chance to redirect the bare URL to
+    // `/fr/...`; after the first effect, every switch is persisted normally.
+    if (!mounted.current) {
+      mounted.current = true
+      const stored = readStoredLocale()
+      if (initialLocale && stored && stored !== initialLocale) return
+    }
+
     try {
       window.localStorage.setItem(STORAGE_KEY, locale)
     } catch {
       // Storage can be blocked; the in-memory locale still applies.
     }
-  }, [locale])
+  }, [initialLocale, locale])
 
   const setLocale = useCallback((next: Locale) => {
     if (!isLocale(next)) return

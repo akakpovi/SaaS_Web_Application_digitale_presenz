@@ -1,4 +1,10 @@
-import { useI18n, type Locale } from "../i18n"
+import { useLocation, useNavigate } from "react-router-dom"
+import {
+  localizedPath,
+  useI18n,
+  type Locale,
+} from "../i18n"
+import { isPublicRoutePath } from "../seo/publicPaths"
 import { useAuth } from "../api/hooks/useAuth"
 import { api } from "../api/client"
 import { endpoints } from "../api/endpoints"
@@ -21,10 +27,39 @@ export default function LanguageSwitcher({
 }) {
   const { locale, setLocale, t } = useI18n()
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const { pathname, search, hash } = useLocation()
+
+  /** Remove `/fr` or `/en` so the next locale can be applied to the same page. */
+  const barePath = (value: string): string => {
+    if (value === "/fr" || value.startsWith("/fr/")) {
+      return value.slice(3) || "/"
+    }
+    if (value === "/en" || value.startsWith("/en/")) {
+      return value.slice(3) || "/"
+    }
+    return value
+  }
 
   const select = async (next: Locale) => {
-    if (next === locale) return
+    const base = barePath(pathname)
+    const params = new URLSearchParams(search)
+    // `lang` is a legacy alias, not part of the canonical localized URL.
+    params.delete("lang")
+    const query = params.toString()
+    const localized = localizedPath(base, next)
+    // Public pages use directory URLs (`/fr/pricing/`); private app routes
+    // keep their extension-less path (`/fr/app/dashboard`).
+    const targetPath =
+      isPublicRoutePath(base) && localized !== "/"
+        ? `${localized.replace(/\/+$/, "")}/`
+        : localized
+    const target = `${targetPath}${query ? `?${query}` : ""}${hash}`
+    const current = `${pathname}${search}${hash}`
+
     setLocale(next)
+    if (target !== current) navigate(target, { replace: true })
+
     if (!user) return
     try {
       await api.patch<User>(endpoints.profile, { language: next })

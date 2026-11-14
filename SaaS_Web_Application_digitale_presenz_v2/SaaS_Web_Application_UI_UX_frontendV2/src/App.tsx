@@ -224,7 +224,6 @@ const PRIVATE_ENTRY_PATHS = [
   "/onboarding",
   "/settings/integrations",
   "/admin",
-  "/app/*",
   "/report/*",
   "/scan/*",
 ] as const
@@ -265,6 +264,22 @@ export function AppRoutes() {
                 />
               )),
             )}
+
+            {/* The authenticated app keeps the locale in the path
+                (`/fr/app/dashboard`) instead of downgrading it to `?lang=fr`.
+                The same AppLayout serves both the canonical `/app/...` tree and
+                every localized tree. */}
+            {LOCALES.map((locale) => (
+              <Route
+                key={`${locale}:app`}
+                path={`/${locale}/app/*`}
+                element={
+                  <AuthGuard>
+                    <AppLayout />
+                  </AuthGuard>
+                }
+              />
+            ))}
 
             {/* A CMS article exists in one language under its own slug; its
                 translation is another slug, never `/en/blog/<slug>`. */}

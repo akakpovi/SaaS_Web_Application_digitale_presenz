@@ -65,7 +65,7 @@ async function expectFrenchPage(page: Page): Promise<void> {
 
 async function openPrivate(page: Page, path: string): Promise<void> {
   await page.goto(`/fr/app/${path}`)
-  await page.waitForURL(new RegExp(`/app/${path}\\?lang=fr$`), {
+  await page.waitForURL(new RegExp(`/fr/app/${path}$`), {
     timeout: 30_000,
   })
   await expect(page.locator("#root")).not.toBeEmpty()
@@ -172,7 +172,7 @@ test.describe("French private screens", () => {
     test.skip(!websiteId, "The test account has no website to open.")
 
     await page.goto(`/fr/app/websites/${websiteId}`)
-    await page.waitForURL(new RegExp(`/app/websites/${websiteId}\\?lang=fr$`), {
+    await page.waitForURL(new RegExp(`/fr/app/websites/${websiteId}$`), {
       timeout: 30_000,
     })
     await expectFrenchPage(page)
