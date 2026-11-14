@@ -170,7 +170,13 @@ function AppLayout() {
  */
 const PUBLIC_ELEMENTS: Record<PublicPath, ReactNode> = {
   "/": <Landing />,
-  "/pricing": <Pricing />,
+  // The pricing page is public, but an authenticated visitor must still see
+  // which plan is current. PlanProvider normally lives in the private shell.
+  "/pricing": (
+    <PlanProvider>
+      <Pricing />
+    </PlanProvider>
+  ),
   "/faq": <FAQPage />,
   "/blog": <BlogPage />,
   "/about": <AboutPage />,

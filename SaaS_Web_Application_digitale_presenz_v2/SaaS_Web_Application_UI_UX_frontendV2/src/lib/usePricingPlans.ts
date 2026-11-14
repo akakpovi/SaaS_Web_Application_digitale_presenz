@@ -15,7 +15,14 @@ import { FALLBACK_PLANS, fromApiPlan, type DisplayPlan } from "./pricing"
  * `subscriptions/pricing.py`, checked by scripts/check_pricing_sync.py) is the
  * offline fallback.
  */
-export function usePricingPlans(): DisplayPlan[] {
+const PUBLIC_TIERS = new Set(["free", "pro", "business", "agency"])
+
+/**
+ * The public catalogue deliberately excludes internal QA plans. The only
+ * exception is an authenticated QA account viewing the pricing page: it must
+ * still see which plan it currently uses.
+ */
+export function usePricingPlans(includeInternal = false): DisplayPlan[] {
   const [plans, setPlans] = useState<DisplayPlan[]>(FALLBACK_PLANS)
 
   useEffect(() => {
@@ -24,7 +31,12 @@ export function usePricingPlans(): DisplayPlan[] {
       .get<Plan[]>(endpoints.billing.plans)
       .then((data) => {
         if (cancelled) return
-        const mapped = data.map(fromApiPlan)
+        const mapped = data
+          .map(fromApiPlan)
+          .filter(
+            (plan) =>
+              includeInternal || PUBLIC_TIERS.has(String(plan.tier)),
+          )
         if (mapped.length > 0) setPlans(mapped)
       })
       .catch(() => {
@@ -33,7 +45,7 @@ export function usePricingPlans(): DisplayPlan[] {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [includeInternal])
 
   return plans
 }

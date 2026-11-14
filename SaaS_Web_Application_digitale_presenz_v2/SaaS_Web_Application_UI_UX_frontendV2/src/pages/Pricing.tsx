@@ -8,6 +8,8 @@ import { useI18n } from "../i18n"
 import { api } from "../api/client"
 import { endpoints } from "../api/endpoints"
 import { authStorage } from "../api/authStorage"
+import { useAuth } from "../api/hooks/useAuth"
+import { usePlan } from "../contexts/PlanContext"
 import type { CheckoutResponse } from "../api/types"
 import { FALLBACK_PLANS, priceLabel, yearlyMonthlyEquivalent } from "../lib/pricing"
 import {
@@ -19,8 +21,14 @@ import {
 export default function Pricing() {
   const navigate = useNavigate()
   const { t } = useI18n()
+  const { isAuthenticated } = useAuth()
+  const { tier, loading: planLoading } = usePlan()
   const [yearly, setYearly] = useState(false)
-  const plans = usePricingPlans().map(usePlanCopy())
+  const includeInternal =
+    isAuthenticated &&
+    !planLoading &&
+    !["free", "pro", "business", "agency"].includes(String(tier))
+  const plans = usePricingPlans(includeInternal).map(usePlanCopy())
   const [busyTier, setBusyTier] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -129,6 +137,10 @@ export default function Pricing() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {plans.map((plan) => {
             const highlight = plan.tier === "pro"
+            const current =
+              isAuthenticated &&
+              !planLoading &&
+              String(plan.tier) === String(tier)
             const monthlyEquivalent = yearly
               ? yearlyMonthlyEquivalent(plan)
               : plan.monthly
@@ -152,13 +164,20 @@ export default function Pricing() {
                 <div
                   className={`mb-5 ${highlight ? "text-white" : "text-slate-900"}`}
                 >
-                  <p
-                    className={`text-sm font-semibold mb-2 ${
-                      highlight ? "text-indigo-200" : "text-slate-500"
-                    }`}
-                  >
-                    {plan.name}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <p
+                      className={`text-sm font-semibold ${
+                        highlight ? "text-indigo-200" : "text-slate-500"
+                      }`}
+                    >
+                      {plan.name}
+                    </p>
+                    {current && (
+                      <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-950">
+                        {t("billing.currentPlan")}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-4xl font-black tabular-nums">
                       {priceLabel(monthlyEquivalent)}
@@ -211,14 +230,18 @@ export default function Pricing() {
 
                 <button
                   onClick={() => choosePlan(plan)}
-                  disabled={busyTier === plan.tier}
+                  disabled={busyTier === plan.tier || current}
                   className={`w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-60 ${
                     highlight
                       ? "bg-white text-indigo-700 hover:bg-indigo-50"
                       : "bg-indigo-600 text-white hover:bg-indigo-700"
                   }`}
                 >
-                  {busyTier === plan.tier ? t("pricing.redirecting") : plan.cta}
+                  {current
+                    ? t("billing.currentPlan")
+                    : busyTier === plan.tier
+                      ? t("pricing.redirecting")
+                      : plan.cta}
                 </button>
               </div>
             )
