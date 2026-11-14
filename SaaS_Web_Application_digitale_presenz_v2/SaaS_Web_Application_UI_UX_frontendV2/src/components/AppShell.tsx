@@ -155,6 +155,26 @@ export function AppShell({
     setSidebarOpen(false)
   }, [location.pathname])
 
+  // The private shell is client-rendered after a public/auth page, whose
+  // <SEO> title would otherwise remain in the tab ("Anmelden | Presence").
+  useEffect(() => {
+    const normalized = location.pathname.replace(
+      /^\/(fr|en)(?=\/app(?:\/|$))/,
+      "",
+    )
+    const entries = [
+      ...primaryNav,
+      { labelKey: "app.navBilling" as MessageKey, path: "/app/billing" },
+      { labelKey: "app.navSettings" as MessageKey, path: "/app/settings" },
+      { labelKey: "app.navHelp" as MessageKey, path: "/app/help" },
+    ].sort((a, b) => b.path.length - a.path.length)
+    const active = entries.find(
+      (entry) =>
+        normalized === entry.path || normalized.startsWith(`${entry.path}/`),
+    )
+    document.title = active ? `${t(active.labelKey)} | Presence` : "Presence"
+  }, [location.pathname, t])
+
   // The private shell is served from the pre-rendered public shell, whose head
   // says `index,follow`. The app's own tags win: the copies of the tags this
   // screen replaces are dropped (see src/lib/prerenderedHead.ts).
