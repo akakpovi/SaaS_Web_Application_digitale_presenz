@@ -515,6 +515,8 @@
     "resetSuccessToast": "Password reset successful!",
     "errSignin": "Unable to sign in. Please try again.",
     "errRegister": "Registration failed",
+    "emailTaken": "This email address is already in use.",
+    "invalidCredentials": "Incorrect email or password.",
     "errResetLink": "Failed to send reset link",
     "errResetPassword": "Failed to reset password",
     "loginTitle": "Welcome back",

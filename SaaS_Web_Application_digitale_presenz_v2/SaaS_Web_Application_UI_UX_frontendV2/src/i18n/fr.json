@@ -515,6 +515,8 @@
     "resetSuccessToast": "Réinitialisation du mot de passe réussie !",
     "errSignin": "Impossible de se connecter. Veuillez réessayer.",
     "errRegister": "L'inscription a échoué",
+    "emailTaken": "Cette adresse e-mail est déjà utilisée.",
+    "invalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
     "errResetLink": "Échec de l'envoi du lien de réinitialisation",
     "errResetPassword": "Échec de la réinitialisation du mot de passe",
     "loginTitle": "Bon retour",

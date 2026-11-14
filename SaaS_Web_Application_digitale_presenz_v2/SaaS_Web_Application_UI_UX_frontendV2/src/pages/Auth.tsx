@@ -16,6 +16,7 @@ import { useAuth } from "../api/hooks/useAuth"
 import {
   apiErrorMessage,
   apiFieldErrors,
+  isApiError,
   type FieldErrors,
 } from "../api/errors"
 import { useToast } from "../components/Toast"
@@ -101,7 +102,15 @@ export function Login() {
       // DRF answers a rejected credential with `detail`; surface its wording
       // instead of a generic fallback (and never the refresh "Session expired").
       const fields = apiFieldErrors(err)
-      const message = apiErrorMessage(err, t("auth.errSignin"))
+      const raw = apiErrorMessage(err, t("auth.errSignin"))
+      // DRF's default credential message is English; the form must stay in
+      // the language the visitor selected.
+      const invalidCredentials =
+        (isApiError(err) && err.status === 401) ||
+        /No active account|Invalid credentials|Unable to log in/i.test(raw)
+      const message = invalidCredentials
+        ? t("auth.invalidCredentials")
+        : raw
       setFieldErrors(fields)
       setError(message)
       showToast(message, "error")
@@ -233,6 +242,8 @@ export function Register() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [confirmError, setConfirmError] = useState("")
   const [error, setError] = useState("")
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -241,6 +252,13 @@ export function Register() {
     e.preventDefault()
     setError("")
     setFieldErrors({})
+    setConfirmError("")
+    if (password !== confirmPassword) {
+      const message = t("auth.passwordsDoNotMatch")
+      setConfirmError(message)
+      setError(message)
+      return
+    }
     setIsSubmitting(true)
     try {
       // The API field is `full_name`; sending `name` silently dropped the name.
@@ -253,7 +271,15 @@ export function Register() {
       // A duplicate address arrives as `{email: [...]}`, a weak password as
       // `{password: [...]}`; each one is attached to its own input below.
       const fields = apiFieldErrors(err)
-      const message = apiErrorMessage(err, t("auth.errRegister"))
+      const duplicateEmail = Boolean(
+        fields.email?.some((entry) =>
+          /already exists|existe déjà|bereits vorhanden/i.test(entry),
+        ),
+      )
+      if (duplicateEmail) fields.email = [t("auth.emailTaken")]
+      const message = duplicateEmail
+        ? t("auth.emailTaken")
+        : apiErrorMessage(err, t("auth.errRegister"))
       setFieldErrors(fields)
       setError(message)
       showToast(message, "error")
@@ -263,7 +289,10 @@ export function Register() {
   }
 
   const errorShownOnField = Boolean(
-    fieldErrors.full_name || fieldErrors.email || fieldErrors.password,
+    confirmError ||
+      fieldErrors.full_name ||
+      fieldErrors.email ||
+      fieldErrors.password,
   )
 
   return (
@@ -291,9 +320,24 @@ export function Register() {
           type="password"
           placeholder={t("auth.minChars")}
           value={password}
-          onChange={setPassword}
+          onChange={(value) => {
+            setPassword(value)
+            setConfirmError("")
+          }}
           disabled={isSubmitting}
           error={fieldErrors.password?.[0]}
+        />
+        <Input
+          label={t("auth.confirmPassword")}
+          type="password"
+          placeholder={t("auth.minChars")}
+          value={confirmPassword}
+          onChange={(value) => {
+            setConfirmPassword(value)
+            setConfirmError("")
+          }}
+          disabled={isSubmitting}
+          error={confirmError}
         />
 
         <div className="flex items-start gap-2 mt-1">

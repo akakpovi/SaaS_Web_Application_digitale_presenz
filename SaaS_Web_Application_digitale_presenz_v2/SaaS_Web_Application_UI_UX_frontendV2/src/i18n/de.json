@@ -515,6 +515,8 @@
     "resetSuccessToast": "Passwort erfolgreich zurückgesetzt!",
     "errSignin": "Anmeldung nicht möglich. Bitte versuchen Sie es erneut.",
     "errRegister": "Registrierung fehlgeschlagen",
+    "emailTaken": "Diese E-Mail-Adresse wird bereits verwendet.",
+    "invalidCredentials": "E-Mail-Adresse oder Passwort ist falsch.",
     "errResetLink": "Link konnte nicht gesendet werden",
     "errResetPassword": "Passwort konnte nicht zurückgesetzt werden",
     "loginTitle": "Willkommen zurück",
