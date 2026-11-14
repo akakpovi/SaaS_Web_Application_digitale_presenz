@@ -1,9 +1,11 @@
-import React, { useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Link from "../components/LocaleLink"
 import {
   CheckCircle,
   ChevronDown,
+  Menu,
+  X,
   Globe,
   Shield,
   Mail,
@@ -118,6 +120,56 @@ function useFaqs() {
 function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { t } = useI18n()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        setMenuOpen(false)
+        triggerRef.current?.focus()
+        return
+      }
+      if (event.key !== "Tab" || !menuRef.current) return
+      const focusable = Array.from(
+        menuRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const focusTimer = window.setTimeout(() => {
+      menuRef.current?.querySelector<HTMLElement>("a[href], button")?.focus()
+    }, 50)
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.body.style.overflow = previousOverflow
+      window.clearTimeout(focusTimer)
+    }
+  }, [menuOpen])
+
+  const closeMenu = () => {
+    setMenuOpen(false)
+    triggerRef.current?.focus()
+  }
+
   return (
     <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-md border-b border-white/10">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-8">
@@ -188,45 +240,80 @@ function NavBar() {
         </div>
 
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden ml-auto text-slate-300"
+          ref={triggerRef}
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          className="md:hidden ml-auto w-10 h-10 flex items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 transition-colors"
+          aria-label={t("app.openNavigation")}
+          aria-expanded={menuOpen}
+          aria-controls="public-mobile-menu"
         >
-          <ChevronDown
-            size={20}
-            className={`transition-transform ${menuOpen ? "rotate-180" : ""}`}
-          />
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {menuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-slate-950/90 backdrop-blur-md px-4 py-4 flex flex-col gap-3">
-          <a href="#features" className="text-sm text-slate-300 py-2">
-            {t("nav.features")}
-          </a>
-          <a href="#how" className="text-sm text-slate-300 py-2">
-            {t("nav.howItWorks")}
-          </a>
-          <a href="#pricing" className="text-sm text-slate-300 py-2">
-            {t("nav.pricing")}
-          </a>
-          <a href="#faq" className="text-sm text-slate-300 py-2">
-            {t("nav.faq")}
-          </a>
-          <div className="pt-2 border-t border-white/10 flex items-center gap-3">
-            <LanguageSwitcher tone="dark" className="flex-1 justify-center" />
-          </div>
-          <div className="flex gap-3">
-            <Link to="/login" className="flex-1">
-              <Button variant="outline" className="w-full">
-                {t("common.login")}
-              </Button>
-            </Link>
-            <Link to="/register" className="flex-1">
-              <Button className="w-full">{t("common.signup")}</Button>
-            </Link>
-          </div>
+      {/* Mobile drawer: fixed, animated and keyboard-safe. */}
+      <div
+        className={`md:hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
+          menuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
+      <div
+        id="public-mobile-menu"
+        ref={menuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("app.openNavigation")}
+        aria-hidden={!menuOpen}
+        {...(!menuOpen ? { inert: true } : {})}
+        className={`md:hidden fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] bg-slate-950 border-l border-white/10 shadow-2xl flex flex-col p-6 transition-transform duration-300 ease-out ${
+          menuOpen ? "translate-x-0" : "translate-x-full pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center justify-between pb-6 border-b border-white/10">
+          <span className="font-bold text-white">Presence</span>
+          <button
+            type="button"
+            onClick={closeMenu}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-300 hover:bg-white/10"
+            aria-label={t("common.close")}
+          >
+            <X size={20} />
+          </button>
         </div>
-      )}
+
+        <nav className="flex flex-col gap-1 py-6" aria-label={t("app.openNavigation")}>
+          {[
+            { href: "#features", label: t("nav.features") },
+            { href: "#how", label: t("nav.howItWorks") },
+            { href: "#pricing", label: t("nav.pricing") },
+            { href: "#faq", label: t("nav.faq") },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className="text-base text-slate-200 py-3 border-b border-white/5 hover:text-white transition-colors"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
+          <LanguageSwitcher tone="dark" className="w-fit" />
+          <Link to="/login" className="block" onClick={() => setMenuOpen(false)}>
+            <Button variant="outline" className="w-full">
+              {t("common.login")}
+            </Button>
+          </Link>
+          <Link to="/register" className="block" onClick={() => setMenuOpen(false)}>
+            <Button className="w-full">{t("common.signup")}</Button>
+          </Link>
+        </div>
+      </div>
     </header>
   )
 }
