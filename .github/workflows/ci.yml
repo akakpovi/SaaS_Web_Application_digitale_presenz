@@ -222,7 +222,9 @@ jobs:
           EOF
 
       - name: Start local stack
-        run: docker compose up -d --build db redis web celery-worker mailpit frontend
+        # WordPress is part of the blog path: A9 fetches /cms at runtime and
+        # the seeded 2 DE + 6 EN articles are needed for A7/A9 hydration.
+        run: docker compose up -d --build db redis web celery-worker mailpit wordpress-db wordpress wordpress-init frontend
 
       - name: Wait for API through nginx
         run: |
@@ -235,6 +237,26 @@ jobs:
           done
           docker compose ps
           docker compose logs --tail=100 web frontend
+          exit 1
+
+      - name: Wait for CMS content
+        # The runtime blog fetch must return the seeded catalogue; without
+        # WordPress, /fr/blog/ shows "Failed to fetch" instead of its empty
+        # French state. `wordpress-init` is a one-shot Compose service, so wait
+        # for its eight published posts rather than assuming it finished.
+        run: |
+          for attempt in $(seq 1 60); do
+            posts="$(curl -sk 'https://localhost/cms/wp-json/wp/v2/posts?per_page=100' \
+              | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' 2>/dev/null \
+              || echo 0)"
+            if [ "${posts:-0}" -ge 8 ]; then
+              echo "CMS ready with ${posts} posts after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose ps
+          docker compose logs --tail=100 wordpress wordpress-init frontend
           exit 1
 
       - name: Seed E2E test data

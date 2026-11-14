@@ -93,6 +93,11 @@ def run_seed() -> None:
             plans[plan.tier] = plan
             plans_created += int(plan_created)
         free_plan = plans[Plan.Tier.FREE]
+        # D2/D4 create and delete a second website. A Free plan only allows one
+        # site, so a seeded QA account with an existing site would receive a
+        # 403 quota error. When E2E_WEBSITE_ID is set (the CI path), give the QA
+        # account an Agency plan; local/internal plans (e.g. ``qa``) are kept.
+        qa_plan = plans[Plan.Tier.AGENCY] if website_id is not None else None
 
         user = User.objects.filter(email__iexact=email).first()
         created_user = user is None
@@ -115,9 +120,22 @@ def run_seed() -> None:
         # and repair an existing QA account that predates the plan catalogue.
         subscription, subscription_created = Subscription.objects.get_or_create(
             user=user,
-            defaults={"plan": free_plan, "status": Subscription.Status.ACTIVE},
+            defaults={
+                "plan": qa_plan or free_plan,
+                "status": Subscription.Status.ACTIVE,
+            },
         )
-        if (
+        if qa_plan is not None and subscription.plan_id == free_plan.pk:
+            # The user post_save signal has already attached Free. Upgrade it
+            # so the website CRUD tests can exercise add/delete without a
+            # quota failure; do not overwrite a real local subscription.
+            subscription.plan = qa_plan
+            subscription.status = Subscription.Status.ACTIVE
+            subscription.cancelled_at = None
+            subscription.save(
+                update_fields=["plan", "status", "cancelled_at", "updated_at"]
+            )
+        elif (
             subscription.plan_id == free_plan.pk
             and subscription.status != Subscription.Status.ACTIVE
         ):
