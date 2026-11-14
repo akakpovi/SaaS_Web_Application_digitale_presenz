@@ -171,8 +171,9 @@ function NavBar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-md border-b border-white/10">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-8">
+    <>
+      <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-8">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
           <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
@@ -250,9 +251,12 @@ function NavBar() {
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-      </div>
+        </div>
+      </header>
 
-      {/* Mobile drawer: fixed, animated and keyboard-safe. */}
+      {/* Mobile drawer: fixed, animated and keyboard-safe. Kept outside the
+          blurred header, whose backdrop-filter would otherwise constrain a
+          fixed descendant to the header box. */}
       <div
         className={`md:hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
           menuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -305,7 +309,10 @@ function NavBar() {
         <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
           <LanguageSwitcher tone="dark" className="w-fit" />
           <Link to="/login" className="block" onClick={() => setMenuOpen(false)}>
-            <Button variant="outline" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+            >
               {t("common.login")}
             </Button>
           </Link>
@@ -314,7 +321,7 @@ function NavBar() {
           </Link>
         </div>
       </div>
-    </header>
+    </>
   )
 }
 
