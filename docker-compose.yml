@@ -512,6 +512,8 @@ services:
       # Webroot ACME (scripts/enable_letsencrypt.sh) — inoffensif en local.
       - ./nginx/certbot:/var/www/certbot:ro
       - ./nginx/letsencrypt:/etc/letsencrypt:ro
+      # Le nginx frontend sert les assets Django admin depuis le volume partagé.
+      - static_data:/var/www/static:ro
     healthcheck:
       test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://127.0.0.1/ >/dev/null 2>&1"]
       interval: 30s
