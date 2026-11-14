@@ -439,7 +439,10 @@ export default function Settings() {
       timezone: profile.data.timezone,
     })
     setLanguage(profile.data.language)
-    document.documentElement.lang = profile.data.language
+    // The profile's preferred language drives e-mails and defaults, not the
+    // document language: the i18n provider owns `<html lang>` and keeps it in
+    // sync with the URL/active UI locale. Writing the profile value here made
+    // /fr/app/settings claim `lang="de"` while its content was French.
   }, [profile.data])
 
   const saveBusiness = async () => {
@@ -464,7 +467,6 @@ export default function Settings() {
     setSavingLanguage(true)
     try {
       await api.patch(endpoints.profile, { language })
-      document.documentElement.lang = language
       profile.refetch()
       showToast(t("settings.toast.languageSaved"), "success")
     } catch (err) {
