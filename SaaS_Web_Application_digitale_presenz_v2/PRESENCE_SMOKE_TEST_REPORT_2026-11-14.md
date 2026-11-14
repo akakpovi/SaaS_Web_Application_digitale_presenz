@@ -13,7 +13,7 @@
 | A9 — blog FR | **✅ corrigé** : 0 article, message français, aucun contenu allemand |
 | A7 — blog DE | **✅ fonctionnel**, réserve CMS : **2 articles DE** seulement |
 | Tests E2E | **35/35 ✅** |
-| Build | RC 0 — 87 pages SSG, 8 articles, 95 URLs sitemap |
+| Build | RC 0 — 87 pages SSG, 2 DE + 6 EN (8 au total), 95 URLs sitemap |
 | Reconstruction propre | `down` + `build --no-cache web frontend` + `up` : RC 0 |
 | Healthcheck | `GET /api/v1/health/` → **200** |
 | CI `e9da5a0` | ✅ `43592091854` |
@@ -23,9 +23,10 @@
 
 > **Correction du rapport précédent :** A9 avait été marqué ✅ à tort. La page
 > `/fr/blog/` affichait le catalogue complet (2 articles DE + 6 articles EN)
-> après hydratation. A7 était également basé sur une hypothèse erronée de
-> « 8 articles allemands » : le snapshot WordPress contient 2 articles DE et
-> 6 articles EN.
+> après hydratation. A7 supposait à tort une couverture DE complète : le
+> snapshot WordPress contient **2 articles DE et 6 articles EN**. Le filtrage
+> par locale fonctionne : `/blog/` affiche 2 DE, `/en/blog/` affiche 6 EN et
+> `/fr/blog/` affiche 0 article + le message FR.
 
 ## 1. Corrections
 
@@ -104,7 +105,7 @@ de script, pas de l’application).
 | A4 | `/de/` → 301 → `/` | ✅ | `P8_A4_redirect.png` | |
 | A5 | Pricing public | ✅ | `P8_A5_pricing.png` | 4 plans, aucun QA |
 | A6 | Pricing FR | ✅ | `P8_A6_pricing_fr.png` | 4 plans |
-| A7 | Blog DE | ✅ | `P8_A7_blog_de.png` | 2 DE, aucun EN ; objectif 8 non atteignable |
+| A7 | Blog DE | ✅ | `P8_A7_blog_de.png` | 2 DE, aucun EN ; couverture DE complète non atteignable |
 | A8 | Article DE | ✅ | `P8_A8_article.png` | |
 | A9 | Blog FR | ✅ | `P8_A9_blog_fr.png` | 0 article, message FR, aucun allemand |
 | A10 | Login DE | ✅ | `P8_A10_login_de.png` | |
@@ -150,9 +151,11 @@ de script, pas de l’application).
 | M1 | Performance | ✅ | `P8_M1_perf.png` | LCP 2,55 s froid / 0,80 s chaud |
 | M2 | Lazy loading | N/A | — | |
 
-> **A7 / contenu CMS :** le snapshot contient 2 articles DE et 6 articles EN.
-> Aucun article FR n’existe. Afficher « 8 articles allemands » exigerait de
-> créer ou traduire du contenu dans WordPress, hors périmètre de ce correctif.
+> **A7 / contenu CMS :** le snapshot contient **2 articles DE et 6 articles EN**
+> (8 au total). Aucun article FR n’existe. `/blog/` affiche 2 DE, `/en/blog/`
+> affiche 6 EN et `/fr/blog/` affiche 0 article + le message FR. La réserve
+> porte uniquement sur le volume de contenu DE : l’ajouter exigerait de créer
+> ou traduire des articles dans WordPress, hors périmètre de ce correctif.
 > La page DE n’affiche désormais que le contenu réellement allemand.
 
 > **D3/E3 :** le détail et le résultat portent sur le site de test P8
